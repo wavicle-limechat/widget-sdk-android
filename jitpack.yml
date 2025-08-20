@@ -2,4 +2,4 @@ jdk:
   - openjdk17
 
 install:
-  - ./gradlew :widget-sdk:assembleRelease
+  - ./gradlew :widget-sdk:publishToMavenLocal -x test

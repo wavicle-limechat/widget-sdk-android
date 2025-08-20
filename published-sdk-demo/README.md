@@ -4,18 +4,33 @@ This is a standalone Android application that demonstrates using **ONLY** the pu
 
 ## Key Features
 
-✅ **Published SDK Only** - Uses `com.github.wavicle-limechat:widget-sdk-android:0.0.1`  
+✅ **Published SDK Only** - Uses `com.github.wavicle-limechat:widget-sdk-android:0.0.3`  
 ✅ **No Local Dependencies** - Completely independent from the SDK source code  
 ✅ **JitPack Integration** - Direct dependency resolution from JitPack  
+✅ **Dynamic Version Display** - Shows actual SDK version from published JAR  
 ✅ **Widget Button** - Shows default widget icon fetched from API  
 ✅ **Badge Updates** - Demonstrates unread count functionality  
+✅ **Clear Visual Indicators** - Green banner shows published version info
+
+## How to Identify Published vs Local SDK
+
+### 🟢 **Published SDK (this app)**
+- **Green Banner**: Shows actual version like `✅ PUBLISHED: 0.0.2-published`
+- **Toast Messages**: Include actual version from `getSDKVersion()`
+- **Logs**: Show version from published JAR
+- **Dependency**: `com.github.wavicle-limechat:widget-sdk-android:0.0.3`
+
+### 🔘 **Local SDK** (sample-app, example-project)
+- **Version Display**: Shows `0.0.3-local-dev` 
+- **Standard UI**: No green version banner
+- **Dependency**: `project(":widget-sdk")`
 
 ## Dependencies
 
 ```kotlin
 dependencies {
     // ONLY the published SDK - no local project references
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.1")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.3")
     
     // Standard Android dependencies
     implementation("androidx.core:core-ktx:1.12.0")
@@ -27,10 +42,14 @@ dependencies {
 
 ## How to Run
 
-1. **Ensure SDK is published**: The v0.0.1 tag must be pushed to GitHub for JitPack to build it
+1. **Wait for JitPack Build**: v0.0.3 must be successfully built on JitPack
 2. **Open in Android Studio**: Open this `published-sdk-demo` folder as an Android project
-3. **Sync dependencies**: Let Gradle download the published SDK from JitPack
-4. **Run the app**: The widget button will appear in the bottom-right corner
+3. **Sync Dependencies**: Gradle will download the published SDK from JitPack
+4. **Run the App**: 
+   - Green banner will show actual published version
+   - Toast messages will include version info
+   - Logs will show published SDK version
+   - Widget button appears in bottom-right corner
 
 ## What This Proves
 
@@ -39,29 +58,36 @@ This demo app proves that:
 - ✅ The SDK is properly published to JitPack
 - ✅ External apps can use the SDK without any local source dependencies
 - ✅ The SDK works independently with all its features
+- ✅ Version tracking works correctly (published vs local)
 - ✅ Widget icon fetching from API works
 - ✅ Badge updates work correctly
 - ✅ The SDK is production-ready for distribution
 
-## Usage Example
+## Testing Steps
 
-```kotlin
-import ai.limechat.widget.LimechatWidgetButton
-import ai.limechat.widget.models.WidgetConfig
+1. **Build Status**: Check that v0.0.3 is built on JitPack
+2. **Open Project**: Load this folder in Android Studio
+3. **Gradle Sync**: Should download from JitPack without errors
+4. **Run App**: 
+   - Should show green banner with actual version
+   - Toast should say "Published [version] from JitPack!"
+   - Logs should show published version info
+   - Widget functionality should work
 
-// Create configuration
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    locale = "en",
-    colorScheme = WidgetConfig.ColorScheme.LIGHT
-)
+## Expected Output
 
-// Create and initialize widget button
-val widgetButton = LimechatWidgetButton(this)
-widgetButton.init(config)
+### UI Elements
+- **Green Banner**: `✅ PUBLISHED: 0.0.2-published 📦 From JitPack`
+- **Toast on Load**: `🚀 Using Published SDK: 0.0.2-published`
+- **Test Button Toast**: `✅ Published 0.0.2-published works!`
+- **Widget Click Toast**: `🎯 Widget clicked! Published 0.0.2-published from JitPack!`
 
-// Add to your layout
-yourLayout.addView(widgetButton)
+### Logs
+```
+D/PublishedSDKDemo: 🚀 Starting Published SDK Demo
+D/PublishedSDKDemo: 📦 Using: com.github.wavicle-limechat:widget-sdk-android:0.0.3
+D/PublishedSDKDemo: 🔍 SDK Version from JitPack: 0.0.2-published
+D/LimechatWidgetButton: 🚀 LimeChat Widget SDK v0.0.2-published initializing...
 ```
 
 ## Configuration
@@ -75,8 +101,32 @@ private const val WEBSITE_TOKEN = "your_actual_website_token_here"
 ## Build Requirements
 
 - Android Studio Arctic Fox or newer
-- Gradle 8.0+
+- Gradle 8.5+
 - Min SDK: 23 (Android 6.0)
 - Target SDK: 35 (Android 15)
+- JitPack v0.0.3 must be successfully built
+
+## JitPack Status
+
+Check build status at: https://jitpack.io/#wavicle-limechat/widget-sdk-android
+
+Current status:
+- v0.0.3: Building/Ok ✅
+- v0.0.2: Error ❌
+- v0.0.1: Error ❌
+
+## Troubleshooting
+
+### "Could not find" Error
+- **Cause**: JitPack build not ready
+- **Solution**: Wait for build completion, check JitPack status
+
+### Version Shows "local-dev"
+- **Cause**: Using local SDK instead of published
+- **Solution**: Check dependency is JitPack URL, not `project(":widget-sdk")`
+
+### No Green Banner
+- **Cause**: Wrong project or dependency
+- **Solution**: Ensure using this `published-sdk-demo` folder
 
 This app demonstrates that the LimeChat Widget Android SDK is successfully published and ready for production use! 🎉
