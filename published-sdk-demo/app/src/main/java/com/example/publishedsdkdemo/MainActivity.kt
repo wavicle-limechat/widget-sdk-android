@@ -37,12 +37,15 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         
         Log.d(TAG, "🚀 Starting Published SDK Demo")
-        Log.d(TAG, "📦 Using: com.github.wavicle-limechat:widget-sdk-android:0.0.1")
-        Log.d(TAG, "🔍 This is PUBLISHED SDK - downloaded from JitPack")
+        Log.d(TAG, "📦 Using: com.github.wavicle-limechat:widget-sdk-android:0.0.3")
         
-        // Display SDK info in UI - clearly showing it's published
-        findViewById<TextView>(R.id.tvSDKVersion).text = "✅ PUBLISHED SDK v0.0.1\n📦 From JitPack"
-        Toast.makeText(this, "🚀 Using PUBLISHED SDK v0.0.1 from JitPack", Toast.LENGTH_LONG).show()
+        // Get actual SDK version to prove we're using published version
+        val sdkVersion = LimechatWidgetButton.getSDKVersion()
+        Log.d(TAG, "🔍 SDK Version from JitPack: $sdkVersion")
+        
+        // Display SDK info in UI - showing actual published version
+        findViewById<TextView>(R.id.tvSDKVersion).text = "✅ PUBLISHED: $sdkVersion\n📦 From JitPack"
+        Toast.makeText(this, "🚀 Using Published SDK: $sdkVersion", Toast.LENGTH_LONG).show()
         
         setupUI()
         setupPublishedSDK()
@@ -50,8 +53,9 @@ class MainActivity : AppCompatActivity() {
     
     private fun setupUI() {
         findViewById<Button>(R.id.btnTestWidget).setOnClickListener {
-            Toast.makeText(this, "✅ PUBLISHED SDK v0.0.1 works! Check bottom-right corner", Toast.LENGTH_LONG).show()
-            Log.d(TAG, "✅ Widget button test clicked - using PUBLISHED SDK from JitPack")
+            val version = LimechatWidgetButton.getSDKVersion()
+            Toast.makeText(this, "✅ Published $version works! Check bottom-right corner", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "✅ Widget button test clicked - using PUBLISHED $version from JitPack")
         }
         
         findViewById<Button>(R.id.btnUpdateBadge).setOnClickListener {
@@ -98,8 +102,9 @@ class MainActivity : AppCompatActivity() {
         
         // Set click listener
         widgetButton.setOnClickListener {
-            Toast.makeText(this, "🎯 Widget clicked! Using PUBLISHED SDK v0.0.1 from JitPack!", Toast.LENGTH_LONG).show()
-            Log.d(TAG, "🎯 Widget button clicked - PUBLISHED SDK from JitPack working!")
+            val version = LimechatWidgetButton.getSDKVersion()
+            Toast.makeText(this, "🎯 Widget clicked! Published $version from JitPack!", Toast.LENGTH_LONG).show()
+            Log.d(TAG, "🎯 Widget button clicked - Published $version working!")
         }
         
         // Add to layout
