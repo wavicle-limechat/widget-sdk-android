@@ -15,45 +15,55 @@
             android:orientation="vertical"
             android:padding="24dp">
 
+            <!-- Header -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:text="🚀 Published SDK Demo"
-                android:textSize="24sp"
+                android:textSize="28sp"
                 android:textStyle="bold"
                 android:gravity="center"
-                android:layout_marginBottom="16dp" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="This app demonstrates using ONLY the published JitPack SDK:\ncom.github.wavicle-limechat:widget-sdk-android:0.0.4"
-                android:textSize="14sp"
-                android:gravity="center"
                 android:layout_marginBottom="16dp"
-                android:background="@android:color/background_light"
-                android:padding="16dp" />
+                android:textColor="@android:color/black" />
 
+            <!-- Status Display -->
             <TextView
-                android:id="@+id/tvSDKVersion"
+                android:id="@+id/tvStatus"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="✅ PUBLISHED: Loading...\n📦 From JitPack"
+                android:text="⏳ Loading Published SDK..."
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layout_marginBottom="24dp"
                 android:background="@android:color/holo_green_light"
                 android:textColor="@android:color/black"
-                android:padding="12dp" />
+                android:padding="16dp" />
 
+            <!-- Description -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="This app uses ONLY the JitPack published dependency:\n\ncom.github.wavicle-limechat:widget-sdk-android:0.0.4"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"
+                android:background="@android:color/background_light"
+                android:textColor="@android:color/black"
+                android:padding="16dp"
+                android:typeface="monospace" />
+
+            <!-- Test Buttons -->
             <Button
                 android:id="@+id/btnTestWidget"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Test Widget Button"
+                android:text="🚀 Open Published SDK Widget"
                 android:textSize="16sp"
-                android:layout_marginBottom="16dp" />
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_blue_dark"
+                android:layout_marginBottom="12dp"
+                android:padding="16dp" />
 
             <Button
                 android:id="@+id/btnUpdateBadge"
@@ -61,18 +71,36 @@
                 android:layout_height="wrap_content"
                 android:text="Update Badge Count"
                 android:textSize="16sp"
-                android:layout_marginBottom="16dp" />
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_orange_dark"
+                android:layout_marginBottom="32dp"
+                android:padding="16dp" />
 
+            <!-- Instructions -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="✅ Using PUBLISHED SDK only (not local)\n✅ No local dependencies or source code\n✅ Downloaded directly from JitPack\n✅ Version shows actual published version\n🔍 Check logs for published version info"
+                android:text="How to verify this is the published SDK:\n\n✅ Check dependency in app/build.gradle.kts\n✅ Look for 'PUBLISHED SDK DEMO' in logs\n✅ Widget button appears in bottom-right corner\n✅ Click widget button to open full widget view\n✅ No local widget-sdk folder dependency\n✅ All functionality works independently"
                 android:textSize="14sp"
-                android:layout_marginTop="24dp"
-                android:lineSpacingMultiplier="1.4" />
+                android:textColor="@android:color/black"
+                android:lineSpacingMultiplier="1.3"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Configuration Note -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✅ Using live LimeChat token: MEFFACy4xaovJayhLjSt836h\n🌐 Widget URL: app.limechat.ai/widget?website_token=..."
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                android:typeface="monospace"
+                android:background="@android:color/background_light"
+                android:padding="12dp" />
 
         </LinearLayout>
 
     </ScrollView>
+
+    <!-- Widget button will be added programmatically in bottom-right corner -->
 
 </FrameLayout>

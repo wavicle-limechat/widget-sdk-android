@@ -17,6 +17,14 @@
             </intent-filter>
         </activity>
 
+        <!-- Full-screen widget activity -->
+        <activity
+            android:name=".WidgetActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.NoActionBar"
+            android:configChanges="orientation|keyboardHidden|screenSize"
+            android:windowSoftInputMode="adjustResize" />
+
     </application>
 
 </manifest>

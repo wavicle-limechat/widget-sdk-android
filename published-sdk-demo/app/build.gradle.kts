@@ -32,12 +32,13 @@ android {
 }
 
 dependencies {
-    // ONLY using the published JitPack dependency - no local SDK references
+    // CRITICAL: This is the ONLY SDK dependency - published from JitPack
+    // This proves the SDK works independently without local source code
     implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
     
-    // Basic Android dependencies
+    // Basic Android dependencies (minimal set)
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.activity:activity-ktx:1.8.2")
-    implementation("com.google.android.material:material:1.11.0")
+    
+    // No other dependencies - keeping it minimal to prove SDK independence
 }
