@@ -38,11 +38,19 @@ class LimechatWidgetButton @JvmOverloads constructor(
         private const val UNREAD_BADGE_SIZE_DP = 20
         private const val UNREAD_BADGE_MARGIN_DP = 4
         
+        // SDK Version - this helps distinguish between local and published versions
+        const val SDK_VERSION = "0.0.2-published"
+        
         // Colors
         private const val DEFAULT_BACKGROUND_COLOR = 0xFF6366F1.toInt() // Purple
         private const val WHITE_COLOR = 0xFFFFFFFF.toInt()
         private const val BADGE_COLOR = 0xFFEF4444.toInt() // Red
         private const val SHADOW_COLOR = 0x40000000 // Semi-transparent black
+        
+        /**
+         * Get the current SDK version
+         */
+        fun getSDKVersion(): String = SDK_VERSION
     }
 
     private var config: WidgetConfig? = null
@@ -69,6 +77,7 @@ class LimechatWidgetButton @JvmOverloads constructor(
      * Initialize the widget button with configuration
      */
     fun init(config: WidgetConfig, customButton: View? = null) {
+        Log.d(TAG, "🚀 LimeChat Widget SDK v$SDK_VERSION initializing...")
         this.config = config
         this.customButton = customButton
         

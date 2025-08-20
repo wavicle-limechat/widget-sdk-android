@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🚀 Published SDK Demo"
+                android:textSize="24sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="This app demonstrates using ONLY the published JitPack SDK:\ncom.github.wavicle-limechat:widget-sdk-android:0.0.1"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"
+                android:background="@android:color/background_light"
+                android:padding="16dp" />
+
+            <Button
+                android:id="@+id/btnTestWidget"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Test Widget Button"
+                android:textSize="16sp"
+                android:layout_marginBottom="16dp" />
+
+            <Button
+                android:id="@+id/btnUpdateBadge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Update Badge Count"
+                android:textSize="16sp"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✅ Using published SDK only\n✅ No local dependencies\n✅ Direct from JitPack\n✅ Version 0.0.1"
+                android:textSize="14sp"
+                android:layout_marginTop="24dp"
+                android:lineSpacingMultiplier="1.4" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+</FrameLayout>
