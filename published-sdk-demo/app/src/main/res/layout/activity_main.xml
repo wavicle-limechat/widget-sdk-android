@@ -27,7 +27,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="This app demonstrates using ONLY the published JitPack SDK:\ncom.github.wavicle-limechat:widget-sdk-android:0.0.2"
+                android:text="This app demonstrates using ONLY the published JitPack SDK:\ncom.github.wavicle-limechat:widget-sdk-android:0.0.1"
                 android:textSize="14sp"
                 android:gravity="center"
                 android:layout_marginBottom="16dp"
@@ -38,7 +38,7 @@
                 android:id="@+id/tvSDKVersion"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="SDK Version: Loading..."
+                android:text="✅ PUBLISHED SDK v0.0.1\n📦 From JitPack"
                 android:textSize="16sp"
                 android:textStyle="bold"
                 android:gravity="center"
@@ -66,7 +66,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="✅ Using published SDK only\n✅ No local dependencies\n✅ Direct from JitPack\n✅ Version 0.0.1"
+                android:text="✅ Using PUBLISHED SDK only (not local)\n✅ No local dependencies or source code\n✅ Downloaded directly from JitPack\n✅ Version 0.0.1\n🔍 Check logs for 'PUBLISHED SDK' messages"
                 android:textSize="14sp"
                 android:layout_marginTop="24dp"
                 android:lineSpacingMultiplier="1.4" />
