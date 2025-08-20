@@ -39,7 +39,7 @@ android {
 
 dependencies {
     // LimeChat Widget SDK - Published on JitPack
-    implementation("com.github.wavicle-limechat:widget-sdk-android:1.0.0")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.1")
     
     // Android dependencies
     implementation("androidx.core:core-ktx:1.12.0")
