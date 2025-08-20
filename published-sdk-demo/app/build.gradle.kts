@@ -33,7 +33,7 @@ android {
 
 dependencies {
     // ONLY using the published JitPack dependency - no local SDK references
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.3")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
     
     // Basic Android dependencies
     implementation("androidx.core:core-ktx:1.12.0")

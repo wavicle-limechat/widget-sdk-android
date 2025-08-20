@@ -37,7 +37,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         
         Log.d(TAG, "🚀 Starting Published SDK Demo")
-        Log.d(TAG, "📦 Using: com.github.wavicle-limechat:widget-sdk-android:0.0.3")
+        Log.d(TAG, "📦 Using: com.github.wavicle-limechat:widget-sdk-android:0.0.4")
         
         // Get actual SDK version to prove we're using published version
         val sdkVersion = LimechatWidgetButton.getSDKVersion()

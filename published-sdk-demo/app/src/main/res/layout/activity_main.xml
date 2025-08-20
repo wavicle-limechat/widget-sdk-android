@@ -27,7 +27,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="This app demonstrates using ONLY the published JitPack SDK:\ncom.github.wavicle-limechat:widget-sdk-android:0.0.3"
+                android:text="This app demonstrates using ONLY the published JitPack SDK:\ncom.github.wavicle-limechat:widget-sdk-android:0.0.4"
                 android:textSize="14sp"
                 android:gravity="center"
                 android:layout_marginBottom="16dp"

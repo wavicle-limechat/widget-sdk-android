@@ -39,7 +39,7 @@ class LimechatWidgetButton @JvmOverloads constructor(
         private const val UNREAD_BADGE_MARGIN_DP = 4
         
         // SDK Version - this helps distinguish between local and published versions
-        const val SDK_VERSION = "0.0.3-local-dev"
+        const val SDK_VERSION = "0.0.5-local-dev"
         
         // Colors
         private const val DEFAULT_BACKGROUND_COLOR = 0xFF6366F1.toInt() // Purple
