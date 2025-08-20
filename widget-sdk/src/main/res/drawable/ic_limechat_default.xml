@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="56dp"
+    android:height="56dp"
+    android:viewportWidth="56"
+    android:viewportHeight="56">
+    
+    <!-- Background Circle -->
+    <path
+        android:fillColor="#6366F1"
+        android:pathData="M28,28m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0" />
+    
+    <!-- Chat Bubble Icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M28,14C20.268,14 14,19.373 14,26C14,29.302 15.592,32.254 18.09,34.242C18.03,35.972 17.408,37.598 16.344,38.89C16.198,39.064 16.166,39.308 16.26,39.514C16.354,39.72 16.558,39.854 16.786,39.858C16.864,39.86 19.164,39.896 21.672,38.77C23.654,39.426 25.784,39.782 28,39.782C35.732,39.782 42,34.627 42,28C42,21.373 35.732,14 28,14Z" />
+    
+    <!-- Optional: Add "LC" text or dots inside the bubble -->
+    <circle
+        android:fillColor="#6366F1"
+        android:pathData="M22,28m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <circle
+        android:fillColor="#6366F1"
+        android:pathData="M28,28m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+    <circle
+        android:fillColor="#6366F1"
+        android:pathData="M34,28m-2,0a2,2 0,1 1,4 0a2,2 0,1 1,-4 0" />
+</vector>

@@ -25,6 +25,11 @@
             android:configChanges="orientation|keyboardHidden|screenSize"
             android:windowSoftInputMode="adjustResize" />
         
+        <activity
+            android:name=".ButtonDemoActivity"
+            android:exported="false"
+            android:theme="@style/Theme.AppCompat.Light.DarkActionBar" />
+        
     </application>
 
 </manifest>

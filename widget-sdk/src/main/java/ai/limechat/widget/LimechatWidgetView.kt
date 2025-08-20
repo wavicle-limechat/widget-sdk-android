@@ -8,12 +8,8 @@ import android.util.AttributeSet
 import android.util.Log
 import android.webkit.*
 import android.widget.FrameLayout
-import androidx.activity.result.ActivityResultLauncher
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.fragment.app.FragmentActivity
 import androidx.webkit.JavaScriptReplyProxy
 import androidx.webkit.WebMessageCompat
-import androidx.webkit.WebMessagePortCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import ai.limechat.widget.models.WidgetConfig
@@ -43,7 +39,6 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var callback: WidgetCallback? = null
     private var filePicker: WidgetFilePicker? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private var messagePort: WebMessagePortCompat? = null
     private val messageHandler = MessageHandler()
 
     init {

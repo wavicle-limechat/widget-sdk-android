@@ -14,6 +14,7 @@ class MainActivity : FragmentActivity() {
     }
     
     private lateinit var toggleWidgetButton: Button
+    private lateinit var buttonDemoButton: Button
     private lateinit var logText: TextView
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -28,12 +29,17 @@ class MainActivity : FragmentActivity() {
     
     private fun initViews() {
         toggleWidgetButton = findViewById(R.id.toggleWidgetButton)
+        buttonDemoButton = findViewById(R.id.buttonDemoButton)
         logText = findViewById(R.id.logText)
     }
     
     private fun setupListeners() {
         toggleWidgetButton.setOnClickListener {
             openWidget()
+        }
+        
+        buttonDemoButton.setOnClickListener {
+            openButtonDemo()
         }
     }
     
@@ -49,6 +55,14 @@ class MainActivity : FragmentActivity() {
         
         startActivity(intent)
         appendLog("Widget activity launched")
+    }
+    
+    private fun openButtonDemo() {
+        appendLog("Opening button demo activity")
+        
+        val intent = Intent(this, ButtonDemoActivity::class.java)
+        startActivity(intent)
+        appendLog("Button demo activity launched")
     }
     
     private fun appendLog(logMessage: String) {
