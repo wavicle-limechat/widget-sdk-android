@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <!-- Main content area -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="LimeChat Widget Demo"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="This app demonstrates the LimeChat Widget SDK integration using the published JitPack dependency."
+                android:textSize="16sp"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"
+                android:textColor="@android:color/black"
+                android:lineSpacingMultiplier="1.2" />
+
+            <!-- Features section -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Features Demonstrated:"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="16dp"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="• Widget button with default icon (bottom-right)\n• Unread count badge\n• Full-screen widget integration\n• Custom button styling\n• File upload support"
+                android:textSize="14sp"
+                android:layout_marginBottom="32dp"
+                android:textColor="@android:color/black"
+                android:lineSpacingMultiplier="1.3" />
+
+            <!-- Action buttons -->
+            <Button
+                android:id="@+id/buttonFullscreenExample"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Open Full-Screen Widget"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_blue_dark"
+                android:layout_marginBottom="12dp"
+                android:padding="16dp" />
+
+            <Button
+                android:id="@+id/buttonCustomExample"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Custom Button Example"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_green_dark"
+                android:layout_marginBottom="12dp"
+                android:padding="16dp" />
+
+            <Button
+                android:id="@+id/buttonUpdateBadge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Update Unread Count Badge"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_orange_dark"
+                android:layout_marginBottom="32dp"
+                android:padding="16dp" />
+
+            <!-- Instructions -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Instructions:"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="1. Look for the widget button in the bottom-right corner\n2. Click it to open the widget\n3. Try the buttons above for different examples\n4. Replace 'YOUR_WEBSITE_TOKEN' with your actual token"
+                android:textSize="14sp"
+                android:textColor="@android:color/black"
+                android:lineSpacingMultiplier="1.3"
+                android:layout_marginBottom="24dp" />
+
+            <!-- SDK info -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="SDK Information:"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:layout_marginBottom="8dp"
+                android:textColor="@android:color/black" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Using: com.github.wavicle-limechat:widget-sdk-android:1.0.0"
+                android:textSize="12sp"
+                android:typeface="monospace"
+                android:textColor="@android:color/black"
+                android:background="@android:color/background_light"
+                android:padding="8dp" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- Widget button will be added programmatically here -->
+
+</FrameLayout>

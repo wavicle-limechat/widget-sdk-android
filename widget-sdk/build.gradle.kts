@@ -61,9 +61,36 @@ afterEvaluate {
             create<MavenPublication>("release") {
                 from(components["release"])
                 
-                groupId = "com.github.limechat"
-                artifactId = "widget-sdk"
+                groupId = "com.github.wavicle-limechat"
+                artifactId = "widget-sdk-android"
                 version = "1.0.0"
+                
+                pom {
+                    name.set("LimeChat Widget Android SDK")
+                    description.set("Official Android SDK for LimeChat widget integration with support for custom buttons and widget icons")
+                    url.set("https://github.com/wavicle-limechat/widget-sdk-android")
+                    
+                    licenses {
+                        license {
+                            name.set("MIT License")
+                            url.set("https://opensource.org/licenses/MIT")
+                        }
+                    }
+                    
+                    developers {
+                        developer {
+                            id.set("wavicle-limechat")
+                            name.set("LimeChat Team")
+                            email.set("support@limechat.ai")
+                        }
+                    }
+                    
+                    scm {
+                        connection.set("scm:git:git://github.com/wavicle-limechat/widget-sdk-android.git")
+                        developerConnection.set("scm:git:ssh://github.com/wavicle-limechat/widget-sdk-android.git")
+                        url.set("https://github.com/wavicle-limechat/widget-sdk-android")
+                    }
+                }
             }
         }
     }

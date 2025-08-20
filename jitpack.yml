@@ -1,0 +1,17 @@
+jdk:
+  - openjdk17
+
+before_install:
+  - ./gradlew clean
+
+install:
+  - ./gradlew :widget-sdk:assembleRelease
+  - ./gradlew :widget-sdk:generatePomFileForReleasePublication
+  - ./gradlew :widget-sdk:publishReleasePublicationToMavenLocal
+
+# Optional: Add tests to ensure quality
+script:
+  - ./gradlew :widget-sdk:test
+  - ./gradlew :widget-sdk:assembleRelease
+  - ./gradlew :widget-sdk:generatePomFileForReleasePublication
+  - ./gradlew :widget-sdk:publishReleasePublicationToMavenLocal

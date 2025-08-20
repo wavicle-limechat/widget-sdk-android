@@ -33,7 +33,7 @@ Add the dependency to your app's `build.gradle`:
 
 ```kotlin
 dependencies {
-    implementation("com.github.limechat:widget-sdk:1.0.0")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:1.0.0")
 }
 ```
 
