@@ -2,7 +2,7 @@
 
 **Official Android SDK for integrating LimeChat widget into your Android applications**
 
-Version: **0.0.4** | Repository: `com.github.wavicle-limechat:widget-sdk-android` | Platform: **Android API 23+**
+Version: **0.0.5** | Repository: `com.github.wavicle-limechat:widget-sdk-android` | Platform: **Android API 23+**
 
 ---
 
@@ -31,7 +31,7 @@ Get up and running with LimeChat widget in 5 minutes:
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
 }
 ```
 
@@ -132,7 +132,7 @@ allprojects {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
     
     // Required AndroidX dependencies (if not already included)
     implementation("androidx.core:core-ktx:1.12.0")
@@ -732,7 +732,7 @@ repositories {
 }
 
 // Use exact version
-implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
+implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
 ```
 
 #### 2. AndroidX Compatibility Issues
@@ -1004,7 +1004,7 @@ android:configChanges="orientation|keyboardHidden|screenSize"
 ### Version Updates
 
 Stay updated with the latest SDK versions:
-- **Current Version**: 0.0.4
+- **Current Version**: 0.0.5
 - **Changelog**: Check GitHub releases
 - **Migration Guides**: Available for major version updates
 

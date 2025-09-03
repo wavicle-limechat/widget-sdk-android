@@ -729,12 +729,12 @@ button.setOnClickListener {
 
 ## Migration Guide
 
-### From v0.0.4 to v1.0.0
+### From v0.0.5 to v1.0.0
 
 #### 1. Update Dependencies
 ```kotlin
 // Old
-implementation("ai.limechat:widget-sdk:0.0.4")
+implementation("ai.limechat:widget-sdk:0.0.5")
 
 // New  
 implementation("ai.limechat:widget-sdk:1.0.0")
@@ -882,7 +882,7 @@ widgetView.open(message)
 
 ### Version History
 - **v1.0.0**: Custom messages, improved architecture, enhanced error handling
-- **v0.0.4**: Basic widget functionality, file uploads
+- **v0.0.5**: Basic widget functionality, file uploads
 - **v0.0.3**: Initial release
 
 ---

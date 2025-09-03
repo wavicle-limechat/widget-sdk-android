@@ -6,7 +6,7 @@ This is an example Android application that demonstrates how to use the **local*
 
 | Aspect | Published SDK Demo | Local SDK Demo |
 |--------|-------------------|----------------|
-| **Dependency** | `implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")` | `implementation(project(":widget-sdk"))` |
+| **Dependency** | `implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")` | `implementation(project(":widget-sdk"))` |
 | **Source** | JitPack published artifact | Local project module |
 | **Purpose** | Proves published SDK works independently | Proves local SDK works for development |
 | **Use Case** | Production integration testing | Development and testing |

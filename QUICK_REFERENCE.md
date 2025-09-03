@@ -4,7 +4,7 @@
 
 ### 1. Add Dependency
 ```kotlin
-implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
+implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
 ```
 
 ### 2. Add JitPack Repository
