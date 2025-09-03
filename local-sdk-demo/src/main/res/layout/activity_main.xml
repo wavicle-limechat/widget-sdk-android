@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/mainContainer"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@android:color/white">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <!-- Header -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🚀 Local SDK Demo"
+                android:textSize="28sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="16dp"
+                android:textColor="@android:color/black" />
+
+            <!-- Status Display -->
+            <TextView
+                android:id="@+id/tvStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="⏳ Loading Local SDK..."
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layout_marginBottom="24dp"
+                android:background="@android:color/holo_blue_light"
+                android:textColor="@android:color/black"
+                android:padding="16dp" />
+
+            <!-- Description -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="This app uses ONLY the LOCAL widget-sdk module:\n\nimplementation(project(\&quot;:widget-sdk\&quot;))"
+                android:textSize="14sp"
+                android:gravity="center"
+                android:layout_marginBottom="32dp"
+                android:background="@android:color/background_light"
+                android:textColor="@android:color/black"
+                android:padding="16dp"
+                android:typeface="monospace" />
+
+            <!-- Test Buttons -->
+            <Button
+                android:id="@+id/btnTestWidget"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🚀 Open Local SDK Widget"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_green_dark"
+                android:layout_marginBottom="12dp"
+                android:padding="16dp" />
+
+            <Button
+                android:id="@+id/btnUpdateBadge"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Update Badge Count"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_orange_dark"
+                android:layout_marginBottom="12dp"
+                android:padding="16dp" />
+
+            <Button
+                android:id="@+id/btnOpenWithCustomMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="🗨️ Open with Custom Message"
+                android:textSize="16sp"
+                android:textColor="@android:color/white"
+                android:backgroundTint="@android:color/holo_blue_dark"
+                android:layout_marginBottom="32dp"
+                android:padding="16dp" />
+
+            <!-- Instructions -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="How to verify this is the local SDK:\n\n✅ Check dependency in app/build.gradle.kts\n✅ Look for 'LOCAL SDK DEMO' in logs\n✅ Widget button appears in bottom-right corner\n✅ Click widget button to open full widget view\n✅ Uses local widget-sdk module dependency\n✅ All functionality works with local development"
+                android:textSize="14sp"
+                android:textColor="@android:color/black"
+                android:lineSpacingMultiplier="1.3"
+                android:layout_marginBottom="24dp" />
+
+            <!-- Configuration Note -->
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="✅ Using live LimeChat token: PN5LeU9Cyng1CRiCXTGNMm3x\n🌐 Widget URL: https://cf2e01f8e319.ngrok-free.app/widget?website_token=PN5LeU9Cyng1CRiCXTGNMm3x\n🔧 Local SDK module: :widget-sdk"
+                android:textSize="12sp"
+                android:textColor="@android:color/darker_gray"
+                android:typeface="monospace"
+                android:background="@android:color/background_light"
+                android:padding="12dp" />
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- Widget button will be added programmatically in bottom-right corner -->
+
+</FrameLayout>

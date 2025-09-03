@@ -40,6 +40,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var filePicker: WidgetFilePicker? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val messageHandler = MessageHandler()
+    private var isMessagingSetup = false
 
     init {
         webView = createHardenedWebView()
@@ -60,6 +61,26 @@ class LimechatWidgetView @JvmOverloads constructor(
     }
 
     /**
+     * Initialize the widget with configuration, callback and initial message
+     */
+    fun init(config: WidgetConfig, callback: WidgetCallback? = null, initialMessage: String? = null) {
+        this.config = config
+        this.callback = callback
+        
+        loadWidget(initialMessage)
+    }
+
+    /**
+     * Initialize the widget with configuration, callback and initial message data
+     */
+    fun init(config: WidgetConfig, callback: WidgetCallback? = null, initialMessageData: Map<String, Any>? = null) {
+        this.config = config
+        this.callback = callback
+        
+        loadWidget(initialMessageData = initialMessageData)
+    }
+
+    /**
      * Send a message to the widget
      */
     fun sendMessage(event: String, data: Map<String, Any> = emptyMap()) {
@@ -73,6 +94,79 @@ class LimechatWidgetView @JvmOverloads constructor(
         """.trimIndent()
         
         webView.evaluateJavascript(script, null)
+    }
+
+    /**
+     * Open the widget with an optional custom message
+     * @param message Optional string message to display when opening the widget
+     */
+    fun open(message: String? = null) {
+        if (message != null) {
+            // Use URL parameters approach since we're loading the widget directly
+            reloadWidgetWithMessage(message)
+        } else {
+            // Regular widget opening via JavaScript event
+            val script = """
+                if (window.bus && window.bus.${'$'}emit) {
+                    window.bus.${'$'}emit('widget:toggle');
+                }
+            """.trimIndent()
+            webView.evaluateJavascript(script, null)
+        }
+    }
+
+    /**
+     * Open the widget with a custom message object
+     * @param messageData Message object that can contain 'content' key or other properties
+     */
+    fun open(messageData: Map<String, Any>) {
+        // Use URL parameters approach with JSON payload
+        reloadWidgetWithMessageData(messageData)
+    }
+
+    /**
+     * Reload the widget with a custom message via URL parameters
+     */
+    private fun reloadWidgetWithMessage(message: String) {
+        try {
+            val config = this.config ?: return
+            val encodedMessage = java.net.URLEncoder.encode(message, "UTF-8")
+            val baseUrl = UrlBuilder.buildWidgetUrl(config)
+            val urlWithMessage = if (baseUrl.contains("?")) {
+                "$baseUrl&lc_open_message=$encodedMessage"
+            } else {
+                "$baseUrl?lc_open_message=$encodedMessage"
+            }
+            
+            Log.d(TAG, "Reloading widget with message: $message")
+            Log.d(TAG, "Widget URL: $urlWithMessage")
+            webView.loadUrl(urlWithMessage)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to reload widget with message", e)
+        }
+    }
+
+    /**
+     * Reload the widget with a custom message object via URL parameters
+     */
+    private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
+        try {
+            val config = this.config ?: return
+            val messageJson = JSONObject(messageData).toString()
+            val encodedPayload = java.net.URLEncoder.encode(messageJson, "UTF-8")
+            val baseUrl = UrlBuilder.buildWidgetUrl(config)
+            val urlWithPayload = if (baseUrl.contains("?")) {
+                "$baseUrl&lc_open_payload=$encodedPayload"
+            } else {
+                "$baseUrl?lc_open_payload=$encodedPayload"
+            }
+            
+            Log.d(TAG, "Reloading widget with message data: $messageData")
+            Log.d(TAG, "Widget URL: $urlWithPayload")
+            webView.loadUrl(urlWithPayload)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to reload widget with message data", e)
+        }
     }
 
     /**
@@ -212,9 +306,38 @@ class LimechatWidgetView @JvmOverloads constructor(
         }
     }
 
-    private fun loadWidget() {
+    private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
-        val url = UrlBuilder.buildWidgetUrl(config)
+        var url = UrlBuilder.buildWidgetUrl(config)
+        
+        // Add initial message parameters if provided
+        try {
+            when {
+                initialMessage != null -> {
+                    val encodedMessage = java.net.URLEncoder.encode(initialMessage, "UTF-8")
+                    url = if (url.contains("?")) {
+                        "$url&lc_open_message=$encodedMessage"
+                    } else {
+                        "$url?lc_open_message=$encodedMessage"
+                    }
+                    Log.d(TAG, "Loading widget with initial message: $initialMessage")
+                }
+                initialMessageData != null -> {
+                    val messageJson = JSONObject(initialMessageData).toString()
+                    val encodedPayload = java.net.URLEncoder.encode(messageJson, "UTF-8")
+                    url = if (url.contains("?")) {
+                        "$url&lc_open_payload=$encodedPayload"
+                    } else {
+                        "$url?lc_open_payload=$encodedPayload"
+                    }
+                    Log.d(TAG, "Loading widget with initial message data: $initialMessageData")
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to encode initial message", e)
+        }
+        
+        Log.d(TAG, "Loading widget URL: $url")
         webView.loadUrl(url)
     }
 
@@ -280,6 +403,11 @@ class LimechatWidgetView @JvmOverloads constructor(
     }
 
     private fun setupMessaging() {
+        if (isMessagingSetup) {
+            Log.d(TAG, "Messaging already setup, skipping")
+            return
+        }
+        
         // Try WebMessageListener first (preferred method)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             setupWebMessageListener()
@@ -287,6 +415,8 @@ class LimechatWidgetView @JvmOverloads constructor(
             // Fallback to JavascriptInterface
             setupJavascriptInterface()
         }
+        
+        isMessagingSetup = true
     }
 
     private fun setupWebMessageListener() {

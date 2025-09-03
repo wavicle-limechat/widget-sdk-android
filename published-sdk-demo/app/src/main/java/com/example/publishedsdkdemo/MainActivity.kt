@@ -27,7 +27,8 @@ class MainActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "PublishedSDKDemo"
-        private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
+        private const val WEBSITE_TOKEN = "PN5LeU9Cyng1CRiCXTGNMm3x"
+        private const val BASE_URL = "https://cf2e01f8e319.ngrok-free.app"
     }
     
     private lateinit var widgetButton: LimechatWidgetButton

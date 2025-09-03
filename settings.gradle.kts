@@ -15,4 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "limechat-android-sdk"
 include(":widget-sdk")
-include(":sample-app")
+include(":local-sdk-demo")
