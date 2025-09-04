@@ -4,7 +4,154 @@
 
 ### 1. Add Dependency
 ```kotlin
-implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
+# LimeChat Android SDK - Quick Reference
+
+**A cheatsheet for integrating and using the LimeChat Android SDK.**
+
+---
+
+## 🚀 Setup
+
+**1. Add JitPack Repository:**
+
+```kotlin
+// settings.gradle.kts
+repositories {
+    maven { url = uri("https://jitpack.io") }
+}
+```
+
+**2. Add Dependency:**
+
+```kotlin
+// app/build.gradle.kts
+dependencies {
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.6")
+}
+```
+
+---
+
+## 📱 Core Components
+
+### Floating Widget Button
+
+The easiest way to add the chat widget to your app.
+
+```kotlin
+// In your Activity
+val config = WidgetConfig(websiteToken = "YOUR_WEBSITE_TOKEN")
+
+val widgetButton = LimechatWidgetButton(this)
+widgetButton.init(config)
+
+// Add to your layout
+val container = findViewById<FrameLayout>(R.id.main_container)
+container.addView(widgetButton)
+```
+
+### Full-Screen Widget
+
+For a dedicated chat screen.
+
+```kotlin
+// In a dedicated Activity
+class ChatActivity : FragmentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val widgetView = LimechatWidgetView(this)
+        setContentView(widgetView)
+
+        val config = WidgetConfig(websiteToken = "YOUR_WEBSITE_TOKEN")
+        widgetView.init(config)
+    }
+}
+```
+
+---
+
+## ⚙️ Common Configurations
+
+### Passing User Information
+
+```kotlin
+val config = WidgetConfig(
+    websiteToken = "YOUR_TOKEN",
+    user = WidgetConfig.User(
+        name = "John Doe",
+        email = "john@example.com"
+    )
+)
+```
+
+### Custom Attributes
+
+```kotlin
+val config = WidgetConfig(
+    websiteToken = "YOUR_TOKEN",
+    customAttributes = mapOf(
+        "plan" to "premium",
+        "source" to "android_app"
+    )
+)
+```
+
+### Setting the Theme
+
+```kotlin
+val config = WidgetConfig(
+    websiteToken = "YOUR_TOKEN",
+    colorScheme = WidgetConfig.ColorScheme.DARK // or LIGHT, or AUTO
+)
+```
+
+---
+
+## ✨ Advanced Features
+
+### Using a Custom Chat Button
+
+```kotlin
+val myButton: Button = findViewById(R.id.my_chat_button)
+
+val widgetButton = LimechatWidgetButton(this)
+widgetButton.init(config, myButton)
+```
+
+### Handling Widget Events
+
+```kotlin
+widgetView.init(config, object : WidgetCallback {
+    override fun onLoaded() { /* ... */ }
+    override fun onClose() { /* ... */ }
+    override fun onError(error: WidgetError) { /* ... */ }
+    override fun onMessage(message: Map<String, Any>) {
+        if (message["event"] == "unread-count-changed") {
+            val count = message["count"] as? Int ?: 0
+            // Update your UI
+        }
+    }
+})
+```
+
+### Enabling File Uploads
+
+```kotlin
+// In your Activity's onCreate
+val widgetFilePicker = WidgetFilePicker(this)
+widgetView.attachFilePicker(widgetFilePicker)
+```
+
+
+
+---
+
+## 🔗 Useful Links
+
+- **[Full Integration Guide](CLIENT_INTEGRATION_GUIDE.md)**
+- **[Working Example](published-sdk-demo/)**
+- **[GitHub Repository](https://github.com/wavicle-limechat/widget-sdk-android)**
+
 ```
 
 ### 2. Add JitPack Repository
