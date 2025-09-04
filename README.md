@@ -30,7 +30,7 @@ repositories {
 
 // app/build.gradle.kts  
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.4")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
 }
 ```
 
@@ -150,7 +150,7 @@ android.enableJetifier=true
 
 ## 📊 SDK Status
 
-- **Current Version**: 0.0.4
+- **Current Version**: 0.0.5
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
 - **Last Updated**: January 2025

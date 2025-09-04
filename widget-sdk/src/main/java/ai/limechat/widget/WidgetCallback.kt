@@ -43,6 +43,7 @@ data class WidgetError(
         NETWORK_ERROR,
         JAVASCRIPT_ERROR,
         FILE_PICKER_ERROR,
+        INITIALIZATION_ERROR,
         UNKNOWN_ERROR
     }
 }

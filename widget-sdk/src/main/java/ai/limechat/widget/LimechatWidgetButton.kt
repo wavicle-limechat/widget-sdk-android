@@ -59,6 +59,7 @@ class LimechatWidgetButton @JvmOverloads constructor(
     private var unreadBadge: TextView? = null
     private var onClickListener: OnClickListener? = null
     private var unreadCount = 0
+    private var widgetView: LimechatWidgetView? = null
     
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val configFetcher = WidgetConfigFetcher()
@@ -104,6 +105,34 @@ class LimechatWidgetButton @JvmOverloads constructor(
     fun updateUnreadCount(count: Int) {
         unreadCount = count
         updateUnreadBadge()
+    }
+
+    /**
+     * Set the associated widget view for advanced interactions
+     * This enables the button to control the widget with custom messages
+     */
+    fun setWidgetView(widgetView: LimechatWidgetView) {
+        this.widgetView = widgetView
+    }
+
+    /**
+     * Open the widget with an optional custom message
+     * @param message Optional string message to display when opening
+     */
+    fun open(message: String? = null) {
+        widgetView?.open(message) ?: run {
+            Log.w(TAG, "WidgetView not set. Call setWidgetView() first to enable custom message functionality")
+        }
+    }
+
+    /**
+     * Open the widget with a custom message object
+     * @param messageData Message object that can contain 'content' key or other properties
+     */
+    fun open(messageData: Map<String, Any>) {
+        widgetView?.open(messageData) ?: run {
+            Log.w(TAG, "WidgetView not set. Call setWidgetView() first to enable custom message functionality")
+        }
     }
 
     /**
