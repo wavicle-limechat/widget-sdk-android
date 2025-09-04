@@ -17,6 +17,7 @@ import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
 import kotlinx.coroutines.*
 import org.json.JSONObject
+import java.net.URLEncoder
 
 /**
  * Main widget view that renders the Limechat widget in a hardened WebView
@@ -53,33 +54,40 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Initialize the widget with configuration and callback
      */
     fun init(config: WidgetConfig, callback: WidgetCallback? = null) {
-        this.config = config
-        this.callback = callback
-        
-        // Note: File picker should be attached separately using attachFilePicker()
-        // to ensure it's created during onCreate() of the activity
-        
-        loadWidget()
+        init(config, callback, null, null)
     }
 
     /**
      * Initialize the widget with configuration, callback and initial message
      */
     fun init(config: WidgetConfig, callback: WidgetCallback? = null, initialMessage: String? = null) {
-        this.config = config
-        this.callback = callback
-        
-        loadWidget(initialMessage)
+        init(config, callback, initialMessage, null)
     }
 
     /**
      * Initialize the widget with configuration, callback and initial message data
      */
     fun init(config: WidgetConfig, callback: WidgetCallback? = null, initialMessageData: Map<String, Any>? = null) {
+        init(config, callback, null, initialMessageData)
+    }
+
+    /**
+     * Initialize the widget with configuration, callback, and optional initial message parameters
+     * This is the main init method that all other overloads delegate to
+     */
+    private fun init(
+        config: WidgetConfig, 
+        callback: WidgetCallback? = null, 
+        initialMessage: String? = null,
+        initialMessageData: Map<String, Any>? = null
+    ) {
         this.config = config
         this.callback = callback
         
-        loadWidget(initialMessageData = initialMessageData)
+        // Note: File picker should be attached separately using attachFilePicker()
+        // to ensure it's created during onCreate() of the activity
+        
+        loadWidget(initialMessage, initialMessageData)
     }
 
     /**
@@ -127,48 +135,53 @@ class LimechatWidgetView @JvmOverloads constructor(
     }
 
     /**
+     * Utility method to build URL with parameters
+     */
+    private fun buildUrlWithParameters(baseUrl: String, params: Map<String, String>): String {
+        return try {
+            val urlBuilder = StringBuilder(baseUrl)
+            val hasQuery = baseUrl.contains("?")
+            
+            params.forEach { (key, value) ->
+                val separator = if (!hasQuery && urlBuilder.toString() == baseUrl) "?" else "&"
+                val encodedValue = URLEncoder.encode(value, "UTF-8")
+                urlBuilder.append("$separator$key=$encodedValue")
+            }
+            
+            urlBuilder.toString()
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to build URL with parameters", e)
+            baseUrl
+        }
+    }
+
+    /**
      * Reload the widget with a custom message via URL parameters
      */
     private fun reloadWidgetWithMessage(message: String) {
-        try {
-            val config = this.config ?: return
-            val encodedMessage = java.net.URLEncoder.encode(message, "UTF-8")
-            val baseUrl = UrlBuilder.buildWidgetUrl(config)
-            val urlWithMessage = if (baseUrl.contains("?")) {
-                "$baseUrl&lc_open_message=$encodedMessage"
-            } else {
-                "$baseUrl?lc_open_message=$encodedMessage"
-            }
-            
-            Log.d(TAG, "Reloading widget with message: $message")
-            Log.d(TAG, "Widget URL: $urlWithMessage")
-            webView.loadUrl(urlWithMessage)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to reload widget with message", e)
-        }
+        val config = this.config ?: return
+        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        val params = mapOf("lc_open_message" to message)
+        val urlWithMessage = buildUrlWithParameters(baseUrl, params)
+        
+        Log.d(TAG, "Reloading widget with message: $message")
+        Log.d(TAG, "Widget URL: $urlWithMessage")
+        webView.loadUrl(urlWithMessage)
     }
 
     /**
      * Reload the widget with a custom message object via URL parameters
      */
     private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
-        try {
-            val config = this.config ?: return
-            val messageJson = JSONObject(messageData).toString()
-            val encodedPayload = java.net.URLEncoder.encode(messageJson, "UTF-8")
-            val baseUrl = UrlBuilder.buildWidgetUrl(config)
-            val urlWithPayload = if (baseUrl.contains("?")) {
-                "$baseUrl&lc_open_payload=$encodedPayload"
-            } else {
-                "$baseUrl?lc_open_payload=$encodedPayload"
-            }
-            
-            Log.d(TAG, "Reloading widget with message data: $messageData")
-            Log.d(TAG, "Widget URL: $urlWithPayload")
-            webView.loadUrl(urlWithPayload)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to reload widget with message data", e)
-        }
+        val config = this.config ?: return
+        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        val messageJson = JSONObject(messageData).toString()
+        val params = mapOf("lc_open_payload" to messageJson)
+        val urlWithPayload = buildUrlWithParameters(baseUrl, params)
+        
+        Log.d(TAG, "Reloading widget with message data: $messageData")
+        Log.d(TAG, "Widget URL: $urlWithPayload")
+        webView.loadUrl(urlWithPayload)
     }
 
     /**
@@ -319,30 +332,21 @@ class LimechatWidgetView @JvmOverloads constructor(
         setupMessaging()
         
         // Add initial message parameters if provided
-        try {
-            when {
-                initialMessage != null -> {
-                    val encodedMessage = java.net.URLEncoder.encode(initialMessage, "UTF-8")
-                    url = if (url.contains("?")) {
-                        "$url&lc_open_message=$encodedMessage"
-                    } else {
-                        "$url?lc_open_message=$encodedMessage"
-                    }
-                    Log.d(TAG, "Loading widget with initial message: $initialMessage")
-                }
-                initialMessageData != null -> {
-                    val messageJson = JSONObject(initialMessageData).toString()
-                    val encodedPayload = java.net.URLEncoder.encode(messageJson, "UTF-8")
-                    url = if (url.contains("?")) {
-                        "$url&lc_open_payload=$encodedPayload"
-                    } else {
-                        "$url?lc_open_payload=$encodedPayload"
-                    }
-                    Log.d(TAG, "Loading widget with initial message data: $initialMessageData")
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to encode initial message", e)
+        val params = mutableMapOf<String, String>()
+        
+        initialMessage?.let { message ->
+            params["lc_open_message"] = message
+            Log.d(TAG, "Loading widget with initial message: $message")
+        }
+        
+        initialMessageData?.let { data ->
+            val messageJson = JSONObject(data).toString()
+            params["lc_open_payload"] = messageJson
+            Log.d(TAG, "Loading widget with initial message data: $data")
+        }
+        
+        if (params.isNotEmpty()) {
+            url = buildUrlWithParameters(url, params)
         }
         
         Log.d(TAG, "Loading widget URL: $url")
@@ -508,27 +512,18 @@ class LimechatWidgetView @JvmOverloads constructor(
                 @JavascriptInterface
                 fun postMessage(message: String) {
                     Log.d(TAG, "JS->Android postMessage: $message")
-                    handleMessage(message)
-                }
-
-                // Support alternate method names used by JS bridge
-                @JavascriptInterface
-                fun onMessage(message: String) {
-                    Log.d(TAG, "JS->Android onMessage: $message")
-                    handleMessage(message)
-                }
-
-                @JavascriptInterface
-                fun receiveMessage(message: String) {
-                    Log.d(TAG, "JS->Android receiveMessage: $message")
-                    handleMessage(message)
-                }
-
-                @JavascriptInterface
-                fun handleMessage(message: String) {
-                    Log.d(TAG, "JS->Android handleMessage: $message")
                     this@LimechatWidgetView.handleMessage(message)
                 }
+
+                // Support alternate method names used by JS bridge - all delegate to postMessage
+                @JavascriptInterface
+                fun onMessage(message: String) = postMessage(message)
+
+                @JavascriptInterface
+                fun receiveMessage(message: String) = postMessage(message)
+
+                @JavascriptInterface
+                fun handleMessage(message: String) = postMessage(message)
             }, JS_INTERFACE_NAME)
             jsInterfaceAdded = true
         } else {
