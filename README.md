@@ -4,37 +4,53 @@
 
 [![JitPack](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 [![API](https://img.shields.io/badge/API-23%2B-brightgreen.svg?style=flat)](https://android-arsenal.com/api?level=23)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 ## ✨ Features
 
-- 🎯 **Easy Integration** - Add chat to your app in 5 minutes
-- 🎨 **Customizable Appearance** - Match your brand design
-- 📱 **Widget Button** - Floating button with unread count badge
-- 🖥️ **Full-Screen Chat** - Immersive conversation experience  
-- 📎 **File Upload Support** - Share images, documents, and media
-- 🔔 **Real-Time Messaging** - Instant notifications and responses
-- 🎭 **Theme Support** - Light, dark, and auto themes
-- 🌍 **Multi-Language** - Localization support
-- 🔒 **Secure** - Enterprise-grade security and privacy
+- 🎯 **Easy Integration**: Add chat to your app in minutes.
+- 🎨 **Customizable UI**: Match your brand's design and feel.
+- 📱 **Widget Button**: A floating button with an unread message count badge.
+- 🖥️ **Full-Screen Chat**: An immersive conversation experience.
+- 📎 **File Uploads**: Share images, documents, and other media.
+- 🔔 **Real-Time Messaging**: Instant notifications and message delivery.
+- 🎭 **Theme Support**: Light, dark, and automatic theme switching.
+- 🌍 **Multi-Language**: Support for localization and multiple languages.
+- 🔒 **Secure**: Built with enterprise-grade security and privacy standards.
+
+## 🛠️ Requirements
+
+- **Minimum SDK**: 23 (Android 6.0)
+- **Kotlin**: 1.8+
+- **AndroidX**: Required
 
 ## 🚀 Quick Start
 
-### 1. Add Dependency
+Get your chat widget up and running in three simple steps.
+
+### 1. Add the Dependency
+
+First, add the JitPack repository to your `settings.gradle.kts` file:
 
 ```kotlin
 // settings.gradle.kts
 repositories {
     maven { url = uri("https://jitpack.io") }
 }
+```
 
+Next, add the SDK dependency to your app's `build.gradle.kts` file:
+
+```kotlin
 // app/build.gradle.kts  
 dependencies {
     implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
 }
 ```
 
-### 2. Initialize Widget
+### 2. Initialize the Widget
+
+To add the chat widget to your app, configure it with your `websiteToken` and user details. Then, create a `LimechatWidgetButton` and add it to your layout.
 
 ```kotlin
 import ai.limechat.widget.LimechatWidgetButton
@@ -46,50 +62,55 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         
-        // Configure the widget
+        // 1. Configure the widget
         val config = WidgetConfig(
-            websiteToken = "YOUR_WEBSITE_TOKEN", // Get from LimeChat dashboard
+            websiteToken = "YOUR_WEBSITE_TOKEN", // Get this from your LimeChat dashboard
             user = WidgetConfig.User(
                 name = "John Doe",
                 email = "john@example.com"
             )
         )
         
-        // Create floating chat button
+        // 2. Create the floating chat button
         val widgetButton = LimechatWidgetButton(this)
         widgetButton.init(config)
         
-        // Add to your layout (bottom-right corner)
+        // 3. Add the button to your layout (e.g., bottom-right corner)
         val container = findViewById<FrameLayout>(R.id.main_container)
-        widgetButton.layoutParams = FrameLayout.LayoutParams(
+        val layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.END
             setMargins(0, 0, 16.dp, 16.dp)
         }
-        container.addView(widgetButton)
+        container.addView(widgetButton, layoutParams)
     }
 }
 ```
 
 ### 3. Add Permissions
 
+Finally, ensure your app has the necessary permissions by adding the following to your `AndroidManifest.xml`:
+
 ```xml
 <!-- AndroidManifest.xml -->
 <uses-permission android:name="android.permission.INTERNET" />
 ```
 
-**That's it! Your chat widget is ready.** 🎉
+**That's it! Your chat widget is now ready.** 🎉
 
 ## 📖 Documentation
 
-### Quick References
-- **[🚀 Quick Reference](QUICK_REFERENCE.md)** - Common code snippets and examples
-- **[📚 Full Integration Guide](CLIENT_INTEGRATION_GUIDE.md)** - Comprehensive documentation
-- **[🔧 Working Example](published-sdk-demo/)** - Complete sample application
+For more detailed information, check out our comprehensive documentation and examples.
+
+- **[🚀 Quick Reference](QUICK_REFERENCE.md)**: Common code snippets and quick examples.
+- **[📚 Full Integration Guide](CLIENT_INTEGRATION_GUIDE.md)**: A complete guide to integrating and customizing the widget.
+- **[🔧 Working Example](published-sdk-demo/)**: A sample application demonstrating a complete integration.
 
 ### Advanced Integration
+
+For more control, you can embed the widget directly as a `LimechatWidgetView` and handle events with callbacks.
 
 ```kotlin
 // Full-screen widget with callbacks
@@ -105,11 +126,11 @@ class ChatActivity : FragmentActivity() {
         widgetView.attachFilePicker(filePicker)
         
         widgetView.init(config, object : WidgetCallback {
-            override fun onLoaded() { /* Widget ready */ }
-            override fun onClose() { finish() }
-            override fun onError(error: WidgetError) { /* Handle errors */ }
+            override fun onLoaded() { /* Widget is ready */ }
+            override fun onClose() { finish() } // Close the activity when the widget closes
+            override fun onError(error: WidgetError) { /* Handle any errors */ }
             override fun onMessage(message: Map<String, Any>) {
-                // Handle real-time events
+                // Handle real-time events from the widget
                 when (message["event"]) {
                     "unread-count-changed" -> updateBadge(message["count"] as Int)
                     "conversation-started" -> trackAnalytics("chat_started")
@@ -120,18 +141,14 @@ class ChatActivity : FragmentActivity() {
 }
 ```
 
-## 🛠️ Requirements
-
-- **Minimum SDK**: 23 (Android 6.0)
-- **Target SDK**: 35 (Android 15)  
-- **Kotlin**: 1.8+
-- **AndroidX**: Required
-
 ## 🔧 Common Issues
 
 ### Dependency Resolution Error
+
+If you encounter a dependency resolution error, ensure you have `google()` and `mavenCentral()` in your `settings.gradle.kts`:
+
 ```kotlin
-// Add to settings.gradle.kts
+// settings.gradle.kts
 repositories {
     google()
     mavenCentral()
@@ -140,32 +157,31 @@ repositories {
 ```
 
 ### AndroidX Compatibility
+
+The SDK requires AndroidX. To enable it, add the following to your `gradle.properties` file:
+
 ```properties
-# Add to gradle.properties
+# gradle.properties
 android.useAndroidX=true
 android.enableJetifier=true
 ```
 
-**For more solutions, see [Troubleshooting Guide](CLIENT_INTEGRATION_GUIDE.md#-troubleshooting)**
+**For more solutions, see our [Troubleshooting Guide](CLIENT_INTEGRATION_GUIDE.md#-troubleshooting).**
 
 ## 📊 SDK Status
 
-- **Current Version**: 0.0.5
+- **Current Version**: 0.0.6
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
-- **Last Updated**: January 2025
 
 ## 🤝 Support
 
 - **📖 Documentation**: [CLIENT_INTEGRATION_GUIDE.md](CLIENT_INTEGRATION_GUIDE.md)
-- **🐛 Issues**: [GitHub Issues](https://github.com/wavicle-limechat/widget-sdk-android/issues)
-- **💬 Support**: Contact LimeChat support team
+- **📦 Publishing Guide**: [PUBLISHING.md](PUBLISHING.md)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/wavicle-limechat/widget-sdk-android/issues)
+- **💬 General Support**: Contact the LimeChat support team.
 - **📧 Email**: support@limechat.ai
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) file for details.
-
----
-
-**Ready to add chat to your app?** Start with the [Quick Reference](QUICK_REFERENCE.md) for instant integration! 🚀
+This project is licensed under the MIT License.
