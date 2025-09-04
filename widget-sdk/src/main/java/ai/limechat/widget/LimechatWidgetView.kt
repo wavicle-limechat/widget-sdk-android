@@ -41,6 +41,8 @@ class LimechatWidgetView @JvmOverloads constructor(
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val messageHandler = MessageHandler()
     private var isMessagingSetup = false
+    private var webMessageListenerAdded = false
+    private var jsInterfaceAdded = false
 
     init {
         webView = createHardenedWebView()
@@ -246,8 +248,10 @@ class LimechatWidgetView @JvmOverloads constructor(
         return object : WebViewClient() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                injectUserData()
+                // Ensure messaging bridge is re-established on every load/HMR
+                isMessagingSetup = false
                 setupMessaging()
+                injectUserData()
                 callback?.onLoaded()
             }
 
@@ -309,6 +313,10 @@ class LimechatWidgetView @JvmOverloads constructor(
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
         var url = UrlBuilder.buildWidgetUrl(config)
+
+        // Ensure messaging bridges are available before the page loads
+        // so JS can see window.LimechatAndroid / window.LimechatNative immediately
+        setupMessaging()
         
         // Add initial message parameters if provided
         try {
@@ -411,6 +419,9 @@ class LimechatWidgetView @JvmOverloads constructor(
         // Try WebMessageListener first (preferred method)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             setupWebMessageListener()
+            // Also expose a JS interface so window.LimechatAndroid exists
+            // This lets the JS bridge call into Android directly when it prefers interfaces
+            setupJavascriptInterface()
         } else {
             // Fallback to JavascriptInterface
             setupJavascriptInterface()
@@ -421,34 +432,68 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun setupWebMessageListener() {
         try {
-            WebViewCompat.addWebMessageListener(
-                webView,
-                MESSAGE_LISTENER_NAME,
-                setOf("*"),
-                object : WebViewCompat.WebMessageListener {
-                    override fun onPostMessage(
-                        view: WebView,
-                        message: WebMessageCompat,
-                        sourceOrigin: Uri,
-                        isMainFrame: Boolean,
-                        replyProxy: JavaScriptReplyProxy
-                    ) {
-                        message.data?.let { data ->
-                            handleMessage(data)
+            if (!webMessageListenerAdded) {
+                WebViewCompat.addWebMessageListener(
+                    webView,
+                    MESSAGE_LISTENER_NAME,
+                    setOf("*"),
+                    object : WebViewCompat.WebMessageListener {
+                        override fun onPostMessage(
+                            view: WebView,
+                            message: WebMessageCompat,
+                            sourceOrigin: Uri,
+                            isMainFrame: Boolean,
+                            replyProxy: JavaScriptReplyProxy
+                        ) {
+                            message.data?.let { data ->
+                                handleMessage(data)
+                            }
                         }
                     }
-                }
-            )
-            
-            // Inject script to use WebMessageListener
+                )
+                webMessageListenerAdded = true
+            } else {
+                Log.d(TAG, "WebMessageListener already added, reusing")
+            }
+            // Inject (idempotent) script to forward window.postMessage to native bridge
             val script = """
-                window.addEventListener('message', function(e) {
-                    if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                        window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
-                    }
-                });
+                (function(){
+                  if (!window.__lcAndroidBridgeWML) {
+                    window.__lcAndroidBridgeWML = true;
+                    // Wrap window.postMessage to also forward limechat-widget messages to native
+                    try {
+                      if (!window.__lcPostMessageWrapped) {
+                        window.__lcPostMessageWrapped = true;
+                        var __lcOrigPostMessage = window.postMessage.bind(window);
+                        window.postMessage = function(data, targetOrigin, transfer) {
+                          try {
+                            if (typeof data === 'string' && data.indexOf('limechat-widget:') === 0) {
+                              if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
+                                window.$MESSAGE_LISTENER_NAME.postMessage(data);
+                              } else if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
+                                window.$JS_INTERFACE_NAME.postMessage(data);
+                              }
+                              try { console.log('[LimechatBridge] forwarded via wrapped postMessage'); } catch (e) {}
+                            }
+                          } catch (e) {}
+                          return __lcOrigPostMessage(data, targetOrigin, transfer);
+                        };
+                      }
+                    } catch (e) {}
+                    window.addEventListener('message', function(e) {
+                      if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
+                        try {
+                          if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
+                            window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
+                          } else if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
+                            window.$JS_INTERFACE_NAME.postMessage(e.data);
+                          }
+                        } catch (err) {}
+                      }
+                    });
+                  }
+                })();
             """.trimIndent()
-            
             webView.evaluateJavascript(script, null)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set up WebMessageListener", e)
@@ -458,22 +503,77 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     @SuppressLint("JavascriptInterface")
     private fun setupJavascriptInterface() {
-        webView.addJavascriptInterface(object {
-            @JavascriptInterface
-            fun postMessage(message: String) {
-                handleMessage(message)
-            }
-        }, JS_INTERFACE_NAME)
-        
-        // Inject script to use JavascriptInterface
-        val script = """
-            window.addEventListener('message', function(e) {
-                if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                    window.$JS_INTERFACE_NAME.postMessage(e.data);
+        if (!jsInterfaceAdded) {
+            webView.addJavascriptInterface(object {
+                @JavascriptInterface
+                fun postMessage(message: String) {
+                    Log.d(TAG, "JS->Android postMessage: $message")
+                    handleMessage(message)
                 }
-            });
-        """.trimIndent()
+
+                // Support alternate method names used by JS bridge
+                @JavascriptInterface
+                fun onMessage(message: String) {
+                    Log.d(TAG, "JS->Android onMessage: $message")
+                    handleMessage(message)
+                }
+
+                @JavascriptInterface
+                fun receiveMessage(message: String) {
+                    Log.d(TAG, "JS->Android receiveMessage: $message")
+                    handleMessage(message)
+                }
+
+                @JavascriptInterface
+                fun handleMessage(message: String) {
+                    Log.d(TAG, "JS->Android handleMessage: $message")
+                    this@LimechatWidgetView.handleMessage(message)
+                }
+            }, JS_INTERFACE_NAME)
+            jsInterfaceAdded = true
+        } else {
+            Log.d(TAG, "JS interface already added, reusing")
+        }
         
+        // Inject (idempotent) script to use JavascriptInterface
+        val script = """
+            (function(){
+              if (!window.__lcAndroidBridgeJSI) {
+                window.__lcAndroidBridgeJSI = true;
+                // Wrap window.postMessage to also forward limechat-widget messages to native
+                try {
+                  if (!window.__lcPostMessageWrapped) {
+                    window.__lcPostMessageWrapped = true;
+                    var __lcOrigPostMessage = window.postMessage.bind(window);
+                    window.postMessage = function(data, targetOrigin, transfer) {
+                      try {
+                        if (typeof data === 'string' && data.indexOf('limechat-widget:') === 0) {
+                          if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
+                            window.$JS_INTERFACE_NAME.postMessage(data);
+                          } else if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
+                            window.$MESSAGE_LISTENER_NAME.postMessage(data);
+                          }
+                          try { console.log('[LimechatBridge] forwarded via wrapped postMessage'); } catch (e) {}
+                        }
+                      } catch (e) {}
+                      return __lcOrigPostMessage(data, targetOrigin, transfer);
+                    };
+                  }
+                } catch (e) {}
+                window.addEventListener('message', function(e) {
+                  if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
+                    try {
+                      if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
+                        window.$JS_INTERFACE_NAME.postMessage(e.data);
+                      } else if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
+                        window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
+                      }
+                    } catch (err) {}
+                  }
+                });
+              }
+            })();
+        """.trimIndent()
         webView.evaluateJavascript(script, null)
     }
 
@@ -483,6 +583,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                 val processed = messageHandler.processMessage(data)
                 processed?.let { message ->
                     val event = message["event"] as? String
+                    Log.d(TAG, "Received widget event: ${event ?: "unknown"} | payload: $message")
                     
                     when (event) {
                         "loaded" -> callback?.onLoaded()
