@@ -148,7 +148,7 @@ class WidgetActivityRefactored : FragmentActivity() {
                 handleWidgetError(error)
             }
             
-            override fun onMessage(message: Map<String, Any>) {
+            override fun onMessage(message: Map<String, Any?>) {
                 Log.d(TAG, "📨 Widget message received: $message")
                 handleWidgetMessage(message)
             }
@@ -172,7 +172,7 @@ class WidgetActivityRefactored : FragmentActivity() {
         // For now, we'll just log it
     }
 
-    private fun handleWidgetMessage(message: Map<String, Any>) {
+    private fun handleWidgetMessage(message: Map<String, Any?>) {
         // Handle custom widget messages if needed
         // This could include analytics, custom actions, etc.
         val event = message["event"] as? String
