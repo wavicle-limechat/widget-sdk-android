@@ -62,9 +62,9 @@ echo -e "${YELLOW}🔨 Building project...${NC}"
 echo -e "${YELLOW}🧪 Running tests...${NC}"
 ./gradlew :widget-sdk:test
 
-# Build sample app to ensure integration works
-echo -e "${YELLOW}🏗️  Building sample app...${NC}"
-./gradlew :sample-app:assembleDebug
+# Build local SDK demo app to ensure integration works
+echo -e "${YELLOW}🏗️  Building local SDK demo app...${NC}"
+./gradlew :local-sdk-demo:assembleDebug
 
 # Commit changes
 echo -e "${YELLOW}📝 Committing changes...${NC}"
