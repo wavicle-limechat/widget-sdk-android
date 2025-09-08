@@ -185,3 +185,4 @@ android.enableJetifier=true
 ## 📄 License
 
 This project is licensed under the MIT License.
+# JitPack build trigger
