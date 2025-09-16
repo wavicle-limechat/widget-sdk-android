@@ -3,3 +3,5 @@ jdk:
 
 install:
   - ./gradlew :widget-sdk:assembleRelease
+  - ./gradlew :widget-sdk:generatePomFileForReleasePublication
+  - ./gradlew :widget-sdk:publishReleasePublicationToMavenLocal

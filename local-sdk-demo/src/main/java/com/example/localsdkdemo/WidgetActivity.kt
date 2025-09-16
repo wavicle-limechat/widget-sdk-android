@@ -102,7 +102,7 @@ class WidgetActivity : FragmentActivity() {
                 Log.e(TAG, "❌ Widget error: ${error.message}")
             }
             
-            override fun onMessage(message: Map<String, Any>) {
+            override fun onMessage(message: Map<String, Any?>) {
                 Log.d(TAG, "📨 Widget message: $message")
             }
         }

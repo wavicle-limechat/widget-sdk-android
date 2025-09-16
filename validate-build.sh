@@ -28,13 +28,13 @@ echo -e "${YELLOW}🔨 Building widget SDK...${NC}"
 echo -e "${YELLOW}🧪 Running SDK tests...${NC}"
 ./gradlew :widget-sdk:test
 
-# Build sample app
-echo -e "${YELLOW}🏗️  Building sample app...${NC}"
-./gradlew :sample-app:assembleDebug
+# Build local SDK demo app
+echo -e "${YELLOW}🏗️  Building local SDK demo app...${NC}"
+./gradlew :local-sdk-demo:assembleDebug
 
-# Run sample app tests (if any)
-echo -e "${YELLOW}🧪 Running sample app tests...${NC}"
-./gradlew :sample-app:test || echo "No tests found for sample app"
+# Run local SDK demo tests (if any)
+echo -e "${YELLOW}🧪 Running local SDK demo tests...${NC}"
+./gradlew :local-sdk-demo:test || echo "No tests found for local SDK demo"
 
 # Generate documentation
 echo -e "${YELLOW}📚 Generating documentation...${NC}"
@@ -50,7 +50,7 @@ echo ""
 echo -e "${BLUE}📋 Build artifacts created:${NC}"
 echo "- widget-sdk/build/outputs/aar/widget-sdk-release.aar"
 echo "- widget-sdk/build/outputs/aar/widget-sdk-debug.aar"
-echo "- sample-app/build/outputs/apk/debug/sample-app-debug.apk"
+echo "- local-sdk-demo/build/outputs/apk/debug/local-sdk-demo-debug.apk"
 echo ""
 echo -e "${YELLOW}💡 Next steps:${NC}"
 echo "- Review lint report if any issues were found"
