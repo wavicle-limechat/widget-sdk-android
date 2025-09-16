@@ -44,7 +44,7 @@ Next, add the SDK dependency to your app's `build.gradle.kts` file:
 ```kotlin
 // app/build.gradle.kts  
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.8")
 }
 ```
 
@@ -127,7 +127,7 @@ class ChatActivity : FragmentActivity() {
         
         widgetView.init(config, object : WidgetCallback {
             override fun onLoaded() { /* Widget is ready */ }
-            override fun onClose() { finish() } // Close the activity when the widget closes
+            override fun onClose() { finish() } // Automatically called when user closes/minimizes widget
             override fun onError(error: WidgetError) { /* Handle any errors */ }
             override fun onMessage(message: Map<String, Any>) {
                 // Handle real-time events from the widget
@@ -170,7 +170,7 @@ android.enableJetifier=true
 
 ## 📊 SDK Status
 
-- **Current Version**: 0.0.6
+- **Current Version**: 0.0.8
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
 
@@ -185,4 +185,3 @@ android.enableJetifier=true
 ## 📄 License
 
 This project is licensed under the MIT License.
-# JitPack build trigger
