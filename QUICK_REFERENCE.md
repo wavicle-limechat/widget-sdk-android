@@ -255,6 +255,20 @@ val config = WidgetConfig(
 )
 ```
 
+### Conversation Persistence
+```kotlin
+val initOptions = LimechatWidgetView.InitOptions(
+    conversationOptions = LimechatWidgetView.ConversationOptions(
+        token = storedToken,
+        onTokenChange = LimechatWidgetView.ConversationTokenListener(::saveToken)
+    ),
+    conversationInstanceId = "checkout_support"
+)
+
+widgetView.init(config, widgetCallback, initOptions)
+```
+
+
 ## 📡 Event Handling
 
 ### Unread Count Updates

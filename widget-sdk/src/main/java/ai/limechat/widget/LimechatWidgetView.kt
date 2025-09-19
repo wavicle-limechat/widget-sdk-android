@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.util.AttributeSet
 import android.util.Log
+import android.view.View
 import android.webkit.*
 import android.widget.FrameLayout
 import androidx.webkit.JavaScriptReplyProxy
@@ -14,6 +15,7 @@ import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.utils.MessageHandler
+import ai.limechat.widget.utils.ConversationTokenStore
 import ai.limechat.widget.utils.UrlBuilder
 import kotlinx.coroutines.*
 import org.json.JSONObject
@@ -28,14 +30,38 @@ class LimechatWidgetView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
+    /** Listener invoked whenever the widget reports a new cw_conversation token */
+    fun interface ConversationTokenListener {
+        fun onTokenChange(token: String)
+    }
+
+    /** Options to control conversation persistence */
+    data class ConversationOptions(
+        val token: String? = null,
+        val onTokenChange: ConversationTokenListener? = null
+    )
+
+    /** Bundle of optional parameters accepted during initialization */
+    data class InitOptions(
+        val initialMessage: String? = null,
+        val initialMessageData: Map<String, Any>? = null,
+        val conversationOptions: ConversationOptions? = null,
+        val conversationInstanceId: String? = null
+    )
+
     companion object {
         private const val TAG = "LimechatWidgetView"
         private const val MESSAGE_LISTENER_NAME = "LimechatNative"
         private const val JS_INTERFACE_NAME = "LimechatAndroid"
         private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
+        private const val EVENT_LOADED = "loaded"
+        private const val EVENT_CLOSE_WIDGET = "close-widget"
+        private const val EVENT_SET_CW_CONVERSATION = "set-cw-conversation"
+        private const val PAYLOAD_KEY_CW_CONVERSATION = "cw_conversation"
     }
 
     private val webView: WebView
+    private val appContext = context.applicationContext
     private var config: WidgetConfig? = null
     private var callback: WidgetCallback? = null
     private var filePicker: WidgetFilePicker? = null
@@ -44,6 +70,10 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var isMessagingSetup = false
     private var webMessageListenerAdded = false
     private var jsInterfaceAdded = false
+    private var conversationToken: String? = null
+    private var conversationTokenListener: ConversationTokenListener? = null
+    private var conversationInstanceKey: String? = null
+    private val defaultInstanceId = "instance-${System.identityHashCode(this)}"
 
     init {
         webView = createHardenedWebView()
@@ -54,39 +84,126 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Initialize the widget with configuration and callback
      */
     fun init(config: WidgetConfig, callback: WidgetCallback? = null) {
-        init(config, callback, null, null)
+        initializeWidget(config, callback, InitOptions())
     }
 
     /**
      * Initialize the widget with configuration, callback and initial message
      */
     fun init(config: WidgetConfig, callback: WidgetCallback? = null, initialMessage: String? = null) {
-        init(config, callback, initialMessage, null)
+        initializeWidget(config, callback, InitOptions(initialMessage = initialMessage))
     }
 
     /**
      * Initialize the widget with configuration, callback and initial message data
      */
-    fun init(config: WidgetConfig, callback: WidgetCallback? = null, initialMessageData: Map<String, Any>? = null) {
-        init(config, callback, null, initialMessageData)
+    fun init(
+        config: WidgetConfig,
+        callback: WidgetCallback? = null,
+        initialMessageData: Map<String, Any>? = null
+    ) {
+        initializeWidget(config, callback, InitOptions(initialMessageData = initialMessageData))
     }
 
     /**
-     * Initialize the widget with configuration, callback, and optional initial message parameters
+     * Initialize the widget with configuration, callback, and additional options
+     */
+    fun init(
+        config: WidgetConfig,
+        callback: WidgetCallback? = null,
+        options: InitOptions
+    ) {
+        initializeWidget(config, callback, options)
+    }
+
+    /**
+     * Update conversation persistence options after initialization
+     */
+    fun setConversationOptions(conversationOptions: ConversationOptions?) {
+        if (conversationOptions == null) {
+            Log.d(TAG, "Conversation options cleared via setter")
+            conversationTokenListener = null
+            return
+        }
+
+        conversationTokenListener = conversationOptions.onTokenChange
+        val providedToken = conversationOptions.token?.takeIf { it.isNotBlank() }
+
+        if (providedToken != null) {
+            conversationToken = providedToken
+            saveConversationToken(providedToken)
+            Log.d(TAG, "Conversation options updated with provided token")
+        } else {
+            val storedToken = loadStoredConversationToken()
+            if (storedToken != null) {
+                conversationToken = storedToken
+                Log.d(TAG, "Conversation options missing token; using stored cw_conversation token")
+            } else {
+                conversationToken = null
+                Log.d(TAG, "Conversation options missing token and no stored value available")
+            }
+        }
+    }
+
+    /**
+     * Expose the last known cw_conversation token for host apps that prefer polling
+     */
+    fun getConversationToken(): String? = conversationToken
+
+    /**
+     * Initialize the widget with configuration, callback, and optional parameters
      * This is the main init method that all other overloads delegate to
      */
-    private fun init(
-        config: WidgetConfig, 
-        callback: WidgetCallback? = null, 
-        initialMessage: String? = null,
-        initialMessageData: Map<String, Any>? = null
+    private fun initializeWidget(
+        config: WidgetConfig,
+        callback: WidgetCallback? = null,
+        options: InitOptions
     ) {
+
+        val previousConfig = this.config
+        val previousInstanceKey = conversationInstanceKey
+        val hasTargetChanged = previousConfig?.websiteToken != null &&
+            (previousConfig.websiteToken != config.websiteToken || previousConfig.baseUrl != config.baseUrl)
+
         this.config = config
         this.callback = callback
-        
+
+        conversationInstanceKey = buildConversationInstanceKey(config, options)
+
+        if (hasTargetChanged) {
+            Log.d(TAG, "Website token or base URL changed; clearing stored cw_conversation token")
+            previousInstanceKey?.let { ConversationTokenStore.clearToken(appContext, it) }
+            conversationToken = null
+        }
+
+        if (options.conversationOptions != null) {
+            setConversationOptions(options.conversationOptions)
+            if (conversationToken.isNullOrBlank()) {
+                loadStoredConversationToken()?.let { storedToken ->
+                    conversationToken = storedToken
+                    Log.d(TAG, "Loaded stored cw_conversation token for managed conversation")
+                }
+            }
+        } else {
+            conversationTokenListener = null
+            if (conversationToken.isNullOrBlank()) {
+                loadStoredConversationToken()?.let { storedToken ->
+                    conversationToken = storedToken
+                    Log.d(TAG, "Loaded stored cw_conversation token for internal persistence")
+                }
+            }
+        }
+
+        val initialMessage = options.initialMessage
+        val initialMessageData = options.initialMessageData
+
+        if (initialMessage != null && initialMessageData != null) {
+            Log.w(TAG, "Both initialMessage and initialMessageData provided; lc_open_payload will take precedence")
+        }
+
         // Note: File picker should be attached separately using attachFilePicker()
         // to ensure it's created during onCreate() of the activity
-        
+
         loadWidget(initialMessage, initialMessageData)
     }
 
@@ -160,7 +277,7 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun reloadWidgetWithMessage(message: String) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        val baseUrl = UrlBuilder.buildWidgetUrl(config, conversationToken)
         val params = mapOf("lc_open_message" to message)
         val urlWithMessage = buildUrlWithParameters(baseUrl, params)
         
@@ -174,7 +291,7 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        val baseUrl = UrlBuilder.buildWidgetUrl(config, conversationToken)
         val messageJson = JSONObject(messageData).toString()
         val params = mapOf("lc_open_payload" to messageJson)
         val urlWithPayload = buildUrlWithParameters(baseUrl, params)
@@ -325,7 +442,7 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
-        var url = UrlBuilder.buildWidgetUrl(config)
+        var url = UrlBuilder.buildWidgetUrl(config, conversationToken)
 
         // Ensure messaging bridges are available before the page loads
         // so JS can see window.LimechatAndroid / window.LimechatNative immediately
@@ -572,6 +689,40 @@ class LimechatWidgetView @JvmOverloads constructor(
         webView.evaluateJavascript(script, null)
     }
 
+    private fun buildConversationInstanceKey(config: WidgetConfig, options: InitOptions): String {
+        val baseComponent = "${config.baseUrl.trimEnd('/')}:${config.websiteToken}"
+        val instanceComponent = options.conversationInstanceId?.takeIf { it.isNotBlank() }
+            ?: if (id != View.NO_ID) "view-$id" else defaultInstanceId
+        return "$baseComponent::$instanceComponent"
+    }
+
+    private fun loadStoredConversationToken(): String? {
+        val key = conversationInstanceKey ?: return null
+        return ConversationTokenStore.getToken(appContext, key)
+    }
+
+    private fun saveConversationToken(token: String) {
+        val key = conversationInstanceKey ?: return
+        ConversationTokenStore.setToken(appContext, key, token)
+    }
+
+    private fun handleConversationTokenUpdate(token: String?) {
+        val normalizedToken = token?.takeIf { it.isNotBlank() } ?: run {
+            Log.w(TAG, "Received empty cw_conversation token, ignoring")
+            return
+        }
+
+        if (normalizedToken == conversationToken) {
+            Log.d(TAG, "cw_conversation token unchanged, skipping update")
+            return
+        }
+
+        conversationToken = normalizedToken
+        Log.d(TAG, "Updated cw_conversation token: ${normalizedToken.take(8)}...")
+        saveConversationToken(normalizedToken)
+        conversationTokenListener?.onTokenChange(normalizedToken)
+    }
+
     private fun handleMessage(data: String) {
         coroutineScope.launch {
             try {
@@ -581,8 +732,13 @@ class LimechatWidgetView @JvmOverloads constructor(
                     Log.d(TAG, "Received widget event: ${event ?: "unknown"} | payload: $message")
                     
                     when (event) {
-                        "loaded" -> callback?.onLoaded()
-                        "close-widget" -> callback?.onClose()
+                        EVENT_LOADED -> callback?.onLoaded()
+                        EVENT_CLOSE_WIDGET -> callback?.onClose()
+                        EVENT_SET_CW_CONVERSATION -> {
+                            val token = message[PAYLOAD_KEY_CW_CONVERSATION] as? String
+                            handleConversationTokenUpdate(token)
+                            callback?.onMessage(message)
+                        }
                         else -> callback?.onMessage(message)
                     }
                 }

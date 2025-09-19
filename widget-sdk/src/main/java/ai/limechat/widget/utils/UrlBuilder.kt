@@ -12,13 +12,16 @@ object UrlBuilder {
     /**
      * Build the complete widget URL with query parameters
      */
-    fun buildWidgetUrl(config: WidgetConfig): String {
+    fun buildWidgetUrl(config: WidgetConfig, conversationToken: String? = null): String {
         val baseUrl = config.baseUrl.trimEnd('/')
         val params = mutableMapOf<String, String>()
         
         // Required parameters
         params["website_token"] = config.websiteToken
         params["locale"] = config.locale
+        conversationToken?.takeIf { it.isNotBlank() }?.let { token ->
+            params["cw_conversation"] = token
+        }
         
         // Color scheme
         params["color_scheme"] = when (config.colorScheme) {

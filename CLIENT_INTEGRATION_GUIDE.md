@@ -348,6 +348,31 @@ val user = WidgetConfig.User(
 
 ---
 
+## 💾 Chat Persistence
+
+To keep conversations sticky across sessions, pass the last saved `cw_conversation` token when you initialise the widget and capture updates when the widget issues a new token.
+
+```kotlin
+val storedToken = loadToken()
+
+val initOptions = LimechatWidgetView.InitOptions(
+    conversationOptions = LimechatWidgetView.ConversationOptions(
+        token = storedToken,
+        onTokenChange = LimechatWidgetView.ConversationTokenListener { token ->
+            saveToken(token)
+        }
+    ),
+    conversationInstanceId = "customer_support_widget"
+)
+
+widgetView.init(config, widgetCallback, initOptions)
+```
+
+- If you skip both fields, the SDK caches the generated token internally so the current widget instance keeps its state.
+- Use `conversationInstanceId` to ensure separate entry points (for example, an embedded widget and a floating button) don’t share the same conversation history.
+- Access the latest value at any time with `widgetView.getConversationToken()` or replace it later with `widgetView.setConversationOptions(...)`.
+
+
 ## 📡 Handling Events
 
 You can listen for events from the widget using the `WidgetCallback`.

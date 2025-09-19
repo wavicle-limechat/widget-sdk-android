@@ -141,6 +141,31 @@ class ChatActivity : FragmentActivity() {
 }
 ```
 
+### 💬 Persist Conversations
+
+Resume an existing chat by passing the last saved `cw_conversation` token and listening for updates. The SDK appends the token to the widget URL for you.
+
+```kotlin
+val storedToken = loadTokenFromDisk()
+
+val initOptions = LimechatWidgetView.InitOptions(
+    conversationOptions = LimechatWidgetView.ConversationOptions(
+        token = storedToken,
+        onTokenChange = LimechatWidgetView.ConversationTokenListener { token ->
+            saveToken(token)
+        }
+    ),
+    conversationInstanceId = "primary_fullscreen"
+)
+
+widgetView.init(config, widgetCallback, initOptions)
+```
+
+- Skip both the token and the listener to let the SDK keep the token in memory for this widget instance only.
+- Use `conversationInstanceId` to give each widget entry point its own stored token (e.g., floating button vs. full-screen view).
+- Fetch the current value with `widgetView.getConversationToken()` or replace it later via `widgetView.setConversationOptions(...)`.
+
+
 ## 🔧 Common Issues
 
 ### Dependency Resolution Error
