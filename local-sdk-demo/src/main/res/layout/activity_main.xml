@@ -101,7 +101,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="✅ Using live LimeChat token: PN5LeU9Cyng1CRiCXTGNMm3x\n🌐 Widget URL: https://cf2e01f8e319.ngrok-free.app/widget?website_token=PN5LeU9Cyng1CRiCXTGNMm3x\n🔧 Local SDK module: :widget-sdk"
+                android:text="✅ Using live LimeChat token: MEFFACy4xaovJayhLjSt836h\n🌐 Widget URL: https://app.limechat.ai/widget?website_token=MEFFACy4xaovJayhLjSt836h\n🔧 Local SDK module: :widget-sdk"
                 android:textSize="12sp"
                 android:textColor="@android:color/darker_gray"
                 android:typeface="monospace"

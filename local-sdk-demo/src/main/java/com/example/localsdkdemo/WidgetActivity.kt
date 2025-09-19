@@ -38,26 +38,27 @@ class WidgetActivity : FragmentActivity() {
         widgetView.attachFilePicker(widgetFilePicker)
         
         // Get configuration from intent
-        val websiteToken = intent.getStringExtra("website_token") ?: "PN5LeU9Cyng1CRiCXTGNMm3x"
+        val websiteToken = intent.getStringExtra("website_token") ?: "MEFFACy4xaovJayhLjSt836h"
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@local.com"
-        
-        // Create configuration
-        val config = WidgetConfig(
-            websiteToken = websiteToken,
-            baseUrl = "https://cf2e01f8e319.ngrok-free.app",
-            locale = "en",
-            colorScheme = WidgetConfig.ColorScheme.LIGHT,
-            user = WidgetConfig.User(
+        val instanceId = intent.getStringExtra("instance_id") // Get instance ID from intent
+
+        // Create configuration using builder pattern (no token handling - SDK manages internally like React Native)
+        val config = WidgetConfig.builder(websiteToken)
+            .setBaseUrl("https://app.limechat.ai")
+            .setLocale("en")
+            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
+            .setUser(WidgetConfig.User(
                 name = userName,
                 email = userEmail,
                 phoneNumber = "+1234567890"
-            ),
-            customAttributes = mapOf(
+            ))
+            .setCustomAttributes(mapOf(
                 "source" to "local_sdk_demo",
                 "type" to "local_module_dependency"
-            )
-        )
+            ))
+            .setInstanceId(instanceId) // Use app-provided instance ID
+            .build()
         
         // Check for custom messages and initialize accordingly
         val customMessage = intent.getStringExtra("custom_message")
@@ -104,6 +105,10 @@ class WidgetActivity : FragmentActivity() {
             
             override fun onMessage(message: Map<String, Any?>) {
                 Log.d(TAG, "📨 Widget message: $message")
+            }
+            
+            override fun onConversationTokenChange(token: String) {
+                Log.d(TAG, "🔄 Conversation token changed (managed internally): ${token.take(8)}...")
             }
         }
     }
