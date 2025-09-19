@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "LocalSDKDemo"
-        private const val WEBSITE_TOKEN = "PN5LeU9Cyng1CRiCXTGNMm3x"
-        private const val BASE_URL = "https://cf2e01f8e319.ngrok-free.app"
+        private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
+        private const val BASE_URL = "https://app.limechat.ai"
     }
     
     private lateinit var widgetButton: LimechatWidgetButton
@@ -114,7 +114,11 @@ class MainActivity : AppCompatActivity() {
                 1 -> {
                     val message = "Hello! I need help with my order #${(1000..9999).random()}"
                     Log.d(TAG, "🗨️ Opening widget with string message: $message")
-                    openWidgetWithMessage(message)
+                    openWidgetWithMessage(
+                        message = message,
+                        instanceId = WidgetActivity.INSTANCE_ID_FLOATING,
+                        manageToken = false
+                    )
                 }
                 2 -> {
                     val messageData = mapOf(
@@ -123,11 +127,18 @@ class MainActivity : AppCompatActivity() {
                         "priority" to "medium"
                     )
                     Log.d(TAG, "🗨️ Opening widget with object message: $messageData")
-                    openWidgetWithMessage(messageData)
+                    openWidgetWithMessage(
+                        messageData = messageData,
+                        instanceId = WidgetActivity.INSTANCE_ID_FLOATING,
+                        manageToken = false
+                    )
                 }
                 else -> {
                     Log.d(TAG, "🎯 Opening widget without custom message")
-                    openWidget()
+                    openWidget(
+                        instanceId = WidgetActivity.INSTANCE_ID_FLOATING,
+                        manageToken = false
+                    )
                 }
             }
         }
@@ -144,13 +155,18 @@ class MainActivity : AppCompatActivity() {
         Toast.makeText(this, "✅ Local SDK ready with token: ${WEBSITE_TOKEN}", Toast.LENGTH_LONG).show()
     }
     
-    private fun openWidget() {
+    private fun openWidget(
+        instanceId: String = WidgetActivity.INSTANCE_ID_PRIMARY,
+        manageToken: Boolean = true
+    ) {
         Log.d(TAG, "🚀 Opening full-screen widget with local SDK")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)
             putExtra("user_name", "Local SDK Demo User")
             putExtra("user_email", "demo@local.com")
+            putExtra(WidgetActivity.EXTRA_INSTANCE_ID, instanceId)
+            putExtra(WidgetActivity.EXTRA_MANAGE_TOKEN, manageToken)
         }
         startActivity(intent)
     }
@@ -158,7 +174,11 @@ class MainActivity : AppCompatActivity() {
     /**
      * Open widget with custom string message
      */
-    private fun openWidgetWithMessage(message: String) {
+    private fun openWidgetWithMessage(
+        message: String,
+        instanceId: String = WidgetActivity.INSTANCE_ID_PRIMARY,
+        manageToken: Boolean = true
+    ) {
         Log.d(TAG, "🚀 Opening full-screen widget with custom message: $message")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
@@ -166,6 +186,8 @@ class MainActivity : AppCompatActivity() {
             putExtra("user_name", "Local SDK Demo User")
             putExtra("user_email", "demo@local.com")
             putExtra("custom_message", message)
+            putExtra(WidgetActivity.EXTRA_INSTANCE_ID, instanceId)
+            putExtra(WidgetActivity.EXTRA_MANAGE_TOKEN, manageToken)
         }
         startActivity(intent)
     }
@@ -173,7 +195,11 @@ class MainActivity : AppCompatActivity() {
     /**
      * Open widget with custom message object
      */
-    private fun openWidgetWithMessage(messageData: Map<String, Any>) {
+    private fun openWidgetWithMessage(
+        messageData: Map<String, Any>,
+        instanceId: String = WidgetActivity.INSTANCE_ID_PRIMARY,
+        manageToken: Boolean = true
+    ) {
         Log.d(TAG, "🚀 Opening full-screen widget with custom message data: $messageData")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
@@ -181,6 +207,8 @@ class MainActivity : AppCompatActivity() {
             putExtra("user_name", "Local SDK Demo User")
             putExtra("user_email", "demo@local.com")
             putExtra("custom_message_data", HashMap(messageData))
+            putExtra(WidgetActivity.EXTRA_INSTANCE_ID, instanceId)
+            putExtra(WidgetActivity.EXTRA_MANAGE_TOKEN, manageToken)
         }
         startActivity(intent)
     }
