@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "LocalSDKDemo"
-        private const val WEBSITE_TOKEN = "PN5LeU9Cyng1CRiCXTGNMm3x"
-        private const val BASE_URL = "https://cf2e01f8e319.ngrok-free.app"
+        private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
+        private const val BASE_URL = "https://app.limechat.ai"
     }
     
     private lateinit var widgetButton: LimechatWidgetButton
@@ -70,25 +70,33 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Opening with message: $customMessage", Toast.LENGTH_SHORT).show()
             openWidgetWithMessage(customMessage)
         }
+        
+        // Without legacy back icon button
+        findViewById<Button>(R.id.btnOpenWithoutLegacyIcon).setOnClickListener {
+            Log.d(TAG, "🚫 Opening widget WITHOUT legacy back icon")
+            Toast.makeText(this, "Opening widget without legacy back icon", Toast.LENGTH_SHORT).show()
+            openWidgetWithoutLegacyIcon()
+        }
     }
     
     private fun setupWidgetWithLocalSDK() {
         Log.d(TAG, "🔧 Initializing widget with LOCAL SDK...")
         
-        // Create widget configuration
-        val config = WidgetConfig(
-            websiteToken = WEBSITE_TOKEN,
-            locale = "en",
-            colorScheme = WidgetConfig.ColorScheme.LIGHT,
-            user = WidgetConfig.User(
+        // Create widget configuration for floating button using builder pattern
+        val config = WidgetConfig.builder(WEBSITE_TOKEN)
+            .setLocale("en")
+            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
+            .setUser(WidgetConfig.User(
                 name = "Local SDK Demo User",
                 email = "demo@local.com"
-            ),
-            customAttributes = mapOf(
+            ))
+            .setCustomAttributes(mapOf(
                 "demo_type" to "local_widget_sdk",
                 "source" to "local_module_dependency"
-            )
-        )
+            ))
+            .setInstanceId("floating-button") // Unique ID for floating button
+            .setShowLegacyBackIcon(true) // Enable legacy back icon for demo
+            .build()
         
         // Create widget button using local SDK
         widgetButton = LimechatWidgetButton(this).apply {
@@ -104,32 +112,19 @@ class MainActivity : AppCompatActivity() {
         // Initialize widget
         widgetButton.init(config)
         
-        // Set click listener to demonstrate custom message functionality
+        // Set click listener for consistent behavior (same as "Test Widget" button)
         widgetButton.setOnClickListener {
-            Log.d(TAG, "🎯 Local SDK widget clicked - demonstrating custom message")
+            Log.d(TAG, "🎯 Floating widget button clicked - opening widget")
+            Toast.makeText(this, "Opening floating widget...", Toast.LENGTH_SHORT).show()
             
-            // Alternate between different message types for demo
-            val randomChoice = (1..3).random()
-            when (randomChoice) {
-                1 -> {
-                    val message = "Hello! I need help with my order #${(1000..9999).random()}"
-                    Log.d(TAG, "🗨️ Opening widget with string message: $message")
-                    openWidgetWithMessage(message)
-                }
-                2 -> {
-                    val messageData = mapOf(
-                        "content" to "I have a question about your pricing plans",
-                        "type" to "inquiry",
-                        "priority" to "medium"
-                    )
-                    Log.d(TAG, "🗨️ Opening widget with object message: $messageData")
-                    openWidgetWithMessage(messageData)
-                }
-                else -> {
-                    Log.d(TAG, "🎯 Opening widget without custom message")
-                    openWidget()
-                }
+            // Open widget consistently (same behavior as Test Widget button)
+            val intent = Intent(this, WidgetActivity::class.java).apply {
+                putExtra("website_token", WEBSITE_TOKEN)
+                putExtra("user_name", "Local SDK Demo User")
+                putExtra("user_email", "demo@local.com")
+                putExtra("instance_id", "floating-button") // Unique ID for floating button (matches config)
             }
+            startActivity(intent)
         }
         
         // Add to layout
@@ -151,6 +146,7 @@ class MainActivity : AppCompatActivity() {
             putExtra("website_token", WEBSITE_TOKEN)
             putExtra("user_name", "Local SDK Demo User")
             putExtra("user_email", "demo@local.com")
+            putExtra("instance_id", "main-widget-buttons") // Shared ID for synced buttons
         }
         startActivity(intent)
     }
@@ -166,6 +162,23 @@ class MainActivity : AppCompatActivity() {
             putExtra("user_name", "Local SDK Demo User")
             putExtra("user_email", "demo@local.com")
             putExtra("custom_message", message)
+            putExtra("instance_id", "main-widget-buttons") // Shared ID for synced buttons
+        }
+        startActivity(intent)
+    }
+    
+    /**
+     * Open widget WITHOUT legacy back icon (showLegacyBackIcon = false)
+     */
+    private fun openWidgetWithoutLegacyIcon() {
+        Log.d(TAG, "🚫 Opening full-screen widget WITHOUT legacy back icon")
+        
+        val intent = Intent(this, WidgetActivity::class.java).apply {
+            putExtra("website_token", WEBSITE_TOKEN)
+            putExtra("user_name", "Local SDK Demo User")
+            putExtra("user_email", "demo@local.com")
+            putExtra("instance_id", "no-legacy-icon") // Unique ID for this demo
+            putExtra("show_legacy_back_icon", false) // Pass flag to disable legacy icon
         }
         startActivity(intent)
     }
@@ -181,6 +194,7 @@ class MainActivity : AppCompatActivity() {
             putExtra("user_name", "Local SDK Demo User")
             putExtra("user_email", "demo@local.com")
             putExtra("custom_message_data", HashMap(messageData))
+            putExtra("instance_id", "main-widget-buttons") // Shared ID for synced buttons
         }
         startActivity(intent)
     }

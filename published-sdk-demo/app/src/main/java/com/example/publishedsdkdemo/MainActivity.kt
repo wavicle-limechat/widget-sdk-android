@@ -19,7 +19,7 @@ import ai.limechat.widget.models.WidgetConfig
  * PUBLISHED SDK DEMO
  * 
  * This app uses ONLY the JitPack published SDK:
- * implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.5")
+ * implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.9-beta-4")
  * 
  * NO local project dependencies - proving the SDK works independently
  */
@@ -27,8 +27,8 @@ class MainActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "PublishedSDKDemo"
-        private const val WEBSITE_TOKEN = "PN5LeU9Cyng1CRiCXTGNMm3x"
-        private const val BASE_URL = "https://cf2e01f8e319.ngrok-free.app"
+        private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
+        private const val BASE_URL = "https://app.limechat.ai"
     }
     
     private lateinit var widgetButton: LimechatWidgetButton
@@ -67,20 +67,20 @@ class MainActivity : AppCompatActivity() {
     private fun setupWidgetWithPublishedSDK() {
         Log.d(TAG, "🔧 Initializing widget with PUBLISHED SDK...")
         
-        // Create widget configuration
-        val config = WidgetConfig(
-            websiteToken = WEBSITE_TOKEN,
-            locale = "en",
-            colorScheme = WidgetConfig.ColorScheme.LIGHT,
-            user = WidgetConfig.User(
+        // Create widget configuration using builder pattern
+        val config = WidgetConfig.builder(WEBSITE_TOKEN)
+            .setLocale("en")
+            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
+            .setUser(WidgetConfig.User(
                 name = "Published SDK Demo User",
                 email = "demo@published.com"
-            ),
-            customAttributes = mapOf(
+            ))
+            .setCustomAttributes(mapOf(
                 "demo_type" to "published_jitpack_sdk",
                 "source" to "jitpack_dependency"
-            )
-        )
+            ))
+            .setInstanceId("published-sdk-demo-floating-button")
+            .build()
         
         // Create widget button using published SDK
         widgetButton = LimechatWidgetButton(this).apply {
@@ -96,10 +96,16 @@ class MainActivity : AppCompatActivity() {
         // Initialize widget
         widgetButton.init(config)
         
-        // Set click listener to open actual widget
+        // Set click listener to open actual widget (same instance ID as floating button)
         widgetButton.setOnClickListener {
             Log.d(TAG, "🎯 Published SDK widget clicked - opening full widget")
-            openWidget()
+            val intent = Intent(this, WidgetActivity::class.java).apply {
+                putExtra("website_token", WEBSITE_TOKEN)
+                putExtra("user_name", "Published SDK Demo User")
+                putExtra("user_email", "demo@published.com")
+                putExtra("instance_id", "published-sdk-demo-floating-button") // Same as floating button config
+            }
+            startActivity(intent)
         }
         
         // Add to layout
@@ -121,6 +127,7 @@ class MainActivity : AppCompatActivity() {
             putExtra("website_token", WEBSITE_TOKEN)
             putExtra("user_name", "Published SDK Demo User")
             putExtra("user_email", "demo@published.com")
+            putExtra("instance_id", "published-sdk-demo-test-button")
         }
         startActivity(intent)
     }

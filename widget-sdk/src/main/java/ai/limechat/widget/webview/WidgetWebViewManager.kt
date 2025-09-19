@@ -236,6 +236,7 @@ class WidgetWebViewManager(
                     when (event) {
                         "loaded" -> callback?.onLoaded()
                         "close-widget" -> callback?.onClose()
+                        "widget-back" -> callback?.onClose() // Handle back button same as close
                         else -> callback?.onMessage(message)
                     }
                 }

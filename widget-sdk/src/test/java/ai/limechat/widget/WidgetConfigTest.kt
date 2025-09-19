@@ -8,7 +8,7 @@ class WidgetConfigTest {
 
     @Test
     fun `test widget config creation with required fields`() {
-        val config = WidgetConfig(websiteToken = "test-token")
+        val config = WidgetConfig.builder("test-token").build()
         
         assertEquals("test-token", config.websiteToken)
         assertEquals("en", config.locale)
@@ -16,6 +16,7 @@ class WidgetConfigTest {
         assertNull(config.user)
         assertNull(config.customAttributes)
         assertEquals("https://app.limechat.ai", config.baseUrl)
+        assertFalse(config.showLegacyBackIcon)
     }
 
     @Test
@@ -32,14 +33,13 @@ class WidgetConfigTest {
             "priority" to "high"
         )
 
-        val config = WidgetConfig(
-            websiteToken = "test-token",
-            locale = "es",
-            colorScheme = WidgetConfig.ColorScheme.DARK,
-            user = user,
-            customAttributes = customAttributes,
-            baseUrl = "https://custom.example.com"
-        )
+        val config = WidgetConfig.builder("test-token")
+            .setLocale("es")
+            .setColorScheme(WidgetConfig.ColorScheme.DARK)
+            .setUser(user)
+            .setCustomAttributes(customAttributes)
+            .setBaseUrl("https://custom.example.com")
+            .build()
 
         assertEquals("test-token", config.websiteToken)
         assertEquals("es", config.locale)
@@ -49,14 +49,14 @@ class WidgetConfigTest {
         assertEquals("https://custom.example.com", config.baseUrl)
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test(expected = ai.limechat.widget.core.WidgetException.ConfigurationError::class)
     fun `test widget config with empty token throws exception`() {
-        WidgetConfig(websiteToken = "")
+        WidgetConfig.builder("").build()
     }
 
-    @Test(expected = IllegalArgumentException::class)
+    @Test(expected = ai.limechat.widget.core.WidgetException.ConfigurationError::class)
     fun `test widget config with blank token throws exception`() {
-        WidgetConfig(websiteToken = "   ")
+        WidgetConfig.builder("   ").build()
     }
 
     @Test

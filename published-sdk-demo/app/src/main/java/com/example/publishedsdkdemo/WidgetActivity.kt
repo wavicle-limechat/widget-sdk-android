@@ -40,22 +40,23 @@ class WidgetActivity : FragmentActivity() {
         val websiteToken = intent.getStringExtra("website_token") ?: "MEFFACy4xaovJayhLjSt836h"
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@published.com"
+        val instanceId = intent.getStringExtra("instance_id") ?: "published-sdk-demo"
         
-        // Create configuration
-        val config = WidgetConfig(
-            websiteToken = websiteToken,
-            locale = "en",
-            colorScheme = WidgetConfig.ColorScheme.LIGHT,
-            user = WidgetConfig.User(
+        // Create configuration using builder pattern
+        val config = WidgetConfig.builder(websiteToken)
+            .setLocale("en")
+            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
+            .setUser(WidgetConfig.User(
                 name = userName,
                 email = userEmail,
                 phoneNumber = "+1234567890"
-            ),
-            customAttributes = mapOf(
+            ))
+            .setCustomAttributes(mapOf(
                 "source" to "published_sdk_demo",
                 "type" to "jitpack_dependency"
-            )
-        )
+            ))
+            .setInstanceId(instanceId)
+            .build()
         
         // Initialize widget with callbacks
         widgetView.init(config, object : WidgetCallback {

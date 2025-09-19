@@ -26,7 +26,7 @@ repositories {
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.6")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.0.9")
 }
 ```
 
@@ -40,7 +40,10 @@ The easiest way to add the chat widget to your app.
 
 ```kotlin
 // In your Activity
-val config = WidgetConfig(websiteToken = "YOUR_WEBSITE_TOKEN")
+val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
+    .setInstanceId("unique-widget-instance") // Optional: for persistence
+    .setShowLegacyBackIcon(true) // Optional: enable legacy back icon
+    .build()
 
 val widgetButton = LimechatWidgetButton(this)
 widgetButton.init(config)
@@ -278,6 +281,35 @@ override fun onError(error: WidgetError) {
         else -> showGenericError(error.message)
     }
 }
+```
+
+## 🆕 New Features in v0.0.9
+
+### Chat Persistence
+```kotlin
+// Automatic conversation persistence across app restarts
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setInstanceId("unique-widget-instance") // Isolates conversations
+    .build()
+```
+
+### Legacy Back Icon
+```kotlin
+// Control legacy back icon display
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setShowLegacyBackIcon(true) // Adds show_legacy_back_icon=true to URL
+    .build()
+```
+
+### Widget Back Event
+```kotlin
+// Handle back button clicks (same as close-widget)
+widgetView.init(config, object : WidgetCallback {
+    override fun onClose() {
+        // Called for both 'close-widget' and 'widget-back' events
+        finish()
+    }
+})
 ```
 
 ## 🔧 Common Issues & Fixes

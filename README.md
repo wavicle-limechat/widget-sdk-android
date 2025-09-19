@@ -17,6 +17,8 @@
 - 🎭 **Theme Support**: Light, dark, and automatic theme switching.
 - 🌍 **Multi-Language**: Support for localization and multiple languages.
 - 🔒 **Secure**: Built with enterprise-grade security and privacy standards.
+- 💾 **Chat Persistence**: Conversations persist across app restarts and widget instances.
+- 🔙 **Back Button Support**: Configurable legacy back icon with proper event handling.
 
 ## 🛠️ Requirements
 
@@ -44,7 +46,7 @@ Next, add the SDK dependency to your app's `build.gradle.kts` file:
 ```kotlin
 // app/build.gradle.kts  
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.8")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.0.9")
 }
 ```
 
@@ -63,13 +65,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         
         // 1. Configure the widget
-        val config = WidgetConfig(
-            websiteToken = "YOUR_WEBSITE_TOKEN", // Get this from your LimeChat dashboard
-            user = WidgetConfig.User(
+        val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN") // Get this from your LimeChat dashboard
+            .setUser(WidgetConfig.User(
                 name = "John Doe",
                 email = "john@example.com"
-            )
-        )
+            ))
+            .build()
         
         // 2. Create the floating chat button
         val widgetButton = LimechatWidgetButton(this)
@@ -141,6 +142,44 @@ class ChatActivity : FragmentActivity() {
 }
 ```
 
+## 🆕 New Features in v0.0.9
+
+### Chat Persistence
+
+The SDK now automatically persists conversations across app restarts and widget instances. Each widget instance maintains its own conversation state, ensuring users can continue their conversations seamlessly.
+
+```kotlin
+// Chat persistence is automatic - no additional configuration needed
+val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
+    .setInstanceId("unique-widget-instance") // Optional: for widget isolation
+    .build()
+```
+
+### Legacy Back Icon Support
+
+Control the display of the legacy back icon in the widget with the new `showLegacyBackIcon` property.
+
+```kotlin
+val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
+    .setShowLegacyBackIcon(true) // Enable legacy back icon
+    .build()
+```
+
+**URL Parameter**: When enabled, `show_legacy_back_icon=true` is automatically added to the widget URL.
+
+### Widget Back Event Handling
+
+The SDK now handles the `widget-back` event, which behaves the same as the `close-widget` event.
+
+```kotlin
+widgetView.init(config, object : WidgetCallback {
+    override fun onClose() { 
+        // Called for both 'close-widget' and 'widget-back' events
+        finish() 
+    }
+})
+```
+
 ## 🔧 Common Issues
 
 ### Dependency Resolution Error
@@ -170,7 +209,7 @@ android.enableJetifier=true
 
 ## 📊 SDK Status
 
-- **Current Version**: 0.0.8
+- **Current Version**: v0.0.9
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
 
