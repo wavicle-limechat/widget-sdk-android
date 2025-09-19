@@ -42,6 +42,11 @@ object UrlBuilder {
             }
         }
         
+        // Legacy back icon
+        if (config.showLegacyBackIcon) {
+            params["show_legacy_back_icon"] = "true"
+        }
+        
         return buildUrl(baseUrl, "widget", params)
     }
     

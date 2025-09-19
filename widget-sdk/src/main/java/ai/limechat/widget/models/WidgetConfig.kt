@@ -27,7 +27,8 @@ data class WidgetConfig internal constructor(
     val baseUrl: String,
     val conversationToken: String?,
     val onConversationTokenChange: ((String) -> Unit)?,
-    val instanceId: String?
+    val instanceId: String?,
+    val showLegacyBackIcon: Boolean
 ) : Serializable {
     
     /**
@@ -107,6 +108,7 @@ data class WidgetConfig internal constructor(
         private var conversationToken: String? = null
         private var onConversationTokenChange: ((String) -> Unit)? = null
         private var instanceId: String? = null
+        private var showLegacyBackIcon: Boolean = false
         
         /**
          * Set the locale for the widget
@@ -171,6 +173,14 @@ data class WidgetConfig internal constructor(
         }
         
         /**
+         * Set whether to show the legacy back icon in the widget
+         */
+        fun setShowLegacyBackIcon(showLegacyBackIcon: Boolean): Builder {
+            this.showLegacyBackIcon = showLegacyBackIcon
+            return this
+        }
+        
+        /**
          * Build and validate the configuration
          * 
          * @throws WidgetException.ConfigurationError if configuration is invalid
@@ -187,7 +197,8 @@ data class WidgetConfig internal constructor(
                 baseUrl = baseUrl,
                 conversationToken = conversationToken,
                 onConversationTokenChange = onConversationTokenChange,
-                instanceId = instanceId
+                instanceId = instanceId,
+                showLegacyBackIcon = showLegacyBackIcon
             )
         }
         

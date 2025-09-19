@@ -620,6 +620,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                     when (event ?: type) {
                         "loaded" -> callback?.onLoaded()
                         "close-widget" -> callback?.onClose()
+                        "widget-back" -> callback?.onClose() // Handle back button same as close
                         "set-cw-conversation" -> {
                             // Handle conversation token update (like React Native's handleCwConversationUpdate)
                             val token = message["cw_conversation"] as? String
