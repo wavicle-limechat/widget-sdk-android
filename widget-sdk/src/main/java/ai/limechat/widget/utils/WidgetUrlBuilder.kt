@@ -2,53 +2,37 @@ package ai.limechat.widget.utils
 
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.models.WidgetMessage
-import android.util.Log
+import kotlin.jvm.Volatile
 
 /**
  * Responsible for building widget URLs with proper parameters
  */
 class WidgetUrlBuilder(private val config: WidgetConfig) {
-    
-    companion object {
-        private const val TAG = "WidgetUrlBuilder"
-        private const val WIDGET_ENDPOINT = "/widget"
+
+    @Volatile
+    private var conversationToken: String? = config.conversationToken?.takeUnless { it.isBlank() }
+
+    /** Update the conversation token used when generating URLs. */
+    fun updateConversationToken(token: String?) {
+        conversationToken = token?.takeUnless { it.isBlank() }
     }
-    
-    /**
-     * Build the base widget URL
-     */
+
+    /** Build the base widget URL including configuration parameters. */
     fun buildBaseUrl(): String {
-        val baseUrl = config.baseUrl.trimEnd('/')
-        return "$baseUrl$WIDGET_ENDPOINT?website_token=${config.websiteToken}"
+        return UrlBuilder.buildWidgetUrl(config.copy(conversationToken = conversationToken))
     }
-    
-    /**
-     * Build URL with initial message
-     */
+
+    /** Build URL with initial message payload appended. */
     fun buildUrlWithMessage(message: WidgetMessage): String {
-        return try {
-            val baseUrl = buildBaseUrl()
-            val messageParam = message.toUrlParameter()
-            "$baseUrl&$messageParam"
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to build URL with message", e)
-            buildBaseUrl()
-        }
+        val baseUrl = buildBaseUrl()
+        val params = message.toQueryParameters()
+        return UrlBuilder.appendQueryParameters(baseUrl, params)
     }
-    
-    /**
-     * Build URL with custom parameters
-     */
+
+    /** Build URL with additional query parameters appended. */
     fun buildUrlWithParams(params: Map<String, String>): String {
-        return try {
-            val baseUrl = buildBaseUrl()
-            val paramString = params.entries.joinToString("&") { (key, value) ->
-                "$key=${java.net.URLEncoder.encode(value, "UTF-8")}"
-            }
-            if (paramString.isNotEmpty()) "$baseUrl&$paramString" else baseUrl
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to build URL with params", e)
-            buildBaseUrl()
-        }
+        val sanitized = params.filterValues { it.isNotBlank() }
+        if (sanitized.isEmpty()) return buildBaseUrl()
+        return UrlBuilder.appendQueryParameters(buildBaseUrl(), sanitized)
     }
 }

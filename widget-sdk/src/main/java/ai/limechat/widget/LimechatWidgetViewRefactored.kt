@@ -44,6 +44,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
     // State management
     private var currentState = WidgetState()
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var conversationToken: String? = null
 
     /** Initialize the widget with configuration and optional callback */
     fun initialize(
@@ -60,6 +61,8 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
             this.config = config
             this.callback = callback
             this.urlBuilder = WidgetUrlBuilder(config)
+
+            applyConversationToken(config.conversationToken)
 
             updateState(currentState.copy(isInitialized = true).loading())
             setupWebView()
@@ -139,6 +142,7 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
             urlBuilder = null
             config = null
             callback = null
+            conversationToken = null
 
             Log.d(TAG, "Widget cleanup completed")
         } catch (e: Exception) {
@@ -198,6 +202,21 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
             override fun onMessage(message: Map<String, Any?>) {
                 callback?.onMessage(message)
             }
+
+            override fun onConversationTokenChange(conversationToken: String?) {
+                val (sanitizedToken, _) = applyConversationToken(conversationToken)
+                callback?.onConversationTokenChange(sanitizedToken)
+            }
+        }
+    }
+
+    /**
+     * Update the conversation token used for chat persistence.
+     */
+    fun updateConversationToken(conversationToken: String?, reloadWidget: Boolean = false) {
+        val (sanitizedToken, changed) = applyConversationToken(conversationToken)
+        if (reloadWidget && changed) {
+            loadWidget(null)
         }
     }
 
@@ -232,5 +251,16 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
         updateState(currentState.error(message))
         val error = WidgetError(WidgetError.ErrorCode.INITIALIZATION_ERROR, message, cause)
         callback?.onError(error)
+    }
+
+    private fun applyConversationToken(token: String?): Pair<String?, Boolean> {
+        val sanitizedToken = token?.takeUnless { it.isBlank() }
+        val changed = sanitizedToken != conversationToken
+        if (changed) {
+            conversationToken = sanitizedToken
+            urlBuilder?.updateConversationToken(sanitizedToken)
+            config = config?.copy(conversationToken = sanitizedToken)
+        }
+        return sanitizedToken to changed
     }
 }

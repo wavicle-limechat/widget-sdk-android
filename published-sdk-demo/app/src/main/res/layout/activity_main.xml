@@ -90,7 +90,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="✅ Using live LimeChat token: MEFFACy4xaovJayhLjSt836h\n🌐 Widget URL: app.limechat.ai/widget?website_token=..."
+                android:text="✅ Using live LimeChat token: MEFFACy4xaovJayhLjSt836h\n🌐 Widget URL: https://app.limechat.ai/widget?website_token=MEFFACy4xaovJayhLjSt836h"
                 android:textSize="12sp"
                 android:textColor="@android:color/darker_gray"
                 android:typeface="monospace"

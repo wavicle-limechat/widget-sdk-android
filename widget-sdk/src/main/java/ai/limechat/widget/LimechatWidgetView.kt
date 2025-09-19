@@ -17,7 +17,6 @@ import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
 import kotlinx.coroutines.*
 import org.json.JSONObject
-import java.net.URLEncoder
 
 /**
  * Main widget view that renders the Limechat widget in a hardened WebView
@@ -44,6 +43,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var isMessagingSetup = false
     private var webMessageListenerAdded = false
     private var jsInterfaceAdded = false
+    private var internalConversationToken: String? = null
 
     init {
         webView = createHardenedWebView()
@@ -83,6 +83,9 @@ class LimechatWidgetView @JvmOverloads constructor(
     ) {
         this.config = config
         this.callback = callback
+        
+        // Store initial conversation token for internal persistence
+        this.internalConversationToken = config.conversationToken
         
         // Note: File picker should be attached separately using attachFilePicker()
         // to ensure it's created during onCreate() of the activity
@@ -135,23 +138,19 @@ class LimechatWidgetView @JvmOverloads constructor(
     }
 
     /**
-     * Utility method to build URL with parameters
+     * Update the conversation token used for chat persistence.
+     * @param conversationToken Token provided by the host app; pass null or blank to clear persistence.
+     * @param reloadWidget When true, reloads the widget so the new token is applied immediately.
      */
-    private fun buildUrlWithParameters(baseUrl: String, params: Map<String, String>): String {
-        return try {
-            val urlBuilder = StringBuilder(baseUrl)
-            val hasQuery = baseUrl.contains("?")
-            
-            params.forEach { (key, value) ->
-                val separator = if (!hasQuery && urlBuilder.toString() == baseUrl) "?" else "&"
-                val encodedValue = URLEncoder.encode(value, "UTF-8")
-                urlBuilder.append("$separator$key=$encodedValue")
-            }
-            
-            urlBuilder.toString()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to build URL with parameters", e)
-            baseUrl
+    fun updateConversationToken(conversationToken: String?, reloadWidget: Boolean = false) {
+        val sanitizedToken = conversationToken?.takeUnless { it.isBlank() }
+        val tokenChanged = sanitizedToken != internalConversationToken
+
+        internalConversationToken = sanitizedToken
+        config = config?.copy(conversationToken = sanitizedToken)
+
+        if (reloadWidget && tokenChanged) {
+            loadWidget()
         }
     }
 
@@ -160,10 +159,12 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun reloadWidgetWithMessage(message: String) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        // Use internal conversation token for persistence
+        val configWithToken = config.copy(conversationToken = internalConversationToken)
+        val baseUrl = UrlBuilder.buildWidgetUrl(configWithToken)
         val params = mapOf("lc_open_message" to message)
-        val urlWithMessage = buildUrlWithParameters(baseUrl, params)
-        
+        val urlWithMessage = UrlBuilder.appendQueryParameters(baseUrl, params)
+
         Log.d(TAG, "Reloading widget with message: $message")
         Log.d(TAG, "Widget URL: $urlWithMessage")
         webView.loadUrl(urlWithMessage)
@@ -174,11 +175,13 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        // Use internal conversation token for persistence
+        val configWithToken = config.copy(conversationToken = internalConversationToken)
+        val baseUrl = UrlBuilder.buildWidgetUrl(configWithToken)
         val messageJson = JSONObject(messageData).toString()
         val params = mapOf("lc_open_payload" to messageJson)
-        val urlWithPayload = buildUrlWithParameters(baseUrl, params)
-        
+        val urlWithPayload = UrlBuilder.appendQueryParameters(baseUrl, params)
+
         Log.d(TAG, "Reloading widget with message data: $messageData")
         Log.d(TAG, "Widget URL: $urlWithPayload")
         webView.loadUrl(urlWithPayload)
@@ -325,7 +328,10 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
-        var url = UrlBuilder.buildWidgetUrl(config)
+        
+        // Create config with internal conversation token for persistence
+        val configWithToken = config.copy(conversationToken = internalConversationToken)
+        var url = UrlBuilder.buildWidgetUrl(configWithToken)
 
         // Ensure messaging bridges are available before the page loads
         // so JS can see window.LimechatAndroid / window.LimechatNative immediately
@@ -346,7 +352,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         }
         
         if (params.isNotEmpty()) {
-            url = buildUrlWithParameters(url, params)
+            url = UrlBuilder.appendQueryParameters(url, params)
         }
         
         Log.d(TAG, "Loading widget URL: $url")
@@ -583,6 +589,20 @@ class LimechatWidgetView @JvmOverloads constructor(
                     when (event) {
                         "loaded" -> callback?.onLoaded()
                         "close-widget" -> callback?.onClose()
+                        "widget-back" -> {
+                            // Handle back button the same as close widget
+                            Log.d(TAG, "Widget back button pressed - treating as close")
+                            callback?.onClose()
+                        }
+                        "set-cw-conversation" -> {
+                            val conversationToken = (message["cw_conversation"] as? String)?.takeUnless { it.isBlank() }
+                            // Store internally for persistence within this instance
+                            internalConversationToken = conversationToken
+                            config = config?.copy(conversationToken = conversationToken)
+                            Log.d(TAG, "Internal conversation token updated: ${conversationToken ?: "cleared"}")
+                            // Also notify external callback for cross-instance persistence
+                            callback?.onConversationTokenChange(conversationToken)
+                        }
                         else -> callback?.onMessage(message)
                     }
                 }

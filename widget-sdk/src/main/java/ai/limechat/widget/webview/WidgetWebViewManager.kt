@@ -35,6 +35,12 @@ class WidgetWebViewManager(
     private var isMessagingSetup = false
     private val messageHandler = MessageHandler()
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private var internalConversationToken: String? = null
+
+    init {
+        // Store initial conversation token for internal persistence
+        internalConversationToken = config.conversationToken
+    }
 
     /**
      * Create and configure a hardened WebView
@@ -236,6 +242,19 @@ class WidgetWebViewManager(
                     when (event) {
                         "loaded" -> callback?.onLoaded()
                         "close-widget" -> callback?.onClose()
+                        "widget-back" -> {
+                            // Handle back button the same as close widget
+                            Log.d(TAG, "Widget back button pressed - treating as close")
+                            callback?.onClose()
+                        }
+                        "set-cw-conversation" -> {
+                            val conversationToken = (message["cw_conversation"] as? String)?.takeUnless { it.isBlank() }
+                            // Store internally for persistence within this instance
+                            internalConversationToken = conversationToken
+                            Log.d(TAG, "Internal conversation token updated: ${conversationToken ?: "cleared"}")
+                            // Also notify external callback for cross-instance persistence
+                            callback?.onConversationTokenChange(conversationToken)
+                        }
                         else -> callback?.onMessage(message)
                     }
                 }

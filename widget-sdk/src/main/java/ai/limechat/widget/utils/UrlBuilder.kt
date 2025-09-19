@@ -1,8 +1,8 @@
 package ai.limechat.widget.utils
 
 import ai.limechat.widget.models.WidgetConfig
+import android.net.Uri
 import org.json.JSONObject
-import java.net.URLEncoder
 
 /**
  * Utility class for building widget URLs
@@ -14,40 +14,46 @@ object UrlBuilder {
      */
     fun buildWidgetUrl(config: WidgetConfig): String {
         val baseUrl = config.baseUrl.trimEnd('/')
-        val params = mutableMapOf<String, String>()
-        
-        // Required parameters
-        params["website_token"] = config.websiteToken
-        params["locale"] = config.locale
-        
-        // Color scheme
-        params["color_scheme"] = when (config.colorScheme) {
+        val builder = Uri.parse("$baseUrl/widget").buildUpon()
+
+        builder.appendQueryParameter("website_token", config.websiteToken)
+        builder.appendQueryParameter("locale", config.locale)
+
+        val colorScheme = when (config.colorScheme) {
             WidgetConfig.ColorScheme.LIGHT -> "light"
             WidgetConfig.ColorScheme.DARK -> "dark"
             WidgetConfig.ColorScheme.AUTO -> "auto"
         }
-        
-        // Custom attributes
-        config.customAttributes?.let { attrs ->
-            if (attrs.isNotEmpty()) {
-                params["custom_attributes"] = JSONObject(attrs).toString()
-            }
+        builder.appendQueryParameter("color_scheme", colorScheme)
+
+        config.customAttributes
+            ?.takeIf { it.isNotEmpty() }
+            ?.let { attrs -> builder.appendQueryParameter("custom_attributes", JSONObject(attrs).toString()) }
+
+        config.conversationToken
+            ?.takeUnless { it.isBlank() }
+            ?.let { token -> builder.appendQueryParameter("cw_conversation", token) }
+
+        if (config.showBackButtonOnLegacyView) {
+            builder.appendQueryParameter("show_legacy_back_icon", "true")
         }
-        
-        return buildUrl(baseUrl, "widget", params)
+
+        return builder.build().toString()
     }
-    
-    private fun buildUrl(baseUrl: String, path: String, params: Map<String, String>): String {
-        val url = StringBuilder("$baseUrl/$path")
-        
-        if (params.isNotEmpty()) {
-            url.append("?")
-            val queryParams = params.map { (key, value) ->
-                "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
-            }
-            url.append(queryParams.joinToString("&"))
+
+    /**
+     * Append encoded query parameters to an existing widget URL.
+     */
+    fun appendQueryParameters(url: String, params: Map<String, String>): String {
+        if (params.isEmpty()) return url
+
+        val uri = Uri.parse(url)
+        val builder = uri.buildUpon()
+
+        params.forEach { (key, value) ->
+            builder.appendQueryParameter(key, value)
         }
-        
-        return url.toString()
+
+        return builder.build().toString()
     }
 }

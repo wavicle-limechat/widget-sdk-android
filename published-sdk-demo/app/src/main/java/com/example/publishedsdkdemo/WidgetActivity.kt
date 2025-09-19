@@ -54,7 +54,8 @@ class WidgetActivity : FragmentActivity() {
             customAttributes = mapOf(
                 "source" to "published_sdk_demo",
                 "type" to "jitpack_dependency"
-            )
+            ),
+            baseUrl = "https://app.limechat.ai"
         )
         
         // Initialize widget with callbacks

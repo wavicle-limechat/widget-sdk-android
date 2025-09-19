@@ -63,7 +63,7 @@ class WidgetActivityRefactored : FragmentActivity() {
 
     private fun parseIntentExtras() {
         val websiteToken = intent.getStringExtra("website_token") ?: "PN5LeU9Cyng1CRiCXTGNMm3x"
-        val baseUrl = intent.getStringExtra("base_url") ?: "https://cf2e01f8e319.ngrok-free.app"
+        val baseUrl = intent.getStringExtra("base_url") ?: "http://https://a1b7f3fcbf14.ngrok-free.app"
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@refactored.com"
         
@@ -81,7 +81,8 @@ class WidgetActivityRefactored : FragmentActivity() {
                 "source" to "refactored_sdk_demo",
                 "type" to "improved_architecture",
                 "activity" to "WidgetActivityRefactored"
-            )
+            ),
+            showBackButtonOnLegacyView = true
         )
         
         // Parse initial message if provided
@@ -152,6 +153,11 @@ class WidgetActivityRefactored : FragmentActivity() {
                 Log.d(TAG, "📨 Widget message received: $message")
                 handleWidgetMessage(message)
             }
+            
+            override fun onConversationTokenChange(conversationToken: String?) {
+                Log.d(TAG, "🔄 Conversation token changed: $conversationToken")
+                handleConversationTokenChange(conversationToken)
+            }
         }
     }
 
@@ -186,6 +192,29 @@ class WidgetActivityRefactored : FragmentActivity() {
             else -> {
                 Log.d(TAG, "Unhandled widget message: $message")
             }
+        }
+    }
+
+    private fun handleConversationTokenChange(conversationToken: String?) {
+        // In a real app, you would typically store this token for persistence
+        // For example, using SharedPreferences or a database
+        
+        if (conversationToken != null) {
+            Log.d(TAG, "Saving conversation token for persistence: $conversationToken")
+            // Example: Save to SharedPreferences
+            // val prefs = getSharedPreferences("limechat_widget", Context.MODE_PRIVATE)
+            // prefs.edit().putString("conversation_token", conversationToken).apply()
+            
+            // You can also pass this token back when reinitializing the widget:
+            // val config = WidgetConfig(
+            //     websiteToken = "YOUR_TOKEN",
+            //     conversationToken = conversationToken // Use the saved token
+            // )
+        } else {
+            Log.d(TAG, "Conversation token cleared")
+            // Example: Clear from SharedPreferences
+            // val prefs = getSharedPreferences("limechat_widget", Context.MODE_PRIVATE)
+            // prefs.edit().remove("conversation_token").apply()
         }
     }
 

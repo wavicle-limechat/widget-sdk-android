@@ -1,5 +1,6 @@
 package com.example.localsdkdemo
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.FragmentActivity
@@ -38,14 +39,16 @@ class WidgetActivity : FragmentActivity() {
         widgetView.attachFilePicker(widgetFilePicker)
         
         // Get configuration from intent
-        val websiteToken = intent.getStringExtra("website_token") ?: "PN5LeU9Cyng1CRiCXTGNMm3x"
+        val websiteToken = intent.getStringExtra("website_token") ?: "MEFFACy4xaovJayhLjSt836h"
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@local.com"
+        val conversationToken = intent.getStringExtra("conversation_token")
+        val buttonId = intent.getStringExtra("button_id")
         
         // Create configuration
         val config = WidgetConfig(
             websiteToken = websiteToken,
-            baseUrl = "https://cf2e01f8e319.ngrok-free.app",
+            baseUrl = "https://app.limechat.ai",
             locale = "en",
             colorScheme = WidgetConfig.ColorScheme.LIGHT,
             user = WidgetConfig.User(
@@ -55,8 +58,11 @@ class WidgetActivity : FragmentActivity() {
             ),
             customAttributes = mapOf(
                 "source" to "local_sdk_demo",
-                "type" to "local_module_dependency"
-            )
+                "type" to "local_module_dependency",
+                "button_id" to (buttonId ?: "unknown")
+            ),
+            conversationToken = conversationToken,
+            showBackButtonOnLegacyView = true
         )
         
         // Check for custom messages and initialize accordingly
@@ -68,17 +74,17 @@ class WidgetActivity : FragmentActivity() {
         when {
             customMessage != null -> {
                 Log.d(TAG, "🗨️ Initializing widget with custom string message: $customMessage")
-                widgetView.init(config, createWidgetCallback(), customMessage)
+                widgetView.init(config, createWidgetCallback(buttonId), customMessage)
                 hasHandledCustomMessage = true
             }
             customMessageData != null -> {
                 Log.d(TAG, "🗨️ Initializing widget with custom message data: $customMessageData")
-                widgetView.init(config, createWidgetCallback(), customMessageData)
+                widgetView.init(config, createWidgetCallback(buttonId), customMessageData)
                 hasHandledCustomMessage = true
             }
             else -> {
                 Log.d(TAG, "Initializing widget without custom message")
-                widgetView.init(config, createWidgetCallback())
+                widgetView.init(config, createWidgetCallback(buttonId))
                 hasHandledCustomMessage = true
             }
         }
@@ -86,7 +92,7 @@ class WidgetActivity : FragmentActivity() {
         Log.d(TAG, "✅ Widget initialized with local SDK")
     }
     
-    private fun createWidgetCallback(): WidgetCallback {
+    private fun createWidgetCallback(buttonId: String?): WidgetCallback {
         return object : WidgetCallback {
             override fun onLoaded() {
                 Log.d(TAG, "✅ Local SDK widget loaded successfully")
@@ -104,6 +110,19 @@ class WidgetActivity : FragmentActivity() {
             
             override fun onMessage(message: Map<String, Any?>) {
                 Log.d(TAG, "📨 Widget message: $message")
+            }
+            
+            override fun onConversationTokenChange(conversationToken: String?) {
+                Log.d(TAG, "🔄 Conversation token changed: $conversationToken")
+                // Pass the conversation token back to MainActivity for persistence
+                if (conversationToken != null) {
+                    val resultIntent = Intent().apply {
+                        putExtra("conversation_token", conversationToken)
+                        putExtra("button_id", buttonId)
+                    }
+                    setResult(RESULT_OK, resultIntent)
+                    Log.d(TAG, "📤 Conversation token passed back to MainActivity: $conversationToken")
+                }
             }
         }
     }

@@ -11,7 +11,9 @@ data class WidgetConfig(
     val colorScheme: ColorScheme = ColorScheme.LIGHT,
     val user: User? = null,
     val customAttributes: Map<String, Any>? = null,
-    val baseUrl: String = "https://app.limechat.ai"
+    val baseUrl: String = "https://app.limechat.ai",
+    val conversationToken: String? = null,
+    val showBackButtonOnLegacyView: Boolean = false
 ) : Serializable {
     
     init {

@@ -1,5 +1,6 @@
 package com.example.localsdkdemo
 
+import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.util.Log
@@ -27,12 +28,14 @@ class MainActivity : AppCompatActivity() {
     
     companion object {
         private const val TAG = "LocalSDKDemo"
-        private const val WEBSITE_TOKEN = "PN5LeU9Cyng1CRiCXTGNMm3x"
-        private const val BASE_URL = "https://cf2e01f8e319.ngrok-free.app"
+        private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
+        private const val BASE_URL = "https://app.limechat.ai"
+        private const val WIDGET_ACTIVITY_REQUEST_CODE = 1001
     }
     
     private lateinit var widgetButton: LimechatWidgetButton
     private var badgeCount = 3
+    private var sharedConversationToken: String? = null
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -48,11 +51,11 @@ class MainActivity : AppCompatActivity() {
         // Update status text
         findViewById<TextView>(R.id.tvStatus).text = "✅ Using LOCAL SDK from widget-sdk module"
         
-        // Test button - opens widget directly
+        // Test button - opens widget directly (Button 1 - shares conversation)
         findViewById<Button>(R.id.btnTestWidget).setOnClickListener {
-            Toast.makeText(this, "Opening local SDK widget...", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "🚀 Test button clicked - opening local SDK widget")
-            openWidget()
+            Toast.makeText(this, "Opening widget (Button 1 - shares conversation)...", Toast.LENGTH_SHORT).show()
+            Log.d(TAG, "🚀 Button 1 clicked - opening widget with shared conversation token: $sharedConversationToken")
+            openWidgetWithConversation()
         }
         
         // Badge test button  
@@ -63,12 +66,12 @@ class MainActivity : AppCompatActivity() {
             Log.d(TAG, "📱 Badge count updated: $badgeCount")
         }
         
-        // Custom message button
+        // Custom message button (Button 2 - shares conversation)
         findViewById<Button>(R.id.btnOpenWithCustomMessage).setOnClickListener {
             val customMessage = "Hi, I wanted to ask something!"
-            Log.d(TAG, "🗨️ Opening widget with custom message: $customMessage")
-            Toast.makeText(this, "Opening with message: $customMessage", Toast.LENGTH_SHORT).show()
-            openWidgetWithMessage(customMessage)
+            Log.d(TAG, "🗨️ Button 2 clicked - opening widget with custom message and shared conversation: $sharedConversationToken")
+            Toast.makeText(this, "Opening with message (Button 2 - shares conversation): $customMessage", Toast.LENGTH_SHORT).show()
+            openWidgetWithMessageAndConversation(customMessage)
         }
     }
     
@@ -104,17 +107,17 @@ class MainActivity : AppCompatActivity() {
         // Initialize widget
         widgetButton.init(config)
         
-        // Set click listener to demonstrate custom message functionality
+        // Set click listener to demonstrate custom message functionality with conversation persistence
         widgetButton.setOnClickListener {
-            Log.d(TAG, "🎯 Local SDK widget clicked - demonstrating custom message")
+            Log.d(TAG, "🎯 Floating widget button clicked - using conversation persistence")
             
-            // Alternate between different message types for demo
+            // Alternate between different message types for demo, all with conversation persistence
             val randomChoice = (1..3).random()
             when (randomChoice) {
                 1 -> {
                     val message = "Hello! I need help with my order #${(1000..9999).random()}"
-                    Log.d(TAG, "🗨️ Opening widget with string message: $message")
-                    openWidgetWithMessage(message)
+                    Log.d(TAG, "🗨️ Opening widget with string message and conversation persistence: $message")
+                    openWidgetWithMessageAndConversation(message)
                 }
                 2 -> {
                     val messageData = mapOf(
@@ -122,12 +125,12 @@ class MainActivity : AppCompatActivity() {
                         "type" to "inquiry",
                         "priority" to "medium"
                     )
-                    Log.d(TAG, "🗨️ Opening widget with object message: $messageData")
-                    openWidgetWithMessage(messageData)
+                    Log.d(TAG, "🗨️ Opening widget with object message and conversation persistence: $messageData")
+                    openWidgetWithMessageAndConversation(messageData)
                 }
                 else -> {
-                    Log.d(TAG, "🎯 Opening widget without custom message")
-                    openWidget()
+                    Log.d(TAG, "🎯 Opening widget with conversation persistence")
+                    openWidgetWithConversation()
                 }
             }
         }
@@ -156,6 +159,22 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * Open widget with conversation persistence (Button 1)
+     */
+    private fun openWidgetWithConversation() {
+        Log.d(TAG, "🚀 Opening widget with conversation persistence (Button 1)")
+        
+        val intent = Intent(this, WidgetActivity::class.java).apply {
+            putExtra("website_token", WEBSITE_TOKEN)
+            putExtra("user_name", "Local SDK Demo User")
+            putExtra("user_email", "demo@local.com")
+            putExtra("conversation_token", sharedConversationToken)
+            putExtra("button_id", "button_1")
+        }
+        startActivityForResult(intent, WIDGET_ACTIVITY_REQUEST_CODE)
+    }
+    
+    /**
      * Open widget with custom string message
      */
     private fun openWidgetWithMessage(message: String) {
@@ -168,6 +187,40 @@ class MainActivity : AppCompatActivity() {
             putExtra("custom_message", message)
         }
         startActivity(intent)
+    }
+    
+    /**
+     * Open widget with custom message and conversation persistence (Button 2)
+     */
+    private fun openWidgetWithMessageAndConversation(message: String) {
+        Log.d(TAG, "🚀 Opening widget with custom message and conversation persistence (Button 2)")
+        
+        val intent = Intent(this, WidgetActivity::class.java).apply {
+            putExtra("website_token", WEBSITE_TOKEN)
+            putExtra("user_name", "Local SDK Demo User")
+            putExtra("user_email", "demo@local.com")
+            putExtra("custom_message", message)
+            putExtra("conversation_token", sharedConversationToken)
+            putExtra("button_id", "button_2")
+        }
+        startActivityForResult(intent, WIDGET_ACTIVITY_REQUEST_CODE)
+    }
+    
+    /**
+     * Open widget with custom message data and conversation persistence (Floating Button)
+     */
+    private fun openWidgetWithMessageAndConversation(messageData: Map<String, Any>) {
+        Log.d(TAG, "🚀 Opening widget with custom message data and conversation persistence (Floating Button)")
+        
+        val intent = Intent(this, WidgetActivity::class.java).apply {
+            putExtra("website_token", WEBSITE_TOKEN)
+            putExtra("user_name", "Local SDK Demo User")
+            putExtra("user_email", "demo@local.com")
+            putExtra("custom_message_data", HashMap(messageData))
+            putExtra("conversation_token", sharedConversationToken)
+            putExtra("button_id", "floating_button")
+        }
+        startActivityForResult(intent, WIDGET_ACTIVITY_REQUEST_CODE)
     }
     
     /**
@@ -187,6 +240,21 @@ class MainActivity : AppCompatActivity() {
     
     private fun dpToPx(dp: Int): Int {
         return (dp * resources.displayMetrics.density).toInt()
+    }
+    
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        
+        if (requestCode == WIDGET_ACTIVITY_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            val conversationToken = data?.getStringExtra("conversation_token")
+            val buttonId = data?.getStringExtra("button_id")
+            
+            if (conversationToken != null) {
+                sharedConversationToken = conversationToken
+                Log.d(TAG, "🔄 Conversation token updated from $buttonId: $conversationToken")
+                Toast.makeText(this, "Conversation token updated: ${conversationToken.take(10)}...", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
     
     override fun onDestroy() {

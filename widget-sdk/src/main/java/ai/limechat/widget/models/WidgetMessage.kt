@@ -1,6 +1,7 @@
 package ai.limechat.widget.models
 
 import org.json.JSONObject
+import java.net.URLEncoder
 
 /**
  * Represents a message to be sent to the widget
@@ -24,13 +25,21 @@ sealed class WidgetMessage {
      * Convert message to URL parameter format
      */
     fun toUrlParameter(): String {
+        val (key, value) = toQueryParameters().entries.first()
+        return "${URLEncoder.encode(key, "UTF-8")}=${URLEncoder.encode(value, "UTF-8")}"
+    }
+
+    /**
+     * Convert message to raw query parameters without encoding
+     */
+    fun toQueryParameters(): Map<String, String> {
         return when (this) {
-            is Text -> "lc_open_message=${java.net.URLEncoder.encode(content, "UTF-8")}"
+            is Text -> mapOf("lc_open_message" to content)
             is Structured -> {
                 val payload = mutableMapOf<String, Any>("content" to content)
                 payload.putAll(properties)
                 val json = JSONObject(payload as Map<String, Any>).toString()
-                "lc_open_payload=${java.net.URLEncoder.encode(json, "UTF-8")}"
+                mapOf("lc_open_payload" to json)
             }
         }
     }
