@@ -42,6 +42,11 @@ class WidgetActivity : FragmentActivity() {
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@local.com"
         val instanceId = intent.getStringExtra("instance_id") // Get instance ID from intent
+        val showLegacyBackIcon = intent.getBooleanExtra("show_legacy_back_icon", true) // Default to true for demo
+        
+        Log.d(TAG, "🔧 Widget configuration:")
+        Log.d(TAG, "   - Instance ID: $instanceId")
+        Log.d(TAG, "   - Show Legacy Back Icon: $showLegacyBackIcon")
 
         // Create configuration using builder pattern (no token handling - SDK manages internally like React Native)
         val config = WidgetConfig.builder(websiteToken)
@@ -58,6 +63,7 @@ class WidgetActivity : FragmentActivity() {
                 "type" to "local_module_dependency"
             ))
             .setInstanceId(instanceId) // Use app-provided instance ID
+            .setShowLegacyBackIcon(showLegacyBackIcon) // Use flag from intent
             .build()
         
         // Check for custom messages and initialize accordingly

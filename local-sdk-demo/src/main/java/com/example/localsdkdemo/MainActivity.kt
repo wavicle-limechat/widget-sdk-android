@@ -70,6 +70,13 @@ class MainActivity : AppCompatActivity() {
             Toast.makeText(this, "Opening with message: $customMessage", Toast.LENGTH_SHORT).show()
             openWidgetWithMessage(customMessage)
         }
+        
+        // Without legacy back icon button
+        findViewById<Button>(R.id.btnOpenWithoutLegacyIcon).setOnClickListener {
+            Log.d(TAG, "🚫 Opening widget WITHOUT legacy back icon")
+            Toast.makeText(this, "Opening widget without legacy back icon", Toast.LENGTH_SHORT).show()
+            openWidgetWithoutLegacyIcon()
+        }
     }
     
     private fun setupWidgetWithLocalSDK() {
@@ -88,6 +95,7 @@ class MainActivity : AppCompatActivity() {
                 "source" to "local_module_dependency"
             ))
             .setInstanceId("floating-button") // Unique ID for floating button
+            .setShowLegacyBackIcon(true) // Enable legacy back icon for demo
             .build()
         
         // Create widget button using local SDK
@@ -155,6 +163,22 @@ class MainActivity : AppCompatActivity() {
             putExtra("user_email", "demo@local.com")
             putExtra("custom_message", message)
             putExtra("instance_id", "main-widget-buttons") // Shared ID for synced buttons
+        }
+        startActivity(intent)
+    }
+    
+    /**
+     * Open widget WITHOUT legacy back icon (showLegacyBackIcon = false)
+     */
+    private fun openWidgetWithoutLegacyIcon() {
+        Log.d(TAG, "🚫 Opening full-screen widget WITHOUT legacy back icon")
+        
+        val intent = Intent(this, WidgetActivity::class.java).apply {
+            putExtra("website_token", WEBSITE_TOKEN)
+            putExtra("user_name", "Local SDK Demo User")
+            putExtra("user_email", "demo@local.com")
+            putExtra("instance_id", "no-legacy-icon") // Unique ID for this demo
+            putExtra("show_legacy_back_icon", false) // Pass flag to disable legacy icon
         }
         startActivity(intent)
     }
