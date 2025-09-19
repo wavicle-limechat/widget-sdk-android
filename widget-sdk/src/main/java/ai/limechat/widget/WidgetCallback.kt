@@ -19,6 +19,12 @@ interface WidgetCallback {
      * @param message The message data
      */
     fun onMessage(message: Map<String, Any?>)
+
+    /**
+     * Called when the conversation token changes
+     * @param token The new conversation token
+     */
+    fun onConversationTokenChange(token: String) {}
 }
 
 /** Widget error class */

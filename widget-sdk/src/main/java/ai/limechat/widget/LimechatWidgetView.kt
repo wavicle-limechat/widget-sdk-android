@@ -33,6 +33,11 @@ class LimechatWidgetView @JvmOverloads constructor(
         private const val MESSAGE_LISTENER_NAME = "LimechatNative"
         private const val JS_INTERFACE_NAME = "LimechatAndroid"
         private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
+        private const val PREFS_NAME = "limechat_widget_conversations"
+        
+        // In-memory conversation token cache for performance
+        // Persists across widget instance recreation within same app session
+        private val inMemoryTokenCache = mutableMapOf<String, String>()
     }
 
     private val webView: WebView
@@ -44,10 +49,19 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var isMessagingSetup = false
     private var webMessageListenerAdded = false
     private var jsInterfaceAdded = false
+    
+    // Unique instance identifier (like React Native component instance)
+    private var instanceId: String
+    
+    // Conversation token management (like React Native's component state)
+    private var cwConversation: String? = null
 
     init {
         webView = createHardenedWebView()
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+        
+        // instanceId will be set during init() based on config
+        instanceId = ""
     }
 
     /**
@@ -83,6 +97,28 @@ class LimechatWidgetView @JvmOverloads constructor(
     ) {
         this.config = config
         this.callback = callback
+        
+        // Set instance ID from config or generate a default one
+        instanceId = if (!config.instanceId.isNullOrBlank()) {
+            // App-provided instance ID - gives app full control over widget isolation
+            config.instanceId
+        } else {
+            // Default: single instance per website token (like before the isolation fix)
+            "default"
+        }
+        
+        Log.d(TAG, "Widget instance ID: $instanceId")
+        
+        // Initialize conversation token (like React Native's cwConversation state)
+        if (config.conversationToken != null) {
+            // External token management - app provides token
+            cwConversation = config.conversationToken
+            Log.d(TAG, "Using external conversation token: ${config.conversationToken?.take(8) ?: "none"}")
+        } else {
+            // Internal token management - SDK manages persistence using instanceId
+            cwConversation = loadConversationToken(instanceId)
+            Log.d(TAG, "Instance $instanceId - Loaded conversation token: ${cwConversation?.take(8) ?: "none"}")
+        }
         
         // Note: File picker should be attached separately using attachFilePicker()
         // to ensure it's created during onCreate() of the activity
@@ -325,7 +361,7 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
-        var url = UrlBuilder.buildWidgetUrl(config)
+        var url = UrlBuilder.buildWidgetUrl(config, cwConversation)
 
         // Ensure messaging bridges are available before the page loads
         // so JS can see window.LimechatAndroid / window.LimechatNative immediately
@@ -578,11 +614,17 @@ class LimechatWidgetView @JvmOverloads constructor(
                 val processed = messageHandler.processMessage(data)
                 processed?.let { message ->
                     val event = message["event"] as? String
-                    Log.d(TAG, "Received widget event: ${event ?: "unknown"} | payload: $message")
+                    val type = message["type"] as? String
+                    Log.d(TAG, "Received widget event: ${event ?: type ?: "unknown"} | payload: $message")
                     
-                    when (event) {
+                    when (event ?: type) {
                         "loaded" -> callback?.onLoaded()
                         "close-widget" -> callback?.onClose()
+                        "set-cw-conversation" -> {
+                            // Handle conversation token update (like React Native's handleCwConversationUpdate)
+                            val token = message["cw_conversation"] as? String
+                            handleConversationTokenUpdate(token)
+                        }
                         else -> callback?.onMessage(message)
                     }
                 }
@@ -596,5 +638,62 @@ class LimechatWidgetView @JvmOverloads constructor(
                 )
             }
         }
+    }
+    
+    /**
+     * Load conversation token from persistent storage using instanceId
+     * Provides cross-app restart persistence
+     */
+    private fun loadConversationToken(instanceId: String): String? {
+        // First check in-memory cache for performance
+        val memoryKey = instanceId
+        inMemoryTokenCache[memoryKey]?.let { return it }
+        
+        // Load from SharedPreferences for cross-app persistence
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val token = prefs.getString(instanceId, null)
+        
+        // Cache in memory for future access
+        token?.let { inMemoryTokenCache[memoryKey] = it }
+        
+        return token
+    }
+    
+    /**
+     * Save conversation token to persistent storage using instanceId
+     * Enables cross-app restart persistence
+     */
+    private fun saveConversationToken(instanceId: String, token: String) {
+        // Save to in-memory cache for performance
+        inMemoryTokenCache[instanceId] = token
+        
+        // Save to SharedPreferences for cross-app persistence
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit().putString(instanceId, token).apply()
+    }
+    
+    private fun handleConversationTokenUpdate(token: String?) {
+        if (token.isNullOrBlank()) {
+            Log.w(TAG, "Received empty conversation token, ignoring")
+            return
+        }
+        
+        Log.d(TAG, "Conversation token updated: ${token.take(8)}...")
+        
+        // Update conversation token (like React Native's handleCwConversationUpdate)
+        val config = this.config
+        if (config?.onConversationTokenChange != null) {
+            // External token management - app handles persistence
+            config.onConversationTokenChange.invoke(token)
+            Log.d(TAG, "External token management - calling onConversationTokenChange: ${token.take(8)}...")
+        } else {
+            // Internal token management - SDK handles persistence using instanceId
+            cwConversation = token
+            saveConversationToken(instanceId, token)
+            Log.d(TAG, "Instance $instanceId - Saved conversation token: ${token.take(8)}...")
+        }
+        
+        // Also call the callback interface method
+        callback?.onConversationTokenChange(token)
     }
 }

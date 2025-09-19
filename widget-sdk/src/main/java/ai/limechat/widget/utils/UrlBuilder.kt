@@ -12,7 +12,7 @@ object UrlBuilder {
     /**
      * Build the complete widget URL with query parameters
      */
-    fun buildWidgetUrl(config: WidgetConfig): String {
+    fun buildWidgetUrl(config: WidgetConfig, cwConversation: String? = null): String {
         val baseUrl = config.baseUrl.trimEnd('/')
         val params = mutableMapOf<String, String>()
         
@@ -31,6 +31,14 @@ object UrlBuilder {
         config.customAttributes?.let { attrs ->
             if (attrs.isNotEmpty()) {
                 params["custom_attributes"] = JSONObject(attrs).toString()
+            }
+        }
+        
+        // Conversation token (like React Native's cwConversation)
+        val conversationToken = cwConversation ?: config.conversationToken
+        conversationToken?.let { token ->
+            if (token.isNotBlank()) {
+                params["cw_conversation"] = token
             }
         }
         
