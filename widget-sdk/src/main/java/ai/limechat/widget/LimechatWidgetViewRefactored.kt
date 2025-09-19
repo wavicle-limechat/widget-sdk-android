@@ -3,6 +3,7 @@ package ai.limechat.widget
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.models.WidgetMessage
 import ai.limechat.widget.models.WidgetState
+import ai.limechat.widget.utils.ConversationTokenStore
 import ai.limechat.widget.utils.WidgetUrlBuilder
 import ai.limechat.widget.webview.WidgetWebViewManager
 import android.content.Context
@@ -58,11 +59,18 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
         }
 
         try {
-            this.config = config
-            this.callback = callback
-            this.urlBuilder = WidgetUrlBuilder(config)
+            val resolvedToken = resolveInitialConversationToken(config)
+            val configWithToken = config.copy(conversationToken = resolvedToken)
 
-            applyConversationToken(config.conversationToken)
+            this.config = configWithToken
+            this.callback = callback
+            this.urlBuilder = WidgetUrlBuilder(configWithToken)
+
+            conversationToken = resolvedToken
+            resolvedToken?.let {
+                ConversationTokenStore.save(context, configWithToken.websiteToken, configWithToken.baseUrl, it)
+            }
+            urlBuilder?.updateConversationToken(resolvedToken)
 
             updateState(currentState.copy(isInitialized = true).loading())
             setupWebView()
@@ -260,7 +268,18 @@ constructor(context: Context, attrs: AttributeSet? = null, defStyleAttr: Int = 0
             conversationToken = sanitizedToken
             urlBuilder?.updateConversationToken(sanitizedToken)
             config = config?.copy(conversationToken = sanitizedToken)
+            config?.let {
+                ConversationTokenStore.save(context, it.websiteToken, it.baseUrl, sanitizedToken)
+            }
         }
         return sanitizedToken to changed
+    }
+
+    private fun resolveInitialConversationToken(config: WidgetConfig): String? {
+        val providedToken = config.conversationToken?.takeUnless { it.isBlank() }
+        if (providedToken != null) {
+            return providedToken
+        }
+        return ConversationTokenStore.get(context, config.websiteToken, config.baseUrl)
     }
 }

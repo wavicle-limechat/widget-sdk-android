@@ -1,8 +1,9 @@
 package ai.limechat.widget.utils
 
 import ai.limechat.widget.models.WidgetConfig
-import android.net.Uri
 import org.json.JSONObject
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 /**
  * Utility class for building widget URLs
@@ -14,31 +15,41 @@ object UrlBuilder {
      */
     fun buildWidgetUrl(config: WidgetConfig): String {
         val baseUrl = config.baseUrl.trimEnd('/')
-        val builder = Uri.parse("$baseUrl/widget").buildUpon()
-
-        builder.appendQueryParameter("website_token", config.websiteToken)
-        builder.appendQueryParameter("locale", config.locale)
+        val urlBuilder = StringBuilder("$baseUrl/widget?")
+        
+        var firstParam = true
+        
+        fun appendParam(key: String, value: String) {
+            if (!firstParam) urlBuilder.append("&")
+            urlBuilder.append(URLEncoder.encode(key, StandardCharsets.UTF_8.toString()))
+            urlBuilder.append("=")
+            urlBuilder.append(URLEncoder.encode(value, StandardCharsets.UTF_8.toString()))
+            firstParam = false
+        }
+        
+        appendParam("website_token", config.websiteToken)
+        appendParam("locale", config.locale)
 
         val colorScheme = when (config.colorScheme) {
             WidgetConfig.ColorScheme.LIGHT -> "light"
             WidgetConfig.ColorScheme.DARK -> "dark"
             WidgetConfig.ColorScheme.AUTO -> "auto"
         }
-        builder.appendQueryParameter("color_scheme", colorScheme)
+        appendParam("color_scheme", colorScheme)
 
         config.customAttributes
             ?.takeIf { it.isNotEmpty() }
-            ?.let { attrs -> builder.appendQueryParameter("custom_attributes", JSONObject(attrs).toString()) }
+            ?.let { attrs -> appendParam("custom_attributes", JSONObject(attrs).toString()) }
 
         config.conversationToken
             ?.takeUnless { it.isBlank() }
-            ?.let { token -> builder.appendQueryParameter("cw_conversation", token) }
+            ?.let { token -> appendParam("cw_conversation", token) }
 
         if (config.showBackButtonOnLegacyView) {
-            builder.appendQueryParameter("show_legacy_back_icon", "true")
+            appendParam("show_legacy_back_icon", "true")
         }
 
-        return builder.build().toString()
+        return urlBuilder.toString()
     }
 
     /**
@@ -46,14 +57,20 @@ object UrlBuilder {
      */
     fun appendQueryParameters(url: String, params: Map<String, String>): String {
         if (params.isEmpty()) return url
-
-        val uri = Uri.parse(url)
-        val builder = uri.buildUpon()
-
+        
+        val separator = if (url.contains("?")) "&" else "?"
+        val urlBuilder = StringBuilder(url).append(separator)
+        
+        var firstParam = true
+        
         params.forEach { (key, value) ->
-            builder.appendQueryParameter(key, value)
+            if (!firstParam) urlBuilder.append("&")
+            urlBuilder.append(URLEncoder.encode(key, StandardCharsets.UTF_8.toString()))
+            urlBuilder.append("=")
+            urlBuilder.append(URLEncoder.encode(value, StandardCharsets.UTF_8.toString()))
+            firstParam = false
         }
-
-        return builder.build().toString()
+        
+        return urlBuilder.toString()
     }
 }

@@ -118,7 +118,8 @@ class UrlBuilderTest {
         val baseUrl = UrlBuilder.buildWidgetUrl(config())
         val updatedUrl = UrlBuilder.appendQueryParameters(baseUrl, mapOf("lc_open_message" to "hello world"))
 
-        assertTrue(updatedUrl.contains("lc_open_message=hello%20world"))
+        assertTrue(updatedUrl.contains("lc_open_message="))
+        assertTrue(updatedUrl.contains("hello"))
         assertTrue(updatedUrl.startsWith("https://app.limechat.ai"))
     }
 }

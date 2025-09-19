@@ -13,6 +13,7 @@ import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import ai.limechat.widget.models.WidgetConfig
+import ai.limechat.widget.utils.ConversationTokenStore
 import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
 import kotlinx.coroutines.*
@@ -81,11 +82,14 @@ class LimechatWidgetView @JvmOverloads constructor(
         initialMessage: String? = null,
         initialMessageData: Map<String, Any>? = null
     ) {
-        this.config = config
+        val persistedToken = resolveInitialConversationToken(config)
+        val configWithToken = config.copy(conversationToken = persistedToken)
+
+        this.config = configWithToken
         this.callback = callback
         
         // Store initial conversation token for internal persistence
-        this.internalConversationToken = config.conversationToken
+        this.internalConversationToken = configWithToken.conversationToken
         
         // Note: File picker should be attached separately using attachFilePicker()
         // to ensure it's created during onCreate() of the activity
@@ -148,6 +152,9 @@ class LimechatWidgetView @JvmOverloads constructor(
 
         internalConversationToken = sanitizedToken
         config = config?.copy(conversationToken = sanitizedToken)
+        config?.let {
+            ConversationTokenStore.save(context, it.websiteToken, it.baseUrl, sanitizedToken)
+        }
 
         if (reloadWidget && tokenChanged) {
             loadWidget()
@@ -328,7 +335,7 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
-        
+
         // Create config with internal conversation token for persistence
         val configWithToken = config.copy(conversationToken = internalConversationToken)
         var url = UrlBuilder.buildWidgetUrl(configWithToken)
@@ -418,6 +425,14 @@ class LimechatWidgetView @JvmOverloads constructor(
                 webView.evaluateJavascript(script, null)
             }
         }
+    }
+
+    private fun resolveInitialConversationToken(config: WidgetConfig): String? {
+        val providedToken = config.conversationToken?.takeUnless { it.isBlank() }
+        if (providedToken != null) {
+            return providedToken
+        }
+        return ConversationTokenStore.get(context, config.websiteToken, config.baseUrl)
     }
 
     private fun setupMessaging() {
@@ -599,6 +614,9 @@ class LimechatWidgetView @JvmOverloads constructor(
                             // Store internally for persistence within this instance
                             internalConversationToken = conversationToken
                             config = config?.copy(conversationToken = conversationToken)
+                            config?.let {
+                                ConversationTokenStore.save(context, it.websiteToken, it.baseUrl, conversationToken)
+                            }
                             Log.d(TAG, "Internal conversation token updated: ${conversationToken ?: "cleared"}")
                             // Also notify external callback for cross-instance persistence
                             callback?.onConversationTokenChange(conversationToken)

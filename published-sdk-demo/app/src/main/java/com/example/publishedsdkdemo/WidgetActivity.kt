@@ -22,6 +22,7 @@ class WidgetActivity : FragmentActivity() {
     
     private lateinit var widgetView: LimechatWidgetView
     private lateinit var widgetFilePicker: WidgetFilePicker
+    private val prefs by lazy { getSharedPreferences("limechat_published_demo", MODE_PRIVATE) }
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,9 +42,13 @@ class WidgetActivity : FragmentActivity() {
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@published.com"
         
+        // Restore the last persisted conversation token if available
+        val cachedConversationToken = prefs.getString("cw_conversation", null)
+
         // Create configuration
         val config = WidgetConfig(
             websiteToken = websiteToken,
+            baseUrl = "https://app.limechat.ai",
             locale = "en",
             colorScheme = WidgetConfig.ColorScheme.LIGHT,
             user = WidgetConfig.User(
@@ -55,7 +60,8 @@ class WidgetActivity : FragmentActivity() {
                 "source" to "published_sdk_demo",
                 "type" to "jitpack_dependency"
             ),
-            baseUrl = "https://app.limechat.ai"
+            conversationToken = cachedConversationToken,
+            showBackButtonOnLegacyView = true
         )
         
         // Initialize widget with callbacks
@@ -75,6 +81,11 @@ class WidgetActivity : FragmentActivity() {
             
             override fun onMessage(message: Map<String, Any?>) {
                 Log.d(TAG, "📨 Widget message: $message")
+            }
+            
+            override fun onConversationTokenChange(conversationToken: String?) {
+                Log.d(TAG, "🔄 Conversation token changed: $conversationToken")
+                prefs.edit().putString("cw_conversation", conversationToken).apply()
             }
         })
         

@@ -44,7 +44,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="This app uses ONLY the JitPack published dependency:\n\ncom.github.wavicle-limechat:widget-sdk-android:0.0.4"
+                android:text="This app uses ONLY the JitPack published dependency:\n\ncom.github.wavicle-limechat:widget-sdk-android:0.0.9-beta"
                 android:textSize="14sp"
                 android:gravity="center"
                 android:layout_marginBottom="32dp"
