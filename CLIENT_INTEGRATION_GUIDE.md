@@ -4,7 +4,7 @@
 
 | Version | Repository | Platform |  |
 | --- | --- | --- | --- |
-| 0.0.8 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
+| v0.0.9 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
 
 ---
 
@@ -157,40 +157,45 @@ Customize the widget's behavior and appearance through the `WidgetConfig` object
 
 ### WidgetConfig Options
 
-Here are some of the available options:
+Here are some of the available options using the builder pattern:
 
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "YOUR_WEBSITE_TOKEN",    // Required: Your LimeChat website token
-    locale = "en",                          // Optional: Language code (e.g., "en", "es", "fr")
-    colorScheme = WidgetConfig.ColorScheme.AUTO, // Optional: LIGHT, DARK, or AUTO
-    user = WidgetConfig.User(               // Optional: User information
+val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your LimeChat website token
+    .setLocale("en")                                       // Optional: Language code (e.g., "en", "es", "fr")
+    .setColorScheme(WidgetConfig.ColorScheme.AUTO)         // Optional: LIGHT, DARK, or AUTO
+    .setUser(WidgetConfig.User(                            // Optional: User information
         name = "John Doe",
         email = "john@company.com",
         phoneNumber = "+1234567890",
-        identifierHash = "USER_HASH_123"    // Optional: For secure mode
-    ),
-    customAttributes = mapOf(               // Optional: Custom metadata
+        identifierHash = "USER_HASH_123"                   // Optional: For secure mode
+    ))
+    .setCustomAttributes(mapOf(                            // Optional: Custom metadata
         "user_type" to "premium",
         "plan" to "enterprise"
-    ),
-    baseUrl = "https://app.limechat.ai"     // Optional: For custom domains
-)
+    ))
+    .setBaseUrl("https://app.limechat.ai")                 // Optional: For custom domains
+    .setInstanceId("unique-widget-instance")               // Optional: For widget isolation and persistence
+    .setShowLegacyBackIcon(true)                           // Optional: Enable legacy back icon (default: false)
+    .build()
 ```
+
+#### New Features in v0.0.9:
+
+- **`setInstanceId(String?)`**: Provides unique identification for widget instances, enabling proper conversation persistence and isolation between different widget instances in your app.
+- **`setShowLegacyBackIcon(Boolean)`**: Controls whether the legacy back icon is displayed in the widget. When enabled, adds `show_legacy_back_icon=true` to the widget URL.
 
 ### Custom Attributes
 
 You can send any custom data to the widget, which can be useful for tracking or segmentation.
 
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    customAttributes = mapOf(
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setCustomAttributes(mapOf(
         "user_id" to "12345",
         "subscription_tier" to "premium",
         "app_version" to BuildConfig.VERSION_NAME
-    )
-)
+    ))
+    .build()
 ```
 
 ---
@@ -299,6 +304,62 @@ startActivity(intent)
 
 ---
 
+## 💾 Chat Persistence
+
+The SDK automatically persists conversations across app restarts and widget instances. This ensures users can continue their conversations seamlessly without losing context.
+
+### How It Works
+
+- **Automatic Persistence**: Conversations are automatically saved and restored
+- **Instance Isolation**: Each widget instance maintains its own conversation state
+- **Cross-App Restart**: Conversations persist even when the app is completely closed and reopened
+- **Per-Instance Storage**: Multiple widget instances in your app can have separate conversations
+
+### Configuration
+
+```kotlin
+val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
+    .setInstanceId("unique-widget-instance") // Optional: for widget isolation
+    .build()
+```
+
+### Instance ID Usage
+
+The `instanceId` parameter helps isolate conversations between different widget instances:
+
+```kotlin
+// Different widget instances with separate conversations
+val mainWidgetConfig = WidgetConfig.builder("YOUR_TOKEN")
+    .setInstanceId("main-widget")
+    .build()
+
+val supportWidgetConfig = WidgetConfig.builder("YOUR_TOKEN")
+    .setInstanceId("support-widget")
+    .build()
+
+// Both widgets will have separate conversation histories
+```
+
+### External Token Management
+
+For advanced use cases, you can manage conversation tokens externally:
+
+```kotlin
+var conversationToken: String? = null
+
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setExternalTokenManagement(
+        token = conversationToken,
+        onTokenChange = { newToken ->
+            conversationToken = newToken
+            // Save to your preferred storage (database, preferences, etc.)
+        }
+    )
+    .build()
+```
+
+---
+
 ## 👤 User Management
 
 You can personalize the user experience by providing user information.
@@ -361,7 +422,8 @@ widgetView.init(config, object : WidgetCallback {
     }
 
     override fun onClose() {
-        // User has requested to close the widget (e.g., clicked minimize button)
+        // User has requested to close the widget (e.g., clicked minimize button or back button)
+        // Called for both 'close-widget' and 'widget-back' events
         // The SDK automatically handles minimize/close detection
         finish() // Example: close the activity
     }
@@ -386,6 +448,13 @@ Here are some of the events you can receive in `onMessage`:
 - `conversation-started`: A new conversation has been started.
 - `agent-joined`: An agent has joined the chat.
 - `message-received`: A new message has been received.
+
+### Widget Close Events
+
+The `onClose()` callback is triggered by the following events:
+
+- `close-widget`: User clicked the minimize/close button
+- `widget-back`: User clicked the back button (same behavior as close-widget)
 
 ```kotlin
 private fun handleWidgetMessage(message: Map<String, Any>) {
