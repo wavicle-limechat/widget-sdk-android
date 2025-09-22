@@ -19,7 +19,7 @@ import ai.limechat.widget.models.WidgetConfig
  * PUBLISHED SDK DEMO
  * 
  * This app uses ONLY the JitPack published SDK:
- * implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.9-beta-4")
+ * implementation("com.github.wavicle-limechat:widget-sdk-android:v0.0.9-alpha")
  * 
  * NO local project dependencies - proving the SDK works independently
  */
@@ -51,8 +51,13 @@ class MainActivity : AppCompatActivity() {
         // Test button - opens widget directly
         findViewById<Button>(R.id.btnTestWidget).setOnClickListener {
             Toast.makeText(this, "Opening published SDK widget...", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "🚀 Test button clicked - opening published SDK widget")
-            openWidget()
+            val intent = Intent(this, WidgetActivity::class.java).apply {
+                putExtra("website_token", WEBSITE_TOKEN)
+                putExtra("user_name", "Published SDK Demo User")
+                putExtra("user_email", "demo@published.com")
+                putExtra("instance_id", "published-sdk-demo-test-button")
+            }
+            startActivity(intent)
         }
         
         // Badge test button  
@@ -65,9 +70,8 @@ class MainActivity : AppCompatActivity() {
     }
     
     private fun setupWidgetWithPublishedSDK() {
-        Log.d(TAG, "🔧 Initializing widget with PUBLISHED SDK...")
+        Log.d(TAG, "Initializing widget with PUBLISHED SDK...")
         
-        // Create widget configuration using builder pattern
         val config = WidgetConfig.builder(WEBSITE_TOKEN)
             .setLocale("en")
             .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
@@ -75,14 +79,10 @@ class MainActivity : AppCompatActivity() {
                 name = "Published SDK Demo User",
                 email = "demo@published.com"
             ))
-            .setCustomAttributes(mapOf(
-                "demo_type" to "published_jitpack_sdk",
-                "source" to "jitpack_dependency"
-            ))
             .setInstanceId("published-sdk-demo-floating-button")
+            .setShowLegacyBackIcon(true)
             .build()
         
-        // Create widget button using published SDK
         widgetButton = LimechatWidgetButton(this).apply {
             layoutParams = FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -93,43 +93,24 @@ class MainActivity : AppCompatActivity() {
             }
         }
         
-        // Initialize widget
         widgetButton.init(config)
         
-        // Set click listener to open actual widget (same instance ID as floating button)
         widgetButton.setOnClickListener {
-            Log.d(TAG, "🎯 Published SDK widget clicked - opening full widget")
             val intent = Intent(this, WidgetActivity::class.java).apply {
                 putExtra("website_token", WEBSITE_TOKEN)
                 putExtra("user_name", "Published SDK Demo User")
                 putExtra("user_email", "demo@published.com")
-                putExtra("instance_id", "published-sdk-demo-floating-button") // Same as floating button config
+                putExtra("instance_id", "published-sdk-demo-floating-button")
             }
             startActivity(intent)
         }
         
-        // Add to layout
         findViewById<FrameLayout>(R.id.mainContainer).addView(widgetButton)
         
-        // Set initial badge
         widgetButton.updateUnreadCount(badgeCount)
         
-        Log.d(TAG, "✅ Published SDK widget initialized successfully")
-        Log.d(TAG, "🌐 Widget will load: ${config.baseUrl}/widget?website_token=${config.websiteToken}")
-        
-        Toast.makeText(this, "✅ Published SDK ready with token: ${WEBSITE_TOKEN}", Toast.LENGTH_LONG).show()
-    }
-    
-    private fun openWidget() {
-        Log.d(TAG, "🚀 Opening full-screen widget with published SDK")
-        
-        val intent = Intent(this, WidgetActivity::class.java).apply {
-            putExtra("website_token", WEBSITE_TOKEN)
-            putExtra("user_name", "Published SDK Demo User")
-            putExtra("user_email", "demo@published.com")
-            putExtra("instance_id", "published-sdk-demo-test-button")
-        }
-        startActivity(intent)
+        Log.d(TAG, "Published SDK widget initialized successfully")
+        Toast.makeText(this, "Published SDK ready", Toast.LENGTH_SHORT).show()
     }
     
     private fun dpToPx(dp: Int): Int {

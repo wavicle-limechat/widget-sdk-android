@@ -26,23 +26,19 @@ class WidgetActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        Log.d(TAG, "🚀 Opening widget with PUBLISHED SDK")
+        Log.d(TAG, "Opening widget with PUBLISHED SDK")
         
-        // Create widget view
         widgetView = LimechatWidgetView(this)
         setContentView(widgetView)
         
-        // Set up file picker for file uploads
         widgetFilePicker = WidgetFilePicker(this)
         widgetView.attachFilePicker(widgetFilePicker)
         
-        // Get configuration from intent
         val websiteToken = intent.getStringExtra("website_token") ?: "MEFFACy4xaovJayhLjSt836h"
         val userName = intent.getStringExtra("user_name") ?: "Demo User"
         val userEmail = intent.getStringExtra("user_email") ?: "demo@published.com"
         val instanceId = intent.getStringExtra("instance_id") ?: "published-sdk-demo"
         
-        // Create configuration using builder pattern
         val config = WidgetConfig.builder(websiteToken)
             .setLocale("en")
             .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
@@ -51,34 +47,14 @@ class WidgetActivity : FragmentActivity() {
                 email = userEmail,
                 phoneNumber = "+1234567890"
             ))
-            .setCustomAttributes(mapOf(
-                "source" to "published_sdk_demo",
-                "type" to "jitpack_dependency"
-            ))
             .setInstanceId(instanceId)
+            .setShowLegacyBackIcon(true)
             .build()
         
-        // Initialize widget with callbacks
-        widgetView.init(config, object : WidgetCallback {
-            override fun onLoaded() {
-                Log.d(TAG, "✅ Published SDK widget loaded successfully")
-            }
-            
-            override fun onClose() {
-                Log.d(TAG, "🚪 Widget close requested")
-                finish()
-            }
-            
-            override fun onError(error: WidgetError) {
-                Log.e(TAG, "❌ Widget error: ${error.message}")
-            }
-            
-            override fun onMessage(message: Map<String, Any?>) {
-                Log.d(TAG, "📨 Widget message: $message")
-            }
-        })
+        // Initialize widget - SDK automatically handles close events when showLegacyBackIcon is enabled
+        widgetView.init(config)
         
-        Log.d(TAG, "✅ Widget initialized with published SDK")
+        Log.d(TAG, "Widget initialized with plug-and-play back button")
     }
     
     override fun onBackPressed() {
@@ -93,6 +69,5 @@ class WidgetActivity : FragmentActivity() {
         if (this::widgetView.isInitialized) {
             widgetView.destroy()
         }
-        Log.d(TAG, "🧹 Published SDK widget cleaned up")
     }
 }

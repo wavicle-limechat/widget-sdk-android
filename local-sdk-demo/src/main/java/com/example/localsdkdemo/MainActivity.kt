@@ -74,6 +74,7 @@ class MainActivity : AppCompatActivity() {
         // Without legacy back icon button
         findViewById<Button>(R.id.btnOpenWithoutLegacyIcon).setOnClickListener {
             Log.d(TAG, "🚫 Opening widget WITHOUT legacy back icon")
+            Log.d(TAG, "🔧 TRADITIONAL MODE: WidgetCallback.onClose() required for close handling")
             Toast.makeText(this, "Opening widget without legacy back icon", Toast.LENGTH_SHORT).show()
             openWidgetWithoutLegacyIcon()
         }
@@ -81,6 +82,7 @@ class MainActivity : AppCompatActivity() {
     
     private fun setupWidgetWithLocalSDK() {
         Log.d(TAG, "🔧 Initializing widget with LOCAL SDK...")
+        Log.d(TAG, "🔙 Legacy back icon ENABLED for local SDK demo")
         
         // Create widget configuration for floating button using builder pattern
         val config = WidgetConfig.builder(WEBSITE_TOKEN)
@@ -172,6 +174,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun openWidgetWithoutLegacyIcon() {
         Log.d(TAG, "🚫 Opening full-screen widget WITHOUT legacy back icon")
+        Log.d(TAG, "🔧 TRADITIONAL MODE: WidgetCallback.onClose() required for close handling")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)

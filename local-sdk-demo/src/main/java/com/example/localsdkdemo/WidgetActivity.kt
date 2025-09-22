@@ -22,7 +22,6 @@ class WidgetActivity : FragmentActivity() {
     
     private lateinit var widgetView: LimechatWidgetView
     private lateinit var widgetFilePicker: WidgetFilePicker
-    private var hasHandledCustomMessage = false
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,28 +65,15 @@ class WidgetActivity : FragmentActivity() {
             .setShowLegacyBackIcon(showLegacyBackIcon) // Use flag from intent
             .build()
         
-        // Check for custom messages and initialize accordingly
-        val customMessage = intent.getStringExtra("custom_message")
-        @Suppress("UNCHECKED_CAST")
-        val customMessageData = intent.getSerializableExtra("custom_message_data") as? Map<String, Any>
-        
-        // Initialize widget with callbacks and initial message if provided
-        when {
-            customMessage != null -> {
-                Log.d(TAG, "🗨️ Initializing widget with custom string message: $customMessage")
-                widgetView.init(config, createWidgetCallback(), customMessage)
-                hasHandledCustomMessage = true
-            }
-            customMessageData != null -> {
-                Log.d(TAG, "🗨️ Initializing widget with custom message data: $customMessageData")
-                widgetView.init(config, createWidgetCallback(), customMessageData)
-                hasHandledCustomMessage = true
-            }
-            else -> {
-                Log.d(TAG, "Initializing widget without custom message")
-                widgetView.init(config, createWidgetCallback())
-                hasHandledCustomMessage = true
-            }
+        // Initialize widget based on legacy back icon setting
+        if (showLegacyBackIcon) {
+            // Plug-and-play mode - no callback needed
+            Log.d(TAG, "🔌 PLUG-AND-PLAY MODE: Legacy back icon will auto-close activity!")
+            widgetView.init(config)
+        } else {
+            // Traditional mode - callback required for minimize button
+            Log.d(TAG, "🔧 TRADITIONAL MODE: Using WidgetCallback for close handling")
+            widgetView.init(config, createWidgetCallback())
         }
         
         Log.d(TAG, "✅ Widget initialized with local SDK")
@@ -97,11 +83,10 @@ class WidgetActivity : FragmentActivity() {
         return object : WidgetCallback {
             override fun onLoaded() {
                 Log.d(TAG, "✅ Local SDK widget loaded successfully")
-                // No need to handle custom messages here anymore - they're in the URL
             }
             
             override fun onClose() {
-                Log.d(TAG, "🚪 Widget close requested")
+                Log.d(TAG, "🚪 Widget close requested via callback (minimize button clicked)")
                 finish()
             }
             
@@ -112,13 +97,8 @@ class WidgetActivity : FragmentActivity() {
             override fun onMessage(message: Map<String, Any?>) {
                 Log.d(TAG, "📨 Widget message: $message")
             }
-            
-            override fun onConversationTokenChange(token: String) {
-                Log.d(TAG, "🔄 Conversation token changed (managed internally): ${token.take(8)}...")
-            }
         }
     }
-    
     
     override fun onBackPressed() {
         // Let widget handle back first

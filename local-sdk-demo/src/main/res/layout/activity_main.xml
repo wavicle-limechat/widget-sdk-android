@@ -102,7 +102,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="How to verify this is the local SDK:\n\n✅ Check dependency in app/build.gradle.kts\n✅ Look for 'LOCAL SDK DEMO' in logs\n✅ Widget button appears in bottom-right corner\n✅ Click widget button to open full widget view\n✅ Uses local widget-sdk module dependency\n✅ All functionality works with local development\n\n🆕 NEW: showLegacyBackIcon Feature Demo:\n• Floating button and main buttons: Legacy icon ENABLED\n• Red button: Legacy icon DISABLED\n• Check URL parameters in logs to verify"
+                android:text="How to verify this is the local SDK:\n\n✅ Check dependency in app/build.gradle.kts\n✅ Look for 'LOCAL SDK DEMO' in logs\n✅ Widget button appears in bottom-right corner\n✅ Click widget button to open full widget view\n✅ Uses local widget-sdk module dependency\n✅ All functionality works with local development\n\n🔌 PLUG-AND-PLAY Back Button Testing:\n• Blue buttons: Legacy icon ENABLED (auto-close)\n• Red button: Legacy icon DISABLED (callback required)\n• Check logs for detailed event tracking\n• Test minimize button behavior in both modes"
                 android:textSize="14sp"
                 android:textColor="@android:color/black"
                 android:lineSpacingMultiplier="1.3"

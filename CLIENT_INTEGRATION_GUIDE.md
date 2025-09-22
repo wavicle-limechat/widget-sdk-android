@@ -75,7 +75,7 @@ Add the LimeChat Widget SDK as a dependency in your app's `build.gradle.kts` fil
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.8")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.9-alpha")
 
     // The SDK requires the following AndroidX libraries
     implementation("androidx.core:core-ktx:1.12.0")
@@ -251,11 +251,6 @@ For a more immersive experience, you can open the widget in a dedicated, full-sc
 
 ### Creating a Widget Activity
 
-1. **Create an Activity**: Create a new `FragmentActivity` to host the `LimechatWidgetView`.
-2. **Add the View**: Add the `LimechatWidgetView` to the activity's layout.
-3. **Initialize**: Initialize the view with your `WidgetConfig`.
-4. **Handle Back Press**: Override `onBackPressed` to allow the widget to handle navigation.
-
 ```kotlin
 class ChatActivity : FragmentActivity() {
 
@@ -264,29 +259,19 @@ class ChatActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. Create and set the widget view as the content
         widgetView = LimechatWidgetView(this)
         setContentView(widgetView)
 
-        // 2. Get config from intent or create a new one
-        val config = WidgetConfig.builder(intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN")
-            .setShowLegacyBackIcon(true) // Enable plug-and-play back button
+        val config = WidgetConfig.builder("YOUR_TOKEN")
+            .setShowLegacyBackIcon(true) // That's it!
             .build()
 
-        // 3. Initialize the view - SDK handles back button automatically
-        widgetView.init(config)
-    }
-
-    override fun onBackPressed() {
-        // Allow the widget to handle back navigation (e.g., closing image previews)
-        if (!widgetView.onBackPressed()) {
-            super.onBackPressed()
-        }
+        widgetView.init(config) // No callback needed!
     }
 
     override fun onDestroy() {
         super.onDestroy()
-        widgetView.destroy() // Clean up resources
+        widgetView.destroy()
     }
 }
 ```
@@ -409,11 +394,13 @@ val user = WidgetConfig.User(
 
 ---
 
-## 📡 Handling Events
+## 📡 Handling Events (Optional)
 
-You can listen for events from the widget using the `WidgetCallback`.
+For basic functionality, no event handling is needed. The SDK automatically handles back button events when `setShowLegacyBackIcon(true)` is enabled.
 
-### Implementing WidgetCallback
+### Advanced Event Handling
+
+If you need custom event handling, you can use `WidgetCallback`:
 
 ```kotlin
 widgetView.init(config, object : WidgetCallback {
@@ -422,19 +409,17 @@ widgetView.init(config, object : WidgetCallback {
     }
 
     override fun onClose() {
-        // User has requested to close the widget (e.g., clicked minimize button or back button)
-        // Called for both 'close-widget' and 'widget-back' events
-        // The SDK automatically handles minimize/close detection
-        finish() // Example: close the activity
+        // Custom close handling (only needed if not using plug-and-play)
+        finish()
     }
 
     override fun onError(error: WidgetError) {
-        // An error occurred
+        // Handle errors
         Log.e("LimeChat", "Widget error: ${error.message}")
     }
 
     override fun onMessage(message: Map<String, Any>) {
-        // A message was received from the widget
+        // Handle custom messages
         handleWidgetMessage(message)
     }
 })
@@ -582,7 +567,6 @@ If you encounter issues, check the following common problems and solutions.
 - **Dependency Resolution Error**: Ensure JitPack is in your `settings.gradle.kts` and the dependency name is correct.
 - **AndroidX Compatibility**: Make sure your project has `android.useAndroidX=true` and `android.enableJetifier=true` in `gradle.properties`.
 - **Widget Not Loading**: Double-check your `websiteToken` and internet permissions. Use the `onError` callback to log any errors.
-- **Widget Not Closing**: Ensure you've implemented the `onClose()` callback in your `WidgetCallback`. The SDK automatically handles minimize/close button presses.
 - **ProGuard Issues**: If the widget crashes in release builds, add the ProGuard rules from the `widget-sdk/proguard-rules.pro` file to your app's ProGuard configuration.
 
 ---
@@ -605,7 +589,7 @@ For detailed information on the SDK's classes and methods, please refer to the s
 
 Stay updated with the latest SDK versions:
 
-- **Current Version**: 0.0.8
+- **Current Version**: 0.0.9-alpha
 - **Changelog**: Check GitHub releases
 - **Migration Guides**: Available for major version updates
 
