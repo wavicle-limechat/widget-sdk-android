@@ -167,14 +167,28 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
 
 **URL Parameter**: When enabled, `show_legacy_back_icon=true` is automatically added to the widget URL.
 
-### Widget Back Event Handling
+### 🔌 Plug-and-Play Back Button
 
-The SDK now handles the `widget-back` event, which behaves the same as the `close-widget` event.
+**Zero configuration back button handling!** Simply enable the legacy back icon:
 
+```kotlin
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setShowLegacyBackIcon(true) // That's it!
+    .build()
+
+widgetView.init(config) // No WidgetCallback needed!
+```
+
+**What happens automatically:**
+- ✅ **Back icon appears** in the widget
+- ✅ **Activity closes** when back button is clicked
+- ✅ **Works for both** minimize and back button events
+
+**Advanced use cases** (custom close handling):
 ```kotlin
 widgetView.init(config, object : WidgetCallback {
     override fun onClose() { 
-        // Called for both 'close-widget' and 'widget-back' events
+        // Custom close handling
         finish() 
     }
 })

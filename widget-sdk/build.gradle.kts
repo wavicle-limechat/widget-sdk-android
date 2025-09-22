@@ -64,7 +64,7 @@ afterEvaluate {
                 
                 groupId = "com.github.wavicle-limechat"
                 artifactId = "widget-sdk-android"
-                version = "0.0.9-beta-5"
+                version = "0.0.9-alpha"
                 
                 pom {
                     name.set("LimeChat Widget Android SDK")

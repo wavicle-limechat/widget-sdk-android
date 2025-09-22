@@ -269,16 +269,16 @@ class ChatActivity : FragmentActivity() {
         setContentView(widgetView)
 
         // 2. Get config from intent or create a new one
-        val config = WidgetConfig(
-            websiteToken = intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN"
-        )
+        val config = WidgetConfig.builder(intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN")
+            .setShowLegacyBackIcon(true) // Enable plug-and-play back button
+            .build()
 
-        // 3. Initialize the view
+        // 3. Initialize the view - SDK handles back button automatically
         widgetView.init(config)
     }
 
     override fun onBackPressed() {
-        // 4. Allow the widget to handle back navigation (e.g., closing image previews)
+        // Allow the widget to handle back navigation (e.g., closing image previews)
         if (!widgetView.onBackPressed()) {
             super.onBackPressed()
         }
@@ -449,12 +449,33 @@ Here are some of the events you can receive in `onMessage`:
 - `agent-joined`: An agent has joined the chat.
 - `message-received`: A new message has been received.
 
-### Widget Close Events
+### 🔌 Plug-and-Play Back Button
 
-The `onClose()` callback is triggered by the following events:
+**Zero configuration back button handling!** Simply enable the legacy back icon and the SDK handles everything automatically:
 
-- `close-widget`: User clicked the minimize/close button
-- `widget-back`: User clicked the back button (same behavior as close-widget)
+```kotlin
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setShowLegacyBackIcon(true) // That's it!
+    .build()
+
+widgetView.init(config) // No WidgetCallback needed!
+```
+
+**What happens automatically:**
+- ✅ **Back icon appears** in the widget
+- ✅ **Activity closes** when back button is clicked
+- ✅ **Works for both** minimize and back button events
+- ✅ **Zero configuration** required
+
+**Advanced use cases** (custom close handling):
+```kotlin
+widgetView.init(config, object : WidgetCallback {
+    override fun onClose() {
+        // Custom close handling
+        finish()
+    }
+})
+```
 
 ```kotlin
 private fun handleWidgetMessage(message: Map<String, Any>) {
