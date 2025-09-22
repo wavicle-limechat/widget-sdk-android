@@ -117,13 +117,12 @@ class WidgetWebViewManager(
                 
                 // Handle special URLs
                 if (url.startsWith("limechat://close")) {
-                    callback?.onClose()
+                    handleCloseEvent()
                     return true
                 }
                 
                 // Only allow loading the widget URL
                 if (!url.startsWith(config.baseUrl)) {
-                    Log.w(TAG, "Blocked loading external URL: $url")
                     return true // Block loading
                 }
                 
@@ -233,15 +232,23 @@ class WidgetWebViewManager(
                 processed?.let { message ->
                     val event = message["event"] as? String
                     
+                    Log.d(TAG, "Widget event: $event")
+                    
                     when (event) {
                         "loaded" -> callback?.onLoaded()
-                        "close-widget" -> callback?.onClose()
-                        "widget-back" -> callback?.onClose() // Handle back button same as close
+                        "close-widget" -> {
+                            Log.d(TAG, "Close widget event received")
+                            handleCloseEvent()
+                        }
+                        "widget-back" -> {
+                            Log.d(TAG, "Widget back event received")
+                            handleCloseEvent() // Handle back button same as close
+                        }
                         else -> callback?.onMessage(message)
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to process message: $data", e)
+                Log.e(TAG, "Error processing message: ${e.message}")
                 callback?.onError(
                     WidgetError(
                         WidgetError.ErrorCode.JAVASCRIPT_ERROR,
@@ -252,7 +259,32 @@ class WidgetWebViewManager(
             }
         }
     }
-
+    
+    /**
+     * Handle close events with automatic activity close when legacy back icon is enabled
+     */
+    private fun handleCloseEvent() {
+        // If legacy back icon is enabled, automatically close the activity
+        if (config.showLegacyBackIcon) {
+            try {
+                val activity = context as? android.app.Activity
+                if (activity != null) {
+                    activity.finish()
+                } else {
+                    // Fall back to callback if available
+                    callback?.onClose()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to auto-close activity: ${e.message}")
+                // Fall back to callback if available
+                callback?.onClose()
+            }
+        } else {
+            // Legacy back icon not enabled, use callback only
+            callback?.onClose()
+        }
+    }
+    
     /**
      * Clean up resources
      */
