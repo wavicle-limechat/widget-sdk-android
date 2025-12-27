@@ -80,7 +80,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="How to verify this is the published SDK:\n\n✅ Check dependency in app/build.gradle.kts\n✅ Look for 'PUBLISHED SDK DEMO' in logs\n✅ Widget button appears in bottom-right corner\n✅ Click widget button to open full widget view\n✅ No local widget-sdk folder dependency\n✅ All functionality works independently"
+                android:text="How to verify this is the published SDK:\n\n✅ Check dependency in app/build.gradle.kts\n✅ Look for 'PUBLISHED SDK DEMO' in logs\n✅ Widget button appears in bottom-right corner\n✅ Click widget button to open full widget view\n✅ No local widget-sdk folder dependency\n✅ All functionality works independently\n\n🔌 NEW: PLUG-AND-PLAY Back Button\n✅ Legacy back icon automatically closes activity\n✅ No WidgetCallback.onClose() needed!\n✅ Just set setShowLegacyBackIcon(true)\n✅ Widget URL includes show_legacy_back_icon=true"
                 android:textSize="14sp"
                 android:textColor="@android:color/black"
                 android:lineSpacingMultiplier="1.3"

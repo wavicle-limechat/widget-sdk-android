@@ -326,7 +326,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                 
                 // Handle special URLs
                 if (url.startsWith("limechat://close")) {
-                    callback?.onClose()
+                    handleCloseEvent()
                     return true
                 }
                 
@@ -615,14 +615,21 @@ class LimechatWidgetView @JvmOverloads constructor(
                 processed?.let { message ->
                     val event = message["event"] as? String
                     val type = message["type"] as? String
-                    Log.d(TAG, "Received widget event: ${event ?: type ?: "unknown"} | payload: $message")
+                    val eventName = event ?: type ?: "unknown"
                     
-                    when (event ?: type) {
+                    Log.d(TAG, "Widget event: $eventName")
+                    
+                    when (eventName) {
                         "loaded" -> callback?.onLoaded()
-                        "close-widget" -> callback?.onClose()
-                        "widget-back" -> callback?.onClose() // Handle back button same as close
+                        "close-widget" -> {
+                            Log.d(TAG, "Close widget event received")
+                            handleCloseEvent()
+                        }
+                        "widget-back" -> {
+                            Log.d(TAG, "Widget back event received")
+                            handleCloseEvent() // Handle back button same as close
+                        }
                         "set-cw-conversation" -> {
-                            // Handle conversation token update (like React Native's handleCwConversationUpdate)
                             val token = message["cw_conversation"] as? String
                             handleConversationTokenUpdate(token)
                         }
@@ -630,6 +637,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                     }
                 }
             } catch (e: Exception) {
+                Log.e(TAG, "Error processing message: ${e.message}")
                 callback?.onError(
                     WidgetError(
                         WidgetError.ErrorCode.JAVASCRIPT_ERROR,
@@ -638,6 +646,33 @@ class LimechatWidgetView @JvmOverloads constructor(
                     )
                 )
             }
+        }
+    }
+    
+    /**
+     * Handle close events with automatic activity close when legacy back icon is enabled
+     */
+    private fun handleCloseEvent() {
+        val showLegacyBackIcon = config?.showLegacyBackIcon ?: false
+        
+        // If legacy back icon is enabled, automatically close the activity
+        if (showLegacyBackIcon) {
+            try {
+                val activity = context as? android.app.Activity
+                if (activity != null) {
+                    activity.finish()
+                } else {
+                    // Fall back to callback if available
+                    callback?.onClose()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to auto-close activity: ${e.message}")
+                // Fall back to callback if available
+                callback?.onClose()
+            }
+        } else {
+            // Legacy back icon not enabled, use callback only
+            callback?.onClose()
         }
     }
     

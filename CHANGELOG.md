@@ -5,9 +5,18 @@ All notable changes to the LimeChat Android SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.0.9] - 2024-12-19
+## [v0.0.9-alpha] - 2024-12-19
+
+### 🎉 Major Feature: Plug-and-Play Back Button
+**Zero configuration back button handling!** Simply set `setShowLegacyBackIcon(true)` and the SDK handles everything automatically - no more manual `WidgetCallback.onClose()` implementations needed!
 
 ### Added
+- **🔌 Plug-and-Play Back Button**: Zero configuration back button handling
+  - **One line setup**: `setShowLegacyBackIcon(true)` enables automatic back button functionality
+  - **Automatic activity close**: SDK calls `activity.finish()` when back button is clicked
+  - **Works for both events**: Handles both `close-widget` and `widget-back` events automatically
+  - **Zero configuration**: No `WidgetCallback` needed for basic functionality
+  - **Backward compatible**: Still supports custom `WidgetCallback` for advanced use cases
 - **Chat Persistence**: Automatic conversation persistence across app restarts and widget instances
   - Each widget instance maintains its own conversation state
   - Conversations persist even when the app is completely closed and reopened
@@ -33,6 +42,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Maintains backward compatibility with internal token management
 
 ### Changed
+- **Back Button Handling**: Simplified from manual callback to automatic handling
+  - **Before**: Required `WidgetCallback.onClose()` implementation for back button functionality
+  - **After**: Automatic activity close when `setShowLegacyBackIcon(true)` is enabled
+  - **Migration**: Remove custom `onClose()` implementations for basic back button functionality
 - **WidgetConfig API**: Migrated from constructor to builder pattern
   - `WidgetConfig(websiteToken, ...)` → `WidgetConfig.builder(websiteToken).setXxx().build()`
   - Improved validation and error handling
@@ -68,33 +81,52 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Migration Guide
 For existing users upgrading from v0.0.8:
 
-1. **Update WidgetConfig usage**:
-   ```kotlin
-   // Old way (v0.0.8)
-   val config = WidgetConfig(
-       websiteToken = "YOUR_TOKEN",
-       user = WidgetConfig.User(name = "John", email = "john@example.com")
-   )
-   
-   // New way (v0.0.9)
-   val config = WidgetConfig.builder("YOUR_TOKEN")
-       .setUser(WidgetConfig.User(name = "John", email = "john@example.com"))
-       .build()
-   ```
+#### Back Button Handling (NEW!)
+**Before (v0.0.8):**
+```kotlin
+widgetView.init(config, object : WidgetCallback {
+    override fun onClose() {
+        finish() // Manual implementation required
+    }
+})
+```
 
-2. **Optional: Add instance ID for persistence**:
-   ```kotlin
-   val config = WidgetConfig.builder("YOUR_TOKEN")
-       .setInstanceId("unique-widget-instance") // Optional but recommended
-       .build()
-   ```
+**After (v0.0.9-alpha):**
+```kotlin
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setShowLegacyBackIcon(true) // Enable plug-and-play back button
+    .build()
 
-3. **Optional: Enable legacy back icon**:
-   ```kotlin
-   val config = WidgetConfig.builder("YOUR_TOKEN")
-       .setShowLegacyBackIcon(true) // Optional
-       .build()
-   ```
+widgetView.init(config) // No WidgetCallback needed!
+```
+
+**Migration Steps:**
+1. **Add back button support**: Add `.setShowLegacyBackIcon(true)` to your `WidgetConfig`
+2. **Remove manual handling**: Remove custom `WidgetCallback.onClose()` implementations for basic back button functionality
+3. **Keep callbacks for advanced use**: Keep `WidgetCallback` only for advanced use cases (custom close handling, message processing, etc.)
+
+**Quick Migration:**
+```kotlin
+// Old way (v0.0.8)
+val config = WidgetConfig(
+    websiteToken = "YOUR_TOKEN",
+    user = WidgetConfig.User(name = "John", email = "john@example.com")
+)
+
+// New way (v0.0.9) - with plug-and-play back button
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setUser(WidgetConfig.User(name = "John", email = "john@example.com"))
+    .setShowLegacyBackIcon(true) // That's it!
+    .build()
+```
+
+**Optional enhancements**:
+```kotlin
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setInstanceId("unique-widget-instance") // For conversation persistence
+    .setShowLegacyBackIcon(true) // For plug-and-play back button
+    .build()
+```
 
 ### Breaking Changes
 - **WidgetConfig Constructor**: The direct constructor is now internal. Use the builder pattern instead.
