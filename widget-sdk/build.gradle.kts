@@ -35,6 +35,13 @@ android {
         jvmTarget = "1.8"
     }
 
+    testOptions {
+        unitTests {
+            // robolectric (test only): load sdk resources like ic_limechat_default in jvm tests
+            isIncludeAndroidResources = true
+        }
+    }
+
 }
 
 dependencies {
@@ -51,6 +58,7 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
     testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.json:json:20231013")
+    testImplementation("org.robolectric:robolectric:4.14.1")
     
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
