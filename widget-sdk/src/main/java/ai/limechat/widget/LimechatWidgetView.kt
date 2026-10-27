@@ -15,6 +15,9 @@ import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
 import ai.limechat.widget.internal.ConversationTokenStore
+import ai.limechat.widget.internal.WebViewFactory
+import ai.limechat.widget.internal.WidgetChromeClient
+import ai.limechat.widget.internal.WidgetWebViewClient
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
@@ -34,7 +37,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         private const val TAG = "LimechatWidgetView"
         private const val MESSAGE_LISTENER_NAME = "LimechatNative"
         private const val JS_INTERFACE_NAME = "LimechatAndroid"
-        private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
     }
 
     private val webView: WebView
@@ -52,7 +54,21 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var cwConversation: String? = null
 
     init {
-        webView = createHardenedWebView()
+        webView = WebViewFactory.create(
+            context,
+            WidgetWebViewClient(
+                context,
+                baseUrl = { config?.baseUrl },
+                callback = { callback },
+                onPageLoaded = {
+                    // Ensure messaging bridge is re-established on every load/HMR
+                    isMessagingSetup = false
+                    setupMessaging()
+                    callback?.onLoaded()
+                }
+            ),
+            WidgetChromeClient { filePicker }
+        )
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         
         instanceId = ""
@@ -183,190 +199,6 @@ class LimechatWidgetView @JvmOverloads constructor(
     fun destroy() {
         coroutineScope.cancel()
         webView.destroy()
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun createHardenedWebView(): WebView {
-        return WebView(context).apply {
-            settings.apply {
-                javaScriptEnabled = true
-                
-                domStorageEnabled = true
-                
-                allowFileAccess = false
-                allowContentAccess = false
-                allowFileAccessFromFileURLs = false
-                allowUniversalAccessFromFileURLs = false
-                
-                mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    safeBrowsingEnabled = true
-                }
-                
-                userAgentString = "$USER_AGENT_PREFIX ${userAgentString}"
-                
-                setSupportZoom(false)
-                builtInZoomControls = false
-                displayZoomControls = false
-                loadWithOverviewMode = true
-                useWideViewPort = true
-                cacheMode = WebSettings.LOAD_DEFAULT
-            }
-            
-            webViewClient = createWebViewClient()
-            
-            webChromeClient = createWebChromeClient()
-        }
-    }
-
-    private fun createWebViewClient(): WebViewClient {
-        return object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
-                super.onPageFinished(view, url)
-                // Ensure messaging bridge is re-established on every load/HMR
-                isMessagingSetup = false
-                setupMessaging()
-                callback?.onLoaded()
-            }
-
-            override fun onReceivedError(
-                view: WebView,
-                request: WebResourceRequest,
-                error: WebResourceError
-            ) {
-                super.onReceivedError(view, request, error)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    callback?.onError(
-                        WidgetError(
-                            WidgetError.ErrorCode.WEBVIEW_ERROR,
-                            "WebView error: ${error.description}",
-                            context = mapOf("errorCode" to error.errorCode)
-                        )
-                    )
-                }
-            }
-
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val url = request.url.toString()
-                
-                // Only allow loading the widget URL (same scheme + host + port as baseUrl)
-                val baseUrl = config?.baseUrl ?: return false
-                if (!isSameOrigin(request.url, baseUrl)) {
-                    // User link taps open outside the widget, everything else stays blocked
-                    if (request.isForMainFrame && request.hasGesture()) {
-                        openExternally(url)
-                    }
-                    return true // Block loading
-                }
-                
-                return false
-            }
-        }
-    }
-
-    private fun createWebChromeClient(): WebChromeClient {
-        return object : WebChromeClient() {
-            override fun onShowFileChooser(
-                webView: WebView,
-                filePathCallback: ValueCallback<Array<Uri>>,
-                fileChooserParams: FileChooserParams
-            ): Boolean {
-                val picker = filePicker
-                if (picker == null) {
-                    // No picker attached: cancel so the page's file input isn't stuck
-                    filePathCallback.onReceiveValue(null)
-                    return true
-                }
-                picker.showFileChooser(filePathCallback, fileChooserParams)
-                return true
-            }
-        }
-    }
-
-    /**
-     * True if [uri] has the same scheme, host and port as [baseUrl]
-     */
-    private fun isSameOrigin(uri: Uri, baseUrl: String): Boolean {
-        val base = Uri.parse(baseUrl.trimEnd('/'))
-        return uri.scheme.equals(base.scheme, ignoreCase = true) &&
-            uri.host != null &&
-            uri.host.equals(base.host, ignoreCase = true) &&
-            effectivePort(uri) == effectivePort(base)
-    }
-
-    private fun effectivePort(uri: Uri): Int {
-        if (uri.port != -1) return uri.port
-        return when (uri.scheme?.lowercase()) {
-            "http" -> 80
-            "https" -> 443
-            else -> -1
-        }
-    }
-
-    /**
-     * Open a url outside the widget (system browser, mail, dialer)
-     */
-    private fun openExternally(url: String) {
-        val uri = Uri.parse(url)
-        val intent = when (uri.scheme?.lowercase()) {
-            "http", "https", "mailto", "tel" -> Intent(Intent.ACTION_VIEW, uri)
-            "intent" -> parseIntentUrl(url) ?: return
-            else -> return
-        }
-        if (context !is android.app.Activity) {
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        }
-        try {
-            context.startActivity(intent)
-        } catch (e: ActivityNotFoundException) {
-            val fallback = intent.getStringExtra("browser_fallback_url")
-            val fallbackUri = fallback?.let { Uri.parse(it) }
-            val fallbackScheme = fallbackUri?.scheme?.lowercase()
-            if (uri.scheme.equals("intent", ignoreCase = true) && (fallbackScheme == "http" || fallbackScheme == "https")) {
-                val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
-                if (context !is android.app.Activity) {
-                    fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                }
-                try {
-                    context.startActivity(fallbackIntent)
-                    return
-                } catch (fallbackError: ActivityNotFoundException) {
-                }
-            }
-            callback?.onError(
-                WidgetError(
-                    WidgetError.ErrorCode.WEBVIEW_ERROR,
-                    "No app found to open external link",
-                    e,
-                    mapOf("scheme" to (uri.scheme ?: ""))
-                )
-            )
-        } catch (e: SecurityException) {
-            callback?.onError(
-                WidgetError(
-                    WidgetError.ErrorCode.WEBVIEW_ERROR,
-                    "Not allowed to open external link",
-                    e,
-                    mapOf("scheme" to (uri.scheme ?: ""))
-                )
-            )
-        }
-    }
-
-    /**
-     * Parse an `intent:` url into a browsable intent, or null if it can't be parsed
-     */
-    private fun parseIntentUrl(url: String): Intent? {
-        return try {
-            Intent.parseUri(url, Intent.URI_INTENT_SCHEME).apply {
-                addCategory(Intent.CATEGORY_BROWSABLE)
-                component = null
-                selector = null
-            }
-        } catch (e: Exception) {
-            null
-        }
     }
 
     /**
