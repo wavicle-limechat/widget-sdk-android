@@ -70,12 +70,11 @@ class LoggingCharacterizationTest {
     fun `pins current behaviour - open with message and payload text is logged`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "my order 42")
-        assertLogged("Loading widget with initial message: my order 42")
+        assertLogged("Loading widget URL: $prod$q&lc_open_message=my+order+42")
         v.open("refund please")
-        assertLogged("Reloading widget with message: refund please")
-        assertLogged("Widget URL: $prod$q&lc_open_message=refund+please")
+        assertLogged("Loading widget URL: $prod$q&lc_open_message=refund+please")
         v.open(linkedMapOf<String, Any>("content" to "hi"))
-        assertLogged("Reloading widget with message data: {content=hi}")
+        assertLogged("Loading widget URL: $prod$q&lc_open_payload=%7B%22content%22%3A%22hi%22%7D")
     }
 
     @Test

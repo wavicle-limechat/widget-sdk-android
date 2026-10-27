@@ -19,7 +19,6 @@ import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
 import kotlinx.coroutines.*
 import org.json.JSONObject
-import java.net.URLEncoder
 
 /**
  * Main widget view that renders the Limechat widget in a hardened WebView
@@ -163,54 +162,19 @@ class LimechatWidgetView @JvmOverloads constructor(
         reloadWidgetWithMessageData(messageData)
     }
 
-    /**
-     * Utility method to build URL with parameters
-     */
-    private fun buildUrlWithParameters(baseUrl: String, params: Map<String, String>): String {
-        return try {
-            val urlBuilder = StringBuilder(baseUrl)
-            val hasQuery = baseUrl.contains("?")
-            
-            params.forEach { (key, value) ->
-                val separator = if (!hasQuery && urlBuilder.toString() == baseUrl) "?" else "&"
-                val encodedValue = URLEncoder.encode(value, "UTF-8")
-                urlBuilder.append("$separator$key=$encodedValue")
-            }
-            
-            urlBuilder.toString()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to build URL with parameters", e)
-            baseUrl
-        }
-    }
-
-    /**
-     * Reload the widget with a custom message via URL parameters
-     */
     private fun reloadWidgetWithMessage(message: String) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config, cwConversation)
-        val params = mapOf("lc_open_message" to message)
-        val urlWithMessage = buildUrlWithParameters(baseUrl, params)
-        
-        Log.d(TAG, "Reloading widget with message: $message")
-        Log.d(TAG, "Widget URL: ${redactUrl(urlWithMessage)}")
-        webView.loadUrl(urlWithMessage)
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
     }
 
-    /**
-     * Reload the widget with a custom message object via URL parameters
-     */
     private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config, cwConversation)
-        val messageJson = JSONObject(messageData).toString()
-        val params = mapOf("lc_open_payload" to messageJson)
-        val urlWithPayload = buildUrlWithParameters(baseUrl, params)
-        
-        Log.d(TAG, "Reloading widget with message data: $messageData")
-        Log.d(TAG, "Widget URL: ${redactUrl(urlWithPayload)}")
-        webView.loadUrl(urlWithPayload)
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
+    }
+
+    private fun loadUrl(url: String) {
+        Log.d(TAG, "Loading widget URL: ${redactUrl(url)}")
+        webView.loadUrl(url)
     }
 
     /**
@@ -448,32 +412,18 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
         val config = this.config ?: return
-        var url = UrlBuilder.buildWidgetUrl(config, cwConversation)
 
-        // Ensure messaging bridges are available before the page loads
-        // so JS can see window.LimechatAndroid / window.LimechatNative immediately
+        // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
         setupMessaging()
-        
-        // Add initial message parameters if provided
-        val params = mutableMapOf<String, String>()
-        
-        initialMessage?.let { message ->
-            params["lc_open_message"] = message
-            Log.d(TAG, "Loading widget with initial message: $message")
-        }
-        
-        initialMessageData?.let { data ->
-            val messageJson = JSONObject(data).toString()
-            params["lc_open_payload"] = messageJson
-            Log.d(TAG, "Loading widget with initial message data: $data")
-        }
-        
-        if (params.isNotEmpty()) {
-            url = buildUrlWithParameters(url, params)
-        }
-        
-        Log.d(TAG, "Loading widget URL: ${redactUrl(url)}")
-        webView.loadUrl(url)
+
+        loadUrl(
+            UrlBuilder.buildWidgetUrl(
+                config,
+                cwConversation,
+                openMessage = initialMessage,
+                openPayload = initialMessageData?.let { JSONObject(it).toString() }
+            )
+        )
     }
 
     private fun setupMessaging() {

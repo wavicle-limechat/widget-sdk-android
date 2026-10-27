@@ -12,7 +12,12 @@ object UrlBuilder {
     /**
      * Build the complete widget URL with query parameters
      */
-    fun buildWidgetUrl(config: WidgetConfig, cwConversation: String? = null): String {
+    fun buildWidgetUrl(
+        config: WidgetConfig,
+        cwConversation: String? = null,
+        openMessage: String? = null,
+        openPayload: String? = null
+    ): String {
         val baseUrl = config.baseUrl.trimEnd('/')
         val params = mutableMapOf<String, String>()
         
@@ -46,6 +51,9 @@ object UrlBuilder {
         if (config.showLegacyBackIcon) {
             params["show_legacy_back_icon"] = "true"
         }
+        
+        openMessage?.let { params["lc_open_message"] = it }
+        openPayload?.let { params["lc_open_payload"] = it }
         
         return buildUrl(baseUrl, "widget", params)
     }
