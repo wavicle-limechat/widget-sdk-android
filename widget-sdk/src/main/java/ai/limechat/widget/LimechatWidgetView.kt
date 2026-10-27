@@ -1,27 +1,25 @@
 package ai.limechat.widget
 
-import android.annotation.SuppressLint
-import android.content.ActivityNotFoundException
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.util.AttributeSet
-import android.util.Log
-import android.webkit.*
-import android.widget.FrameLayout
-import androidx.webkit.JavaScriptReplyProxy
-import androidx.webkit.WebMessageCompat
-import androidx.webkit.WebViewCompat
-import androidx.webkit.WebViewFeature
+import ai.limechat.widget.internal.BridgeEvents
+import ai.limechat.widget.internal.CloseHandler
 import ai.limechat.widget.internal.ConversationTokenStore
+import ai.limechat.widget.internal.JsBridge
 import ai.limechat.widget.internal.WebViewFactory
 import ai.limechat.widget.internal.WidgetChromeClient
 import ai.limechat.widget.internal.WidgetWebViewClient
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
-import kotlinx.coroutines.*
+import android.content.Context
+import android.util.AttributeSet
+import android.util.Log
+import android.webkit.WebView
+import android.widget.FrameLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.json.JSONObject
 
 /**
@@ -33,10 +31,8 @@ class LimechatWidgetView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    companion object {
-        private const val TAG = "LimechatWidgetView"
-        private const val MESSAGE_LISTENER_NAME = "LimechatNative"
-        private const val JS_INTERFACE_NAME = "LimechatAndroid"
+    private companion object {
+        const val TAG = "LimechatWidgetView"
     }
 
     private val webView: WebView
@@ -45,12 +41,8 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var filePicker: WidgetFilePicker? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val messageHandler = MessageHandler()
-    private var isMessagingSetup = false
-    private var webMessageListenerAdded = false
-    private var jsInterfaceAdded = false
-    
-    private var instanceId: String
-    
+    private lateinit var bridge: JsBridge
+    private var instanceId = ""
     private var cwConversation: String? = null
 
     init {
@@ -62,16 +54,14 @@ class LimechatWidgetView @JvmOverloads constructor(
                 callback = { callback },
                 onPageLoaded = {
                     // Ensure messaging bridge is re-established on every load/HMR
-                    isMessagingSetup = false
-                    setupMessaging()
+                    bridge.reattach()
                     callback?.onLoaded()
                 }
             ),
             WidgetChromeClient { filePicker }
         )
+        bridge = JsBridge(webView) { handleMessage(it) }
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        
-        instanceId = ""
     }
 
     /**
@@ -212,7 +202,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         val config = this.config ?: return
 
         // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
-        setupMessaging()
+        bridge.setup()
 
         loadUrl(
             UrlBuilder.buildWidgetUrl(
@@ -224,161 +214,16 @@ class LimechatWidgetView @JvmOverloads constructor(
         )
     }
 
-    private fun setupMessaging() {
-        if (isMessagingSetup) {
-            return
-        }
-        
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            setupWebMessageListener()
-            setupJavascriptInterface()
-        } else {
-            setupJavascriptInterface()
-        }
-        
-        isMessagingSetup = true
-    }
-
-    private fun setupWebMessageListener() {
-        try {
-            if (!webMessageListenerAdded) {
-                WebViewCompat.addWebMessageListener(
-                    webView,
-                    MESSAGE_LISTENER_NAME,
-                    setOf("*"),
-                    object : WebViewCompat.WebMessageListener {
-                        override fun onPostMessage(
-                            view: WebView,
-                            message: WebMessageCompat,
-                            sourceOrigin: Uri,
-                            isMainFrame: Boolean,
-                            replyProxy: JavaScriptReplyProxy
-                        ) {
-                            message.data?.let { data ->
-                                handleMessage(data)
-                            }
-                        }
-                    }
-                )
-                webMessageListenerAdded = true
-            }
-            // Inject (idempotent) script to forward window.postMessage to native bridge
-            val script = """
-                (function(){
-                  if (!window.__lcAndroidBridgeWML) {
-                    window.__lcAndroidBridgeWML = true;
-                    // Wrap window.postMessage to also forward limechat-widget messages to native
-                    try {
-                      if (!window.__lcPostMessageWrapped) {
-                        window.__lcPostMessageWrapped = true;
-                        var __lcOrigPostMessage = window.postMessage.bind(window);
-                        window.postMessage = function(data, targetOrigin, transfer) {
-                          try {
-                            if (typeof data === 'string' && data.indexOf('limechat-widget:') === 0) {
-                              if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                                window.$MESSAGE_LISTENER_NAME.postMessage(data);
-                              } else if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                                window.$JS_INTERFACE_NAME.postMessage(data);
-                              }
-                              try { console.log('[LimechatBridge] forwarded via wrapped postMessage'); } catch (e) {}
-                            }
-                          } catch (e) {}
-                          return __lcOrigPostMessage(data, targetOrigin, transfer);
-                        };
-                      }
-                    } catch (e) {}
-                    window.addEventListener('message', function(e) {
-                      if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                        try {
-                          if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                            window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
-                          } else if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                            window.$JS_INTERFACE_NAME.postMessage(e.data);
-                          }
-                        } catch (err) {}
-                      }
-                    });
-                  }
-                })();
-            """.trimIndent()
-            webView.evaluateJavascript(script, null)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set up WebMessageListener", e)
-            setupJavascriptInterface()
-        }
-    }
-
-    @SuppressLint("JavascriptInterface")
-    private fun setupJavascriptInterface() {
-        if (!jsInterfaceAdded) {
-            webView.addJavascriptInterface(object {
-                @JavascriptInterface
-                fun postMessage(message: String) {
-                    this@LimechatWidgetView.handleMessage(message)
-                }
-            }, JS_INTERFACE_NAME)
-            jsInterfaceAdded = true
-        }
-        
-        // Inject (idempotent) script to use JavascriptInterface
-        val script = """
-            (function(){
-              if (!window.__lcAndroidBridgeJSI) {
-                window.__lcAndroidBridgeJSI = true;
-                // Wrap window.postMessage to also forward limechat-widget messages to native
-                try {
-                  if (!window.__lcPostMessageWrapped) {
-                    window.__lcPostMessageWrapped = true;
-                    var __lcOrigPostMessage = window.postMessage.bind(window);
-                    window.postMessage = function(data, targetOrigin, transfer) {
-                      try {
-                        if (typeof data === 'string' && data.indexOf('limechat-widget:') === 0) {
-                          if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                            window.$JS_INTERFACE_NAME.postMessage(data);
-                          } else if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                            window.$MESSAGE_LISTENER_NAME.postMessage(data);
-                          }
-                          try { console.log('[LimechatBridge] forwarded via wrapped postMessage'); } catch (e) {}
-                        }
-                      } catch (e) {}
-                      return __lcOrigPostMessage(data, targetOrigin, transfer);
-                    };
-                  }
-                } catch (e) {}
-                window.addEventListener('message', function(e) {
-                  if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                    try {
-                      if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                        window.$JS_INTERFACE_NAME.postMessage(e.data);
-                      } else if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                        window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
-                      }
-                    } catch (err) {}
-                  }
-                });
-              }
-            })();
-        """.trimIndent()
-        webView.evaluateJavascript(script, null)
-    }
-
     private fun handleMessage(data: String) {
         coroutineScope.launch {
             try {
                 val processed = messageHandler.processMessage(data)
                 processed?.let { message ->
-                    val event = message["event"] as? String
-                    val type = message["type"] as? String
-                    val eventName = event ?: type ?: "unknown"
-                    
-                    when (eventName) {
-                        "close-widget" -> {
-                            handleCloseEvent()
-                        }
-                        "set-cw-conversation" -> {
-                            val token = message["cw_conversation"] as? String
-                            handleConversationTokenUpdate(token)
-                        }
+                    when (BridgeEvents.nameOf(message)) {
+                        BridgeEvents.CLOSE_WIDGET ->
+                            CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
+                        BridgeEvents.SET_CW_CONVERSATION ->
+                            handleConversationTokenUpdate(message["cw_conversation"] as? String)
                         else -> callback?.onMessage(message)
                     }
                 }
@@ -391,29 +236,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                     )
                 )
             }
-        }
-    }
-    
-    /**
-     * Handle close events with automatic activity close when legacy back icon is enabled
-     */
-    private fun handleCloseEvent() {
-        val showLegacyBackIcon = config?.showLegacyBackIcon ?: false
-        
-        if (showLegacyBackIcon) {
-            try {
-                val activity = context as? android.app.Activity
-                if (activity != null) {
-                    activity.finish()
-                } else {
-                    callback?.onClose()
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Failed to auto-close activity: ${e.message}")
-                callback?.onClose()
-            }
-        } else {
-            callback?.onClose()
         }
     }
     
