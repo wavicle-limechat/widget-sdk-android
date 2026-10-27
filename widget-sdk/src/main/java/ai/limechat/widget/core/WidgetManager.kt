@@ -75,7 +75,7 @@ class WidgetManager private constructor(private val context: Context) {
             // Cache in memory for future access
             token?.let { memoryCache[instanceId] = it }
             
-            Log.d(TAG, "Token loaded from persistent storage for instance: $instanceId - ${token?.take(8) ?: "none"}")
+            Log.d(TAG, "Token loaded from persistent storage for instance: $instanceId - ${if (token != null) "found" else "none"}")
             token
         }
     }
@@ -95,7 +95,7 @@ class WidgetManager private constructor(private val context: Context) {
             val key = PREFS_KEY_PREFIX + instanceId
             prefs.edit().putString(key, token).apply()
             
-            Log.d(TAG, "Token saved for instance: $instanceId - ${token.take(8)}...")
+            Log.d(TAG, "Token saved for instance: $instanceId")
         }
     }
     

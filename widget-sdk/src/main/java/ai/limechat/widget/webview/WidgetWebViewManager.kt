@@ -241,7 +241,7 @@ class WidgetWebViewManager(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to process message: $data", e)
+                Log.e(TAG, "Failed to process message", e)
                 callback?.onError(
                     WidgetError(
                         WidgetError.ErrorCode.JAVASCRIPT_ERROR,

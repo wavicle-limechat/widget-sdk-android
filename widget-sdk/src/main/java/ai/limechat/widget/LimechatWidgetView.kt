@@ -1,7 +1,9 @@
 package ai.limechat.widget
 
 import android.annotation.SuppressLint
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.util.AttributeSet
@@ -113,11 +115,11 @@ class LimechatWidgetView @JvmOverloads constructor(
         if (config.conversationToken != null) {
             // External token management - app provides token
             cwConversation = config.conversationToken
-            Log.d(TAG, "Using external conversation token: ${config.conversationToken?.take(8) ?: "none"}")
+            Log.d(TAG, "Using external conversation token")
         } else {
             // Internal token management - SDK manages persistence using instanceId
             cwConversation = loadConversationToken(instanceId)
-            Log.d(TAG, "Instance $instanceId - Loaded conversation token: ${cwConversation?.take(8) ?: "none"}")
+            Log.d(TAG, "Instance $instanceId - Loaded conversation token: ${if (cwConversation != null) "found" else "none"}")
         }
         
         // Note: File picker should be attached separately using attachFilePicker()
@@ -196,12 +198,12 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun reloadWidgetWithMessage(message: String) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        val baseUrl = UrlBuilder.buildWidgetUrl(config, cwConversation)
         val params = mapOf("lc_open_message" to message)
         val urlWithMessage = buildUrlWithParameters(baseUrl, params)
         
         Log.d(TAG, "Reloading widget with message: $message")
-        Log.d(TAG, "Widget URL: $urlWithMessage")
+        Log.d(TAG, "Widget URL: ${redactUrl(urlWithMessage)}")
         webView.loadUrl(urlWithMessage)
     }
 
@@ -210,13 +212,13 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
+        val baseUrl = UrlBuilder.buildWidgetUrl(config, cwConversation)
         val messageJson = JSONObject(messageData).toString()
         val params = mapOf("lc_open_payload" to messageJson)
         val urlWithPayload = buildUrlWithParameters(baseUrl, params)
         
         Log.d(TAG, "Reloading widget with message data: $messageData")
-        Log.d(TAG, "Widget URL: $urlWithPayload")
+        Log.d(TAG, "Widget URL: ${redactUrl(urlWithPayload)}")
         webView.loadUrl(urlWithPayload)
     }
 
@@ -326,13 +328,17 @@ class LimechatWidgetView @JvmOverloads constructor(
                 
                 // Handle special URLs
                 if (url.startsWith("limechat://close")) {
-                    callback?.onClose()
+                    handleCloseEvent()
                     return true
                 }
                 
-                // Only allow loading the widget URL
+                // Only allow loading the widget URL (same scheme + host + port as baseUrl)
                 val baseUrl = config?.baseUrl ?: return false
-                if (!url.startsWith(baseUrl)) {
+                if (!isSameOrigin(request.url, baseUrl)) {
+                    // User link taps open outside the widget, everything else stays blocked
+                    if (request.isForMainFrame && request.hasGesture()) {
+                        openExternally(url)
+                    }
                     return true // Block loading
                 }
                 
@@ -348,7 +354,13 @@ class LimechatWidgetView @JvmOverloads constructor(
                 filePathCallback: ValueCallback<Array<Uri>>,
                 fileChooserParams: FileChooserParams
             ): Boolean {
-                filePicker?.showFileChooser(filePathCallback, fileChooserParams)
+                val picker = filePicker
+                if (picker == null) {
+                    // No picker attached: cancel so the page's file input isn't stuck
+                    filePathCallback.onReceiveValue(null)
+                    return true
+                }
+                picker.showFileChooser(filePathCallback, fileChooserParams)
                 return true
             }
 
@@ -357,6 +369,99 @@ class LimechatWidgetView @JvmOverloads constructor(
                 return super.onConsoleMessage(consoleMessage)
             }
         }
+    }
+
+    /**
+     * True if [uri] has the same scheme, host and port as [baseUrl]
+     */
+    private fun isSameOrigin(uri: Uri, baseUrl: String): Boolean {
+        val base = Uri.parse(baseUrl.trimEnd('/'))
+        return uri.scheme.equals(base.scheme, ignoreCase = true) &&
+            uri.host != null &&
+            uri.host.equals(base.host, ignoreCase = true) &&
+            effectivePort(uri) == effectivePort(base)
+    }
+
+    private fun effectivePort(uri: Uri): Int {
+        if (uri.port != -1) return uri.port
+        return when (uri.scheme?.lowercase()) {
+            "http" -> 80
+            "https" -> 443
+            else -> -1
+        }
+    }
+
+    /**
+     * Open a url outside the widget (system browser, mail, dialer)
+     */
+    private fun openExternally(url: String) {
+        val uri = Uri.parse(url)
+        val intent = when (uri.scheme?.lowercase()) {
+            "http", "https", "mailto", "tel" -> Intent(Intent.ACTION_VIEW, uri)
+            "intent" -> parseIntentUrl(url) ?: return
+            else -> return
+        }
+        if (context !is android.app.Activity) {
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        try {
+            context.startActivity(intent)
+        } catch (e: ActivityNotFoundException) {
+            val fallback = intent.getStringExtra("browser_fallback_url")
+            val fallbackUri = fallback?.let { Uri.parse(it) }
+            val fallbackScheme = fallbackUri?.scheme?.lowercase()
+            if (uri.scheme.equals("intent", ignoreCase = true) && (fallbackScheme == "http" || fallbackScheme == "https")) {
+                val fallbackIntent = Intent(Intent.ACTION_VIEW, fallbackUri)
+                if (context !is android.app.Activity) {
+                    fallbackIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                try {
+                    context.startActivity(fallbackIntent)
+                    return
+                } catch (fallbackError: ActivityNotFoundException) {
+                    // reported below
+                }
+            }
+            callback?.onError(
+                WidgetError(
+                    WidgetError.ErrorCode.WEBVIEW_ERROR,
+                    "No app found to open external link",
+                    e,
+                    mapOf("scheme" to (uri.scheme ?: ""))
+                )
+            )
+        } catch (e: SecurityException) {
+            callback?.onError(
+                WidgetError(
+                    WidgetError.ErrorCode.WEBVIEW_ERROR,
+                    "Not allowed to open external link",
+                    e,
+                    mapOf("scheme" to (uri.scheme ?: ""))
+                )
+            )
+        }
+    }
+
+    /**
+     * Parse an `intent:` url into a browsable intent, or null if it can't be parsed
+     */
+    private fun parseIntentUrl(url: String): Intent? {
+        return try {
+            Intent.parseUri(url, Intent.URI_INTENT_SCHEME).apply {
+                addCategory(Intent.CATEGORY_BROWSABLE)
+                component = null
+                selector = null
+            }
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    /**
+     * Hide the conversation token before a url is logged
+     */
+    private fun redactUrl(url: String): String {
+        return url.replace(Regex("(cw_conversation=)[^&#]*"), "$1<redacted>")
     }
 
     private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
@@ -385,7 +490,7 @@ class LimechatWidgetView @JvmOverloads constructor(
             url = buildUrlWithParameters(url, params)
         }
         
-        Log.d(TAG, "Loading widget URL: $url")
+        Log.d(TAG, "Loading widget URL: ${redactUrl(url)}")
         webView.loadUrl(url)
     }
 
@@ -547,7 +652,7 @@ class LimechatWidgetView @JvmOverloads constructor(
             webView.addJavascriptInterface(object {
                 @JavascriptInterface
                 fun postMessage(message: String) {
-                    Log.d(TAG, "JS->Android postMessage: $message")
+                    Log.d(TAG, "JS->Android postMessage received")
                     this@LimechatWidgetView.handleMessage(message)
                 }
 
@@ -615,14 +720,21 @@ class LimechatWidgetView @JvmOverloads constructor(
                 processed?.let { message ->
                     val event = message["event"] as? String
                     val type = message["type"] as? String
-                    Log.d(TAG, "Received widget event: ${event ?: type ?: "unknown"} | payload: $message")
+                    val eventName = event ?: type ?: "unknown"
                     
-                    when (event ?: type) {
+                    Log.d(TAG, "Widget event: $eventName")
+                    
+                    when (eventName) {
                         "loaded" -> callback?.onLoaded()
-                        "close-widget" -> callback?.onClose()
-                        "widget-back" -> callback?.onClose() // Handle back button same as close
+                        "close-widget" -> {
+                            Log.d(TAG, "Close widget event received")
+                            handleCloseEvent()
+                        }
+                        "widget-back" -> {
+                            Log.d(TAG, "Widget back event received")
+                            handleCloseEvent() // Handle back button same as close
+                        }
                         "set-cw-conversation" -> {
-                            // Handle conversation token update (like React Native's handleCwConversationUpdate)
                             val token = message["cw_conversation"] as? String
                             handleConversationTokenUpdate(token)
                         }
@@ -638,6 +750,33 @@ class LimechatWidgetView @JvmOverloads constructor(
                     )
                 )
             }
+        }
+    }
+    
+    /**
+     * Handle close events with automatic activity close when legacy back icon is enabled
+     */
+    private fun handleCloseEvent() {
+        val showLegacyBackIcon = config?.showLegacyBackIcon ?: false
+        
+        // If legacy back icon is enabled, automatically close the activity
+        if (showLegacyBackIcon) {
+            try {
+                val activity = context as? android.app.Activity
+                if (activity != null) {
+                    activity.finish()
+                } else {
+                    // Fall back to callback if available
+                    callback?.onClose()
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to auto-close activity: ${e.message}")
+                // Fall back to callback if available
+                callback?.onClose()
+            }
+        } else {
+            // Legacy back icon not enabled, use callback only
+            callback?.onClose()
         }
     }
     
@@ -679,19 +818,19 @@ class LimechatWidgetView @JvmOverloads constructor(
             return
         }
         
-        Log.d(TAG, "Conversation token updated: ${token.take(8)}...")
+        Log.d(TAG, "Conversation token updated")
         
         // Update conversation token (like React Native's handleCwConversationUpdate)
         val config = this.config
         if (config?.onConversationTokenChange != null) {
             // External token management - app handles persistence
             config.onConversationTokenChange.invoke(token)
-            Log.d(TAG, "External token management - calling onConversationTokenChange: ${token.take(8)}...")
+            Log.d(TAG, "External token management - calling onConversationTokenChange")
         } else {
             // Internal token management - SDK handles persistence using instanceId
             cwConversation = token
             saveConversationToken(instanceId, token)
-            Log.d(TAG, "Instance $instanceId - Saved conversation token: ${token.take(8)}...")
+            Log.d(TAG, "Instance $instanceId - Saved conversation token")
         }
         
         // Also call the callback interface method
