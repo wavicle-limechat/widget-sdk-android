@@ -90,27 +90,17 @@ class LimechatWidgetView @JvmOverloads constructor(
      * This is the main init method that all other overloads delegate to
      */
     private fun init(
-        config: WidgetConfig, 
-        callback: WidgetCallback? = null, 
-        initialMessage: String? = null,
-        initialMessageData: Map<String, Any>? = null
+        config: WidgetConfig,
+        callback: WidgetCallback?,
+        initialMessage: String?,
+        initialMessageData: Map<String, Any>?
     ) {
         this.config = config
         this.callback = callback
-        
-        instanceId = if (!config.instanceId.isNullOrBlank()) {
-            config.instanceId
-        } else {
-            "default"
-        }
-        
-        if (config.conversationToken != null) {
-            cwConversation = config.conversationToken
-        } else {
-            cwConversation = ConversationTokenStore.load(context, instanceId)
-        }
-        
-        
+
+        instanceId = config.instanceId?.takeIf { it.isNotBlank() } ?: "default"
+        cwConversation = config.conversationToken ?: ConversationTokenStore.load(context, instanceId)
+
         // the file picker is attached separately with attachFilePicker() so it can be created in the activity's onCreate()
         loadWidget(initialMessage, initialMessageData)
     }
@@ -136,8 +126,9 @@ class LimechatWidgetView @JvmOverloads constructor(
      * @param message Optional string message to display when opening the widget. Null does nothing.
      */
     fun open(message: String? = null) {
+        val config = this.config ?: return
         if (message != null) {
-            reloadWidgetWithMessage(message)
+            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
         }
     }
 
@@ -146,15 +137,6 @@ class LimechatWidgetView @JvmOverloads constructor(
      * @param messageData Message object that can contain 'content' key or other properties
      */
     fun open(messageData: Map<String, Any>) {
-        reloadWidgetWithMessageData(messageData)
-    }
-
-    private fun reloadWidgetWithMessage(message: String) {
-        val config = this.config ?: return
-        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
-    }
-
-    private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
         val config = this.config ?: return
         loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
     }
@@ -168,12 +150,9 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Handle back press for WebView navigation
      */
     fun onBackPressed(): Boolean {
-        return if (webView.canGoBack()) {
-            webView.goBack()
-            true
-        } else {
-            false
-        }
+        if (!webView.canGoBack()) return false
+        webView.goBack()
+        return true
     }
 
     /**
@@ -198,7 +177,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         return url.replace(Regex("(cw_conversation=)[^&#]*"), "$1<redacted>")
     }
 
-    private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
+    private fun loadWidget(initialMessage: String?, initialMessageData: Map<String, Any>?) {
         val config = this.config ?: return
 
         // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
@@ -238,7 +217,7 @@ class LimechatWidgetView @JvmOverloads constructor(
             }
         }
     }
-    
+
     private fun handleConversationTokenUpdate(token: String?) {
         if (token.isNullOrBlank()) {
             Log.w(TAG, "Received empty conversation token, ignoring")

@@ -6,7 +6,6 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-import android.os.Build
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
@@ -30,15 +29,13 @@ internal class WidgetWebViewClient(
         error: WebResourceError
     ) {
         super.onReceivedError(view, request, error)
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            callback()?.onError(
-                WidgetError(
-                    WidgetError.ErrorCode.WEBVIEW_ERROR,
-                    "WebView error: ${error.description}",
-                    context = mapOf("errorCode" to error.errorCode)
-                )
+        callback()?.onError(
+            WidgetError(
+                WidgetError.ErrorCode.WEBVIEW_ERROR,
+                "WebView error: ${error.description}",
+                context = mapOf("errorCode" to error.errorCode)
             )
-        }
+        )
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
