@@ -65,10 +65,11 @@ fun waitOnMain(timeoutMs: Long = 5000, condition: () -> Boolean) {
     if (!condition()) throw AssertionError("condition not met within ${timeoutMs}ms")
 }
 
-/** LimechatWidgetView keeps conversation tokens in a private static map that outlives a test. */
+/** ConversationTokenStore keeps conversation tokens in a private map that outlives a test. */
 @Suppress("UNCHECKED_CAST")
 fun tokenMemoryCache(): MutableMap<String, String> {
-    val f = LimechatWidgetView::class.java.getDeclaredField("inMemoryTokenCache")
+    val store = Class.forName("ai.limechat.widget.internal.ConversationTokenStore")
+    val f = store.getDeclaredField("cache")
     f.isAccessible = true
     return f.get(null) as MutableMap<String, String>
 }

@@ -14,6 +14,7 @@ import androidx.webkit.JavaScriptReplyProxy
 import androidx.webkit.WebMessageCompat
 import androidx.webkit.WebViewCompat
 import androidx.webkit.WebViewFeature
+import ai.limechat.widget.internal.ConversationTokenStore
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
@@ -34,9 +35,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         private const val MESSAGE_LISTENER_NAME = "LimechatNative"
         private const val JS_INTERFACE_NAME = "LimechatAndroid"
         private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
-        private const val PREFS_NAME = "limechat_widget_conversations"
-        
-        private val inMemoryTokenCache = mutableMapOf<String, String>()
     }
 
     private val webView: WebView
@@ -103,7 +101,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         if (config.conversationToken != null) {
             cwConversation = config.conversationToken
         } else {
-            cwConversation = loadConversationToken(instanceId)
+            cwConversation = ConversationTokenStore.load(context, instanceId)
         }
         
         
@@ -587,33 +585,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         }
     }
     
-    /**
-     * Load conversation token from persistent storage using instanceId
-     * Provides cross-app restart persistence
-     */
-    private fun loadConversationToken(instanceId: String): String? {
-        val memoryKey = instanceId
-        inMemoryTokenCache[memoryKey]?.let { return it }
-        
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val token = prefs.getString(instanceId, null)
-        
-        token?.let { inMemoryTokenCache[memoryKey] = it }
-        
-        return token
-    }
-    
-    /**
-     * Save conversation token to persistent storage using instanceId
-     * Enables cross-app restart persistence
-     */
-    private fun saveConversationToken(instanceId: String, token: String) {
-        inMemoryTokenCache[instanceId] = token
-        
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(instanceId, token).apply()
-    }
-    
     private fun handleConversationTokenUpdate(token: String?) {
         if (token.isNullOrBlank()) {
             Log.w(TAG, "Received empty conversation token, ignoring")
@@ -625,7 +596,7 @@ class LimechatWidgetView @JvmOverloads constructor(
             config.onConversationTokenChange.invoke(token)
         } else {
             cwConversation = token
-            saveConversationToken(instanceId, token)
+            ConversationTokenStore.save(context, instanceId, token)
         }
         
         callback?.onConversationTokenChange(token)
