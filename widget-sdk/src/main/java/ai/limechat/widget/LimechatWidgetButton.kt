@@ -41,7 +41,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
         // SDK Version - this helps distinguish between local and published versions
         const val SDK_VERSION = "0.0.5-local-dev"
         
-        // Colors
         private const val DEFAULT_BACKGROUND_COLOR = 0xFF6366F1.toInt() // Purple
         private const val WHITE_COLOR = 0xFFFFFFFF.toInt()
         private const val BADGE_COLOR = 0xFFEF4444.toInt() // Red
@@ -65,7 +64,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
     private val configFetcher = WidgetConfigFetcher()
 
     init {
-        // Set default layout params
         layoutParams = LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
@@ -93,7 +91,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
      */
     override fun setOnClickListener(listener: OnClickListener?) {
         this.onClickListener = listener
-        // Apply to current button if exists
         customButton?.setOnClickListener(listener)
         defaultButton?.setOnClickListener(listener)
     }
@@ -142,22 +139,18 @@ class LimechatWidgetButton @JvmOverloads constructor(
     }
 
     private fun setupCustomButton(button: View) {
-        // Remove any existing views
         removeAllViews()
         
-        // Add the custom button
         val buttonLayoutParams = LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         )
         addView(button, buttonLayoutParams)
         
-        // Set click listener
         button.setOnClickListener { view ->
             onClickListener?.onClick(view)
         }
         
-        // Add unread badge
         setupUnreadBadge()
     }
 
@@ -166,7 +159,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
         
         coroutineScope.launch {
             try {
-                // Fetch widget config from API
                 val response = configFetcher.fetchConfig(config.baseUrl, config.websiteToken)
                 
                 withContext(Dispatchers.Main) {
@@ -175,7 +167,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to fetch widget config", e)
                 withContext(Dispatchers.Main) {
-                    // Use default icon on error
                     setupDefaultButton(null)
                 }
             }
@@ -183,30 +174,24 @@ class LimechatWidgetButton @JvmOverloads constructor(
     }
 
     private fun setupDefaultButton(configResponse: WidgetConfigResponse?) {
-        // Remove any existing views
         removeAllViews()
         
-        // Create default button
         defaultButton = AppCompatImageButton(context).apply {
             layoutParams = LayoutParams(
                 dpToPx(DEFAULT_ICON_SIZE_DP),
                 dpToPx(DEFAULT_ICON_SIZE_DP)
             )
             
-            // Set circular background
             background = createCircularBackground()
             
-            // Remove padding for image to fill the button
             setPadding(0, 0, 0, 0)
             scaleType = ImageView.ScaleType.CENTER_INSIDE
             
-            // Set click listener
             setOnClickListener { view ->
                 onClickListener?.onClick(view)
             }
         }
         
-        // Load icon from config or use default
         val iconUrl = configResponse?.config?.widgetIconMobile 
             ?: configResponse?.config?.widgetIconDesktop
         
@@ -218,7 +203,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
         
         addView(defaultButton)
         
-        // Add unread badge
         setupUnreadBadge()
     }
 
@@ -247,8 +231,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
     }
 
     private fun loadDefaultIcon() {
-        // Use a default LimeChat icon
-        // You'll need to add this icon to the drawable resources
         try {
             val iconResId = resources.getIdentifier(
                 "ic_limechat_default",
@@ -268,7 +250,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
     }
 
     private fun createDefaultIconDrawable(): Drawable {
-        // Create a simple colored circle as fallback
         val size = dpToPx(DEFAULT_ICON_SIZE_DP)
         val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
@@ -278,7 +259,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
         }
         canvas.drawCircle(size / 2f, size / 2f, size / 2f, paint)
         
-        // Draw "LC" text
         val textPaint = Paint().apply {
             color = WHITE_COLOR
             textSize = size * 0.3f
@@ -310,10 +290,8 @@ class LimechatWidgetButton @JvmOverloads constructor(
                 val centerY = bounds.exactCenterY()
                 val radius = Math.min(bounds.width(), bounds.height()) / 2f
                 
-                // Draw shadow
                 canvas.drawCircle(centerX, centerY + 2, radius, shadowPaint)
                 
-                // Draw main circle
                 canvas.drawCircle(centerX, centerY, radius, paint)
             }
 

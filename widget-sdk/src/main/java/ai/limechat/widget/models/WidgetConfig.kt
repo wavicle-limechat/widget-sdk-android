@@ -158,24 +158,20 @@ data class WidgetConfig internal constructor(
         }
         
         private fun validateConfiguration() {
-            // Validate website token
             if (websiteToken.isBlank()) {
                 throw WidgetException.ConfigurationError("Website token cannot be blank")
             }
             
-            // Validate base URL
             try {
                 URL(baseUrl)
             } catch (e: Exception) {
                 throw WidgetException.ConfigurationError("Invalid base URL: $baseUrl", e)
             }
             
-            // Validate locale
             if (locale.isBlank()) {
                 throw WidgetException.ConfigurationError("Locale cannot be blank")
             }
             
-            // Validate external token management
             val hasToken = conversationToken != null
             val hasCallback = onConversationTokenChange != null
             
@@ -191,7 +187,6 @@ data class WidgetConfig internal constructor(
                 )
             }
             
-            // Validate instance ID format if provided
             instanceId?.let { id ->
                 if (id.isBlank()) {
                     throw WidgetException.ConfigurationError("Instance ID cannot be blank")

@@ -33,7 +33,6 @@ class WidgetFilePicker(private val activity: FragmentActivity) {
             type = "*/*"
             putExtra(Intent.EXTRA_ALLOW_MULTIPLE, params.mode == WebChromeClient.FileChooserParams.MODE_OPEN_MULTIPLE)
             
-            // Set accepted MIME types if available
             if (params.acceptTypes.isNotEmpty()) {
                 val acceptTypes = params.acceptTypes.filter { it.isNotBlank() }
                 if (acceptTypes.isNotEmpty()) {
@@ -69,14 +68,12 @@ class WidgetFilePicker(private val activity: FragmentActivity) {
                 val uris = mutableListOf<Uri>()
                 
                 when {
-                    // Multiple files selected
                     data?.clipData != null -> {
                         val clipData = data.clipData!!
                         for (i in 0 until clipData.itemCount) {
                             clipData.getItemAt(i)?.uri?.let { uris.add(it) }
                         }
                     }
-                    // Single file selected
                     data?.data != null -> {
                         uris.add(data.data!!)
                     }
@@ -84,7 +81,6 @@ class WidgetFilePicker(private val activity: FragmentActivity) {
                 
                 callback?.onReceiveValue(uris.toTypedArray())
             } else {
-                // User cancelled
                 callback?.onReceiveValue(null)
             }
         }

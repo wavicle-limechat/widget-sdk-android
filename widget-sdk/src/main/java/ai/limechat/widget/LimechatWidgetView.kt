@@ -36,8 +36,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
         private const val PREFS_NAME = "limechat_widget_conversations"
         
-        // In-memory conversation token cache for performance
-        // Persists across widget instance recreation within same app session
         private val inMemoryTokenCache = mutableMapOf<String, String>()
     }
 
@@ -51,17 +49,14 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var webMessageListenerAdded = false
     private var jsInterfaceAdded = false
     
-    // Unique instance identifier (like React Native component instance)
     private var instanceId: String
     
-    // Conversation token management (like React Native's component state)
     private var cwConversation: String? = null
 
     init {
         webView = createHardenedWebView()
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
         
-        // instanceId will be set during init() based on config
         instanceId = ""
     }
 
@@ -99,27 +94,20 @@ class LimechatWidgetView @JvmOverloads constructor(
         this.config = config
         this.callback = callback
         
-        // Set instance ID from config or generate a default one
         instanceId = if (!config.instanceId.isNullOrBlank()) {
-            // App-provided instance ID - gives app full control over widget isolation
             config.instanceId
         } else {
-            // Default: single instance per website token (like before the isolation fix)
             "default"
         }
         
-        // Initialize conversation token (like React Native's cwConversation state)
         if (config.conversationToken != null) {
-            // External token management - app provides token
             cwConversation = config.conversationToken
         } else {
-            // Internal token management - SDK manages persistence using instanceId
             cwConversation = loadConversationToken(instanceId)
         }
         
-        // Note: File picker should be attached separately using attachFilePicker()
-        // to ensure it's created during onCreate() of the activity
         
+        // the file picker is attached separately with attachFilePicker() so it can be created in the activity's onCreate()
         loadWidget(initialMessage, initialMessageData)
     }
 
@@ -154,7 +142,6 @@ class LimechatWidgetView @JvmOverloads constructor(
      * @param messageData Message object that can contain 'content' key or other properties
      */
     fun open(messageData: Map<String, Any>) {
-        // Use URL parameters approach with JSON payload
         reloadWidgetWithMessageData(messageData)
     }
 
@@ -204,30 +191,23 @@ class LimechatWidgetView @JvmOverloads constructor(
     private fun createHardenedWebView(): WebView {
         return WebView(context).apply {
             settings.apply {
-                // Enable JavaScript (required for widget)
                 javaScriptEnabled = true
                 
-                // Enable DOM storage
                 domStorageEnabled = true
                 
-                // Harden WebView
                 allowFileAccess = false
                 allowContentAccess = false
                 allowFileAccessFromFileURLs = false
                 allowUniversalAccessFromFileURLs = false
                 
-                // Block mixed content
                 mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                 
-                // Enable safe browsing
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     safeBrowsingEnabled = true
                 }
                 
-                // Custom user agent
                 userAgentString = "$USER_AGENT_PREFIX ${userAgentString}"
                 
-                // Other settings
                 setSupportZoom(false)
                 builtInZoomControls = false
                 displayZoomControls = false
@@ -236,10 +216,8 @@ class LimechatWidgetView @JvmOverloads constructor(
                 cacheMode = WebSettings.LOAD_DEFAULT
             }
             
-            // Set WebViewClient
             webViewClient = createWebViewClient()
             
-            // Set WebChromeClient for file picker
             webChromeClient = createWebChromeClient()
         }
     }
@@ -356,7 +334,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                     context.startActivity(fallbackIntent)
                     return
                 } catch (fallbackError: ActivityNotFoundException) {
-                    // reported below
                 }
             }
             callback?.onError(
@@ -422,14 +399,10 @@ class LimechatWidgetView @JvmOverloads constructor(
             return
         }
         
-        // Try WebMessageListener first (preferred method)
         if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
             setupWebMessageListener()
-            // Also expose a JS interface so window.LimechatAndroid exists
-            // This lets the JS bridge call into Android directly when it prefers interfaces
             setupJavascriptInterface()
         } else {
-            // Fallback to JavascriptInterface
             setupJavascriptInterface()
         }
         
@@ -597,23 +570,19 @@ class LimechatWidgetView @JvmOverloads constructor(
     private fun handleCloseEvent() {
         val showLegacyBackIcon = config?.showLegacyBackIcon ?: false
         
-        // If legacy back icon is enabled, automatically close the activity
         if (showLegacyBackIcon) {
             try {
                 val activity = context as? android.app.Activity
                 if (activity != null) {
                     activity.finish()
                 } else {
-                    // Fall back to callback if available
                     callback?.onClose()
                 }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to auto-close activity: ${e.message}")
-                // Fall back to callback if available
                 callback?.onClose()
             }
         } else {
-            // Legacy back icon not enabled, use callback only
             callback?.onClose()
         }
     }
@@ -623,15 +592,12 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Provides cross-app restart persistence
      */
     private fun loadConversationToken(instanceId: String): String? {
-        // First check in-memory cache for performance
         val memoryKey = instanceId
         inMemoryTokenCache[memoryKey]?.let { return it }
         
-        // Load from SharedPreferences for cross-app persistence
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         val token = prefs.getString(instanceId, null)
         
-        // Cache in memory for future access
         token?.let { inMemoryTokenCache[memoryKey] = it }
         
         return token
@@ -642,10 +608,8 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Enables cross-app restart persistence
      */
     private fun saveConversationToken(instanceId: String, token: String) {
-        // Save to in-memory cache for performance
         inMemoryTokenCache[instanceId] = token
         
-        // Save to SharedPreferences for cross-app persistence
         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(instanceId, token).apply()
     }
@@ -656,18 +620,14 @@ class LimechatWidgetView @JvmOverloads constructor(
             return
         }
         
-        // Update conversation token (like React Native's handleCwConversationUpdate)
         val config = this.config
         if (config?.onConversationTokenChange != null) {
-            // External token management - app handles persistence
             config.onConversationTokenChange.invoke(token)
         } else {
-            // Internal token management - SDK handles persistence using instanceId
             cwConversation = token
             saveConversationToken(instanceId, token)
         }
         
-        // Also call the callback interface method
         callback?.onConversationTokenChange(token)
     }
 }

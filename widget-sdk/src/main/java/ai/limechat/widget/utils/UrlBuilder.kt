@@ -21,25 +21,21 @@ object UrlBuilder {
         val baseUrl = config.baseUrl.trimEnd('/')
         val params = mutableMapOf<String, String>()
         
-        // Required parameters
         params["website_token"] = config.websiteToken
         params["locale"] = config.locale
         
-        // Color scheme
         params["color_scheme"] = when (config.colorScheme) {
             WidgetConfig.ColorScheme.LIGHT -> "light"
             WidgetConfig.ColorScheme.DARK -> "dark"
             WidgetConfig.ColorScheme.AUTO -> "auto"
         }
         
-        // Custom attributes
         config.customAttributes?.let { attrs ->
             if (attrs.isNotEmpty()) {
                 params["custom_attributes"] = JSONObject(attrs).toString()
             }
         }
         
-        // Conversation token (like React Native's cwConversation)
         val conversationToken = cwConversation ?: config.conversationToken
         conversationToken?.let { token ->
             if (token.isNotBlank()) {
@@ -47,7 +43,6 @@ object UrlBuilder {
             }
         }
         
-        // Legacy back icon
         if (config.showLegacyBackIcon) {
             params["show_legacy_back_icon"] = "true"
         }
