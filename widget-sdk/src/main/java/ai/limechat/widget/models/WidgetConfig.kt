@@ -40,25 +40,7 @@ data class WidgetConfig internal constructor(
         val phoneNumber: String? = null,
         val identifierHash: String? = null,
         val customAttributes: Map<String, Any>? = null
-    ) : Serializable {
-        
-        /**
-         * Check if user has any identifying information
-         */
-        fun hasIdentifyingInfo(): Boolean {
-            return !name.isNullOrBlank() || 
-                   !email.isNullOrBlank() || 
-                   !phoneNumber.isNullOrBlank() || 
-                   !identifierHash.isNullOrBlank()
-        }
-        
-        /**
-         * Get primary identifier for the user
-         */
-        fun getPrimaryIdentifier(): String? {
-            return identifierHash ?: email ?: phoneNumber ?: name
-        }
-    }
+    ) : Serializable
     
     /**
      * Color scheme options for the widget
@@ -68,33 +50,6 @@ data class WidgetConfig internal constructor(
         DARK,
         AUTO
     }
-    
-    /**
-     * Token management mode
-     */
-    enum class TokenManagement {
-        /** SDK manages tokens internally using instanceId */
-        INTERNAL,
-        /** App manages tokens externally via callbacks */
-        EXTERNAL
-    }
-    
-    /**
-     * Get the token management mode based on configuration
-     */
-    val tokenManagement: TokenManagement
-        get() = if (conversationToken != null || onConversationTokenChange != null) {
-            TokenManagement.EXTERNAL
-        } else {
-            TokenManagement.INTERNAL
-        }
-    
-    /**
-     * Check if configuration is valid for external token management
-     */
-    val isExternalTokenManagementValid: Boolean
-        get() = tokenManagement == TokenManagement.INTERNAL || 
-                (conversationToken != null && onConversationTokenChange != null)
     
     /**
      * Builder for WidgetConfig with validation
@@ -255,17 +210,5 @@ data class WidgetConfig internal constructor(
          * Create a builder for WidgetConfig
          */
         fun builder(websiteToken: String): Builder = Builder(websiteToken)
-        
-        /**
-         * Create a simple configuration with just website token
-         * Uses all default values
-         */
-        fun simple(websiteToken: String): WidgetConfig = builder(websiteToken).build()
-        
-        /**
-         * Create configuration with instance ID for conversation isolation
-         */
-        fun withInstanceId(websiteToken: String, instanceId: String): WidgetConfig =
-            builder(websiteToken).setInstanceId(instanceId).build()
     }
 }
