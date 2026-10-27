@@ -146,20 +146,11 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     /**
      * Open the widget with an optional custom message
-     * @param message Optional string message to display when opening the widget
+     * @param message Optional string message to display when opening the widget. Null does nothing.
      */
     fun open(message: String? = null) {
         if (message != null) {
-            // Use URL parameters approach since we're loading the widget directly
             reloadWidgetWithMessage(message)
-        } else {
-            // Regular widget opening via JavaScript event
-            val script = """
-                if (window.bus && window.bus.${'$'}emit) {
-                    window.bus.${'$'}emit('widget:toggle');
-                }
-            """.trimIndent()
-            webView.evaluateJavascript(script, null)
         }
     }
 
@@ -266,9 +257,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                 allowUniversalAccessFromFileURLs = false
                 
                 // Block mixed content
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                }
+                mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
                 
                 // Enable safe browsing
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -229,19 +229,12 @@ class NavigationAndOpenCharacterizationTest {
     // ---- open ----
 
     @Test
-    fun `open() without message does not reload, it evaluates a widget toggle bus event`() {
+    fun `open() without message does nothing`() {
         val v = view()
         v.recorder().scripts.clear()
         v.open()
         assertEquals("$prod$q", v.lastLoadedUrl())
-        assertEquals(
-            listOf(
-                "if (window.bus && window.bus.\$emit) {\n" +
-                    "    window.bus.\$emit('widget:toggle');\n" +
-                    "}"
-            ),
-            v.recorder().scripts
-        )
+        assertEquals(emptyList<String>(), v.recorder().scripts)
     }
 
     @Test
