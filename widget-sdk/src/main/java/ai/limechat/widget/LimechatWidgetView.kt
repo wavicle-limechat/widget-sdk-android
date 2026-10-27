@@ -325,12 +325,6 @@ class LimechatWidgetView @JvmOverloads constructor(
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                 val url = request.url.toString()
                 
-                // Handle special URLs
-                if (url.startsWith("limechat://close")) {
-                    handleCloseEvent()
-                    return true
-                }
-                
                 // Only allow loading the widget URL (same scheme + host + port as baseUrl)
                 val baseUrl = config?.baseUrl ?: return false
                 if (!isSameOrigin(request.url, baseUrl)) {
@@ -593,16 +587,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                     Log.d(TAG, "JS->Android postMessage received")
                     this@LimechatWidgetView.handleMessage(message)
                 }
-
-                // Support alternate method names used by JS bridge - all delegate to postMessage
-                @JavascriptInterface
-                fun onMessage(message: String) = postMessage(message)
-
-                @JavascriptInterface
-                fun receiveMessage(message: String) = postMessage(message)
-
-                @JavascriptInterface
-                fun handleMessage(message: String) = postMessage(message)
             }, JS_INTERFACE_NAME)
             jsInterfaceAdded = true
         } else {
@@ -663,14 +647,9 @@ class LimechatWidgetView @JvmOverloads constructor(
                     Log.d(TAG, "Widget event: $eventName")
                     
                     when (eventName) {
-                        "loaded" -> callback?.onLoaded()
                         "close-widget" -> {
                             Log.d(TAG, "Close widget event received")
                             handleCloseEvent()
-                        }
-                        "widget-back" -> {
-                            Log.d(TAG, "Widget back event received")
-                            handleCloseEvent() // Handle back button same as close
                         }
                         "set-cw-conversation" -> {
                             val token = message["cw_conversation"] as? String

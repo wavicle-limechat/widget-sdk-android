@@ -19,8 +19,8 @@ import org.robolectric.Shadows.shadowOf
  * refactor/back-button-client-integration line), which a client runs today. Ported into
  * chore/sdk-drift-cleanup by plan task b0 (LimechatWidgetView.handleCloseEvent).
  *
- * 0.0.9-alpha routes `close-widget`, `widget-back` and `limechat://close` through
- * handleCloseEvent():
+ * 0.0.9-alpha routes `close-widget` (and the since-removed `widget-back` and `limechat://close`)
+ * through handleCloseEvent():
  *   - showLegacyBackIcon = true and the view's context is an Activity -> activity.finish(),
  *     host onClose() is NOT called
  *   - showLegacyBackIcon = true and the context is not an Activity -> onClose()
@@ -47,25 +47,6 @@ class AlphaV009CloseBehaviourTest {
         val cb = RecordingCallback()
         val (activity, v) = activityView(legacy = true, cb = cb)
         v.postFromJs("""{"event":"close-widget","type":"close-widget"}""")
-        assertTrue(activity.isFinishing)
-        assertEquals(emptyList<String>(), cb.events)
-    }
-
-    @Test
-    fun `alpha - legacy back icon + activity context - widget-back finishes the activity and skips onClose`() {
-        val cb = RecordingCallback()
-        val (activity, v) = activityView(legacy = true, cb = cb)
-        v.postFromJs("""{"event":"widget-back"}""")
-        assertTrue(activity.isFinishing)
-        assertEquals(emptyList<String>(), cb.events)
-    }
-
-    @Test
-    fun `alpha - legacy back icon + activity context - limechat close url finishes the activity and skips onClose`() {
-        val cb = RecordingCallback()
-        val (activity, v) = activityView(legacy = true, cb = cb)
-        val blocked = shadowOf(v.webView()).webViewClient.shouldOverrideUrlLoading(v.webView(), FakeRequest("limechat://close"))
-        assertTrue(blocked)
         assertTrue(activity.isFinishing)
         assertEquals(emptyList<String>(), cb.events)
     }
@@ -105,27 +86,11 @@ class AlphaV009CloseBehaviourTest {
     }
 
     @Test
-    fun `alpha - legacy back icon + activity context + no callback - widget-back and limechat close finish the activity`() {
-        val a1 = Robolectric.buildActivity(Activity::class.java).setup().get()
-        val v1 = LimechatWidgetView(a1)
-        v1.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build())
-        v1.postFromJs("""{"event":"widget-back"}""")
-        assertTrue(a1.isFinishing)
-
-        val a2 = Robolectric.buildActivity(Activity::class.java).setup().get()
-        val v2 = LimechatWidgetView(a2)
-        v2.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build())
-        shadowOf(v2.webView()).webViewClient.shouldOverrideUrlLoading(v2.webView(), FakeRequest("limechat://close"))
-        assertTrue(a2.isFinishing)
-    }
-
-    @Test
     fun `alpha - no legacy back icon - onClose only, activity keeps running`() {
         val cb = RecordingCallback()
         val (activity, v) = activityView(legacy = false, cb = cb)
         v.postFromJs("""{"event":"close-widget"}""")
-        v.postFromJs("""{"event":"widget-back"}""")
-        assertEquals(listOf("onClose", "onClose"), cb.events)
+        assertEquals(listOf("onClose"), cb.events)
         assertFalse(activity.isFinishing)
     }
 

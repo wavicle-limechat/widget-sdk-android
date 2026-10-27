@@ -23,8 +23,8 @@ import org.robolectric.Shadows.shadowOf
  *
  * Dispatch today: MessageHandler strips an optional `limechat-widget:` prefix, parses a json
  * object, then switches on `event ?: type` (only if they are strings):
- *   loaded -> onLoaded, close-widget -> onClose, widget-back -> onClose,
- *   set-cw-conversation -> token update, anything else -> onMessage(map).
+ *   close-widget -> onClose, set-cw-conversation -> token update,
+ *   anything else (incl. loaded, widget-back) -> onMessage(map).
  * Unparseable payloads are dropped silently. Exceptions thrown by the host callback
  * are caught and reported as onError(JAVASCRIPT_ERROR).
  *
@@ -77,15 +77,10 @@ class BridgeCharacterizationTest {
     }
 
     @Test
-    fun `pins current behaviour - widget-back calls onClose (web never emits it)`() {
-        view.postFromJs("""{"event":"widget-back"}""")
-        assertEquals(listOf("onClose"), cb.events)
-    }
-
-    @Test
-    fun `pins current behaviour - loaded event calls onLoaded (web never emits it)`() {
+    fun `loaded and widget-back are unknown events and go to onMessage`() {
         view.postFromJs("""{"event":"loaded"}""")
-        assertEquals(listOf("onLoaded"), cb.events)
+        view.postFromJs("""{"event":"widget-back"}""")
+        assertEquals(listOf("onMessage", "onMessage"), cb.events)
     }
 
     @Test
@@ -140,11 +135,12 @@ class BridgeCharacterizationTest {
     }
 
     @Test
-    fun `alias methods onMessage receiveMessage handleMessage all route like postMessage`() {
-        view.postFromJs("""{"event":"close-widget"}""", method = "onMessage")
-        view.postFromJs("""{"event":"close-widget"}""", method = "receiveMessage")
-        view.postFromJs("""{"event":"close-widget"}""", method = "handleMessage")
-        assertEquals(listOf("onClose", "onClose", "onClose"), cb.events)
+    fun `only postMessage is exposed on the js interface`() {
+        val bridge = shadowOf(view.webView()).getJavascriptInterface("LimechatAndroid")!!
+        val annotated = bridge.javaClass.methods
+            .filter { it.isAnnotationPresent(android.webkit.JavascriptInterface::class.java) }
+            .map { it.name }
+        assertEquals(listOf("postMessage"), annotated)
     }
 
     @Test
@@ -188,11 +184,10 @@ class BridgeCharacterizationTest {
     // ---- close: develop behaviour + ported v0.0.9-alpha legacy close (plan b0) ----
 
     @Test
-    fun `limechat close url calls onClose and is blocked`() {
+    fun `limechat close url is blocked and does not close`() {
         val client = shadowOf(view.webView()).webViewClient
         assertTrue(client.shouldOverrideUrlLoading(view.webView(), FakeRequest("limechat://close")))
-        assertTrue(client.shouldOverrideUrlLoading(view.webView(), FakeRequest("limechat://close/anything?x=1")))
-        assertEquals(listOf("onClose", "onClose"), cb.events)
+        assertEquals(emptyList<String>(), cb.events)
     }
 
     @Test
@@ -202,8 +197,6 @@ class BridgeCharacterizationTest {
         val v = newView(activity, WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), acb)
 
         v.postFromJs("""{"event":"close-widget"}""")
-        v.postFromJs("""{"event":"widget-back"}""")
-        shadowOf(v.webView()).webViewClient.shouldOverrideUrlLoading(v.webView(), FakeRequest("limechat://close"))
 
         assertEquals(emptyList<String>(), acb.events)
         assertTrue(activity.isFinishing)
