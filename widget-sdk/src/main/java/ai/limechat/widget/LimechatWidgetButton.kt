@@ -78,7 +78,6 @@ class LimechatWidgetButton @JvmOverloads constructor(
      * Initialize the widget button with configuration
      */
     fun init(config: WidgetConfig, customButton: View? = null) {
-        Log.d(TAG, "🚀 LimeChat Widget SDK v$SDK_VERSION initializing...")
         this.config = config
         this.customButton = customButton
         

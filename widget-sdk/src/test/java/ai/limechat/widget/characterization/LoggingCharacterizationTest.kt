@@ -14,9 +14,8 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowLog
 
 /**
- * Pins what LimechatWidgetView writes to logcat today (develop @ 3456551), incl. the
- * full conversation token, raw bridge payloads, open-with-message text and js console lines.
- * Phase c trims these logs; these tests are expected to change then.
+ * Pins what LimechatWidgetView writes to logcat: the redacted widget url, and no tokens,
+ * payloads or js console lines.
  */
 @RunWith(RobolectricTestRunner::class)
 class LoggingCharacterizationTest {
@@ -40,34 +39,19 @@ class LoggingCharacterizationTest {
     fun `widget url is logged on load with cw_conversation redacted`() {
         tokenMemoryCache()["default"] = "secret-conversation-token-123"
         LimechatWidgetView(RuntimeEnvironment.getApplication()).init(WidgetConfig.builder("tok").build())
-        assertLogged("Widget instance ID: default")
-        assertLogged("Instance default - Loaded conversation token: found")
         assertLogged("Loading widget URL: $prod$q&cw_conversation=<redacted>")
     }
 
     @Test
-    fun `bridge messages log only the event name, never the payload or token`() {
+    fun `bridge messages never log the payload or token`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(WidgetConfig.builder("tok").build())
-        val payload = """{"event":"set-cw-conversation","cw_conversation":"secret-conversation-token-123"}"""
-        v.postFromJs(payload)
-        assertLogged("JS->Android postMessage received")
-        assertLogged("Widget event: set-cw-conversation")
-        assertLogged("Conversation token updated")
-        assertLogged("Instance default - Saved conversation token")
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"secret-conversation-token-123"}""")
+        assertTrue(ShadowLog.getLogs().none { it.msg.contains("secret-conversation-token-123") })
     }
 
     @Test
-    fun `external token mode logs without the token`() {
-        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
-        v.init(WidgetConfig.builder("tok").setExternalTokenManagement("external-token-xyz") {}.build())
-        assertLogged("Using external conversation token")
-        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"another-token-abc"}""")
-        assertLogged("External token management - calling onConversationTokenChange")
-    }
-
-    @Test
-    fun `pins current behaviour - open with message and payload text is logged`() {
+    fun `open with message logs only the redacted url`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "my order 42")
         assertLogged("Loading widget URL: $prod$q&lc_open_message=my+order+42")
@@ -78,12 +62,12 @@ class LoggingCharacterizationTest {
     }
 
     @Test
-    fun `pins current behaviour - js console messages are mirrored to logcat`() {
+    fun `js console messages are not mirrored to logcat`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(WidgetConfig.builder("tok").build())
         shadowOf(v.webView()).webChromeClient.onConsoleMessage(
             ConsoleMessage("user email is a@b.com", "x.js", 1, ConsoleMessage.MessageLevel.LOG)
         )
-        assertLogged("JS Console: user email is a@b.com")
+        assertTrue(ShadowLog.getLogs().none { it.msg.contains("a@b.com") })
     }
 }

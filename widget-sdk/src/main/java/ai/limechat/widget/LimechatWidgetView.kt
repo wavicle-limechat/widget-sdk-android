@@ -108,17 +108,13 @@ class LimechatWidgetView @JvmOverloads constructor(
             "default"
         }
         
-        Log.d(TAG, "Widget instance ID: $instanceId")
-        
         // Initialize conversation token (like React Native's cwConversation state)
         if (config.conversationToken != null) {
             // External token management - app provides token
             cwConversation = config.conversationToken
-            Log.d(TAG, "Using external conversation token")
         } else {
             // Internal token management - SDK manages persistence using instanceId
             cwConversation = loadConversationToken(instanceId)
-            Log.d(TAG, "Instance $instanceId - Loaded conversation token: ${if (cwConversation != null) "found" else "none"}")
         }
         
         // Note: File picker should be attached separately using attachFilePicker()
@@ -309,11 +305,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                 picker.showFileChooser(filePathCallback, fileChooserParams)
                 return true
             }
-
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d(TAG, "JS Console: ${consoleMessage.message()}")
-                return super.onConsoleMessage(consoleMessage)
-            }
         }
     }
 
@@ -428,7 +419,6 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun setupMessaging() {
         if (isMessagingSetup) {
-            Log.d(TAG, "Messaging already setup, skipping")
             return
         }
         
@@ -468,8 +458,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                     }
                 )
                 webMessageListenerAdded = true
-            } else {
-                Log.d(TAG, "WebMessageListener already added, reusing")
             }
             // Inject (idempotent) script to forward window.postMessage to native bridge
             val script = """
@@ -523,13 +511,10 @@ class LimechatWidgetView @JvmOverloads constructor(
             webView.addJavascriptInterface(object {
                 @JavascriptInterface
                 fun postMessage(message: String) {
-                    Log.d(TAG, "JS->Android postMessage received")
                     this@LimechatWidgetView.handleMessage(message)
                 }
             }, JS_INTERFACE_NAME)
             jsInterfaceAdded = true
-        } else {
-            Log.d(TAG, "JS interface already added, reusing")
         }
         
         // Inject (idempotent) script to use JavascriptInterface
@@ -583,11 +568,8 @@ class LimechatWidgetView @JvmOverloads constructor(
                     val type = message["type"] as? String
                     val eventName = event ?: type ?: "unknown"
                     
-                    Log.d(TAG, "Widget event: $eventName")
-                    
                     when (eventName) {
                         "close-widget" -> {
-                            Log.d(TAG, "Close widget event received")
                             handleCloseEvent()
                         }
                         "set-cw-conversation" -> {
@@ -674,19 +656,15 @@ class LimechatWidgetView @JvmOverloads constructor(
             return
         }
         
-        Log.d(TAG, "Conversation token updated")
-        
         // Update conversation token (like React Native's handleCwConversationUpdate)
         val config = this.config
         if (config?.onConversationTokenChange != null) {
             // External token management - app handles persistence
             config.onConversationTokenChange.invoke(token)
-            Log.d(TAG, "External token management - calling onConversationTokenChange")
         } else {
             // Internal token management - SDK handles persistence using instanceId
             cwConversation = token
             saveConversationToken(instanceId, token)
-            Log.d(TAG, "Instance $instanceId - Saved conversation token")
         }
         
         // Also call the callback interface method
