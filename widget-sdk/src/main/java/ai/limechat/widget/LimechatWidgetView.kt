@@ -302,7 +302,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                 // Ensure messaging bridge is re-established on every load/HMR
                 isMessagingSetup = false
                 setupMessaging()
-                injectUserData()
                 callback?.onLoaded()
             }
 
@@ -492,67 +491,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         
         Log.d(TAG, "Loading widget URL: ${redactUrl(url)}")
         webView.loadUrl(url)
-    }
-
-    private fun injectUserData() {
-        val config = this.config ?: return
-        
-        coroutineScope.launch {
-            delay(500) // Small delay to ensure page is ready
-            
-            val scripts = buildList {
-                // Set user data
-                config.user?.let { user ->
-                    add("""
-                        window.LimechatWidget = window.LimechatWidget || {};
-                        window.LimechatWidget.setUser = function(user) {
-                            window.postMessage(JSON.stringify({
-                                event: 'set-user',
-                                user: user,
-                                identifier: user.identifier_hash
-                            }), '*');
-                        };
-                        window.LimechatWidget.setUser({
-                            name: "${user.name ?: ""}",
-                            email: "${user.email ?: ""}",
-                            phone_number: "${user.phoneNumber ?: ""}",
-                            identifier_hash: "${user.identifierHash ?: ""}"
-                        });
-                    """.trimIndent())
-                }
-                
-                // Set locale
-                add("""
-                    window.postMessage(JSON.stringify({
-                        event: 'set-locale',
-                        locale: '${config.locale}'
-                    }), '*');
-                """.trimIndent())
-                
-                // Set color scheme
-                add("""
-                    window.postMessage(JSON.stringify({
-                        event: 'set-color-scheme',
-                        darkMode: ${config.colorScheme == WidgetConfig.ColorScheme.DARK}
-                    }), '*');
-                """.trimIndent())
-                
-                // Set custom attributes
-                config.customAttributes?.let { attrs ->
-                    val attrsJson = JSONObject(attrs).toString()
-                    add("""
-                        window.postMessage(JSON.stringify({
-                            event: 'set-custom-attributes',
-                            customAttributes: $attrsJson
-                        }), '*');
-                    """.trimIndent())
-                }
-            }
-            
-            scripts.forEach { script ->
-                webView.evaluateJavascript(script, null)
-            }
-        }
     }
 
     private fun setupMessaging() {
