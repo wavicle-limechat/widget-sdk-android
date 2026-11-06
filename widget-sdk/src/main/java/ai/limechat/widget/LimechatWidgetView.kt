@@ -134,7 +134,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     }
 
     private fun loadUrl(url: String) {
-        Log.d(TAG, "Loading widget URL: ${redactUrl(url)}")
+        Log.d(TAG, "Loading widget URL: ${url.substringBefore('?')}")
         webView.loadUrl(url)
     }
 
@@ -160,13 +160,6 @@ class LimechatWidgetView @JvmOverloads constructor(
     fun destroy() {
         coroutineScope.cancel()
         webView.destroy()
-    }
-
-    /**
-     * Hide the conversation token before a url is logged
-     */
-    private fun redactUrl(url: String): String {
-        return url.replace(Regex("(cw_conversation=)[^&#]*"), "$1<redacted>")
     }
 
     private fun injectUser() {

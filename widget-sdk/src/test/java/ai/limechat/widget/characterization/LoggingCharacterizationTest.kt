@@ -14,14 +14,13 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.shadows.ShadowLog
 
 /**
- * Pins what LimechatWidgetView writes to logcat: the redacted widget url, and no tokens,
- * payloads or js console lines.
+ * Pins what LimechatWidgetView writes to logcat: the widget url without its query string,
+ * and no tokens, payloads or js console lines.
  */
 @RunWith(RobolectricTestRunner::class)
 class LoggingCharacterizationTest {
 
     private val prod = "https://app.limechat.ai/widget"
-    private val q = "?website_token=tok&locale=en&color_scheme=light"
 
     @Before
     fun setUp() {
@@ -36,10 +35,10 @@ class LoggingCharacterizationTest {
         assertTrue("missing log line: $line\nactual:\n${debugLogs().joinToString("\n")}", debugLogs().contains(line))
 
     @Test
-    fun `widget url is logged on load with cw_conversation redacted`() {
+    fun `widget url is logged on load without its query string`() {
         tokenMemoryCache()["default"] = "secret-conversation-token-123"
         LimechatWidgetView(RuntimeEnvironment.getApplication()).init(WidgetConfig.builder("tok").build())
-        assertLogged("Loading widget URL: $prod$q&cw_conversation=<redacted>")
+        assertLogged("Loading widget URL: $prod")
     }
 
     @Test
@@ -51,14 +50,15 @@ class LoggingCharacterizationTest {
     }
 
     @Test
-    fun `open with message logs only the redacted url`() {
+    fun `open with message logs only the url without its query`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "my order 42")
-        assertLogged("Loading widget URL: $prod$q&lc_open_message=my+order+42")
+        assertLogged("Loading widget URL: $prod")
+        assertTrue(ShadowLog.getLogs().none { it.msg.contains("my+order+42") || it.msg.contains("my order 42") || it.msg.contains("tok") })
         v.open("refund please")
-        assertLogged("Loading widget URL: $prod$q&lc_open_message=refund+please")
+        assertLogged("Loading widget URL: $prod")
         v.open(linkedMapOf<String, Any>("content" to "hi"))
-        assertLogged("Loading widget URL: $prod$q&lc_open_payload=%7B%22content%22%3A%22hi%22%7D")
+        assertLogged("Loading widget URL: $prod")
     }
 
     @Test

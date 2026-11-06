@@ -250,6 +250,6 @@ class AndroidBugFixesTest {
             assertEquals("token $token leaked in logs", emptyList<String>(), leaked)
         }
         assertEquals(emptyList<String>(), logs.filter { it.contains("payload-value-zzz") })
-        assertTrue(logs.any { it.contains("cw_conversation=<redacted>") })
+        assertEquals(emptyList<String>(), logs.filter { it.contains("cw_conversation=") })
     }
 }
