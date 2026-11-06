@@ -9,6 +9,7 @@ import android.graphics.Bitmap
 import android.net.Uri
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
+import android.webkit.WebResourceResponse
 import android.webkit.WebView
 import android.webkit.WebViewClient
 
@@ -41,6 +42,22 @@ internal class WidgetWebViewClient(
                 WidgetError.ErrorCode.WEBVIEW_ERROR,
                 "WebView error: ${error.description}",
                 context = mapOf("errorCode" to error.errorCode)
+            )
+        )
+    }
+
+    override fun onReceivedHttpError(
+        view: WebView,
+        request: WebResourceRequest,
+        errorResponse: WebResourceResponse
+    ) {
+        super.onReceivedHttpError(view, request, errorResponse)
+        if (!request.isForMainFrame) return
+        callback()?.onError(
+            WidgetError(
+                WidgetError.ErrorCode.WEBVIEW_ERROR,
+                "WebView HTTP error: ${errorResponse.statusCode}",
+                context = mapOf("statusCode" to errorResponse.statusCode)
             )
         )
     }

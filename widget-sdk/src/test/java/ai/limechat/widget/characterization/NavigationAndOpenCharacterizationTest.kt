@@ -9,6 +9,7 @@ import android.content.Intent
 import android.net.Uri
 import android.webkit.ValueCallback
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceResponse
 import android.webkit.FakeWebResourceError
 import androidx.fragment.app.FragmentActivity
 import org.junit.Assert.assertEquals
@@ -111,6 +112,28 @@ class NavigationAndOpenCharacterizationTest {
         assertEquals(WidgetError.ErrorCode.WEBVIEW_ERROR, e.code)
         assertEquals("WebView error: net::ERR_FAILED", e.message)
         assertEquals(mapOf("errorCode" to -2), e.context)
+    }
+
+    @Test
+    fun `main frame http error reports WEBVIEW_ERROR with the status`() {
+        val v = view()
+        val response = WebResourceResponse("text/html", "utf-8", 503, "x", emptyMap(), null)
+        shadowOf(v.webView()).webViewClient.onReceivedHttpError(
+            v.webView(), FakeRequest("$prod$q"), response
+        )
+        val e = cb.errors.single()
+        assertEquals(WidgetError.ErrorCode.WEBVIEW_ERROR, e.code)
+        assertEquals(mapOf("statusCode" to 503), e.context)
+    }
+
+    @Test
+    fun `subresource http error reports nothing`() {
+        val v = view()
+        val response = WebResourceResponse("text/html", "utf-8", 404, "x", emptyMap(), null)
+        shadowOf(v.webView()).webViewClient.onReceivedHttpError(
+            v.webView(), FakeRequest("https://cdn.example.com/x.png", mainFrame = false), response
+        )
+        assertTrue(cb.errors.isEmpty())
     }
 
     @Test
