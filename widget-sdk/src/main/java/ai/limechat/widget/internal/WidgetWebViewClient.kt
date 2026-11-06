@@ -5,6 +5,7 @@ import ai.limechat.widget.WidgetError
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
 import android.net.Uri
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
@@ -15,8 +16,14 @@ internal class WidgetWebViewClient(
     private val context: Context,
     private val baseUrl: () -> String?,
     private val callback: () -> WidgetCallback?,
+    private val onPageStarted: () -> Unit,
     private val onPageLoaded: () -> Unit
 ) : WebViewClient() {
+
+    override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
+        super.onPageStarted(view, url, favicon)
+        onPageStarted()
+    }
 
     override fun onPageFinished(view: WebView, url: String) {
         super.onPageFinished(view, url)

@@ -45,6 +45,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var instanceId = ""
     private var cwConversation: String? = null
     private var pendingOpen: Any? = null
+    private var pendingOpenArmed = false
 
     init {
         webView = WebViewFactory.create(
@@ -53,10 +54,14 @@ class LimechatWidgetView @JvmOverloads constructor(
                 context,
                 baseUrl = { config?.baseUrl },
                 callback = { callback },
+                onPageStarted = { pendingOpenArmed = pendingOpen != null },
                 onPageLoaded = {
                     injectUser()
-                    pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
-                    pendingOpen = null
+                    if (pendingOpenArmed) {
+                        pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
+                        pendingOpen = null
+                        pendingOpenArmed = false
+                    }
                     sendVerifiedUser()
                     callback?.onLoaded()
                 }
@@ -99,6 +104,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         initialMessageData: Map<String, Any>?
     ) {
         pendingOpen = null
+        pendingOpenArmed = false
         this.config = config
         this.callback = callback
 
@@ -126,6 +132,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         if (message != null) {
             if (userFields().isNotEmpty()) {
                 pendingOpen = message
+                pendingOpenArmed = false
                 loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
             } else {
                 loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
@@ -141,6 +148,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         val config = this.config ?: return
         if (userFields().isNotEmpty()) {
             pendingOpen = messageData
+            pendingOpenArmed = false
             loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
         } else {
             loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
@@ -215,6 +223,7 @@ class LimechatWidgetView @JvmOverloads constructor(
 
         if (userFields().isNotEmpty() && (initialMessage != null || initialMessageData != null)) {
             pendingOpen = initialMessage ?: initialMessageData
+            pendingOpenArmed = false
             loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
             return
         }

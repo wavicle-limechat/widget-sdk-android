@@ -99,6 +99,7 @@ class UserInjectionTest {
         val v = loaded(userConfig())
         v.open("hi")
         assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         val scripts = v.recorder().scripts
         val rn = scripts.indexOfLast { it.contains("rnUser") }
@@ -112,10 +113,12 @@ class UserInjectionTest {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(userConfig(), null, "first")
         assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         assertTrue(v.openScripts().single().contains("first"))
         v.open(mapOf("content" to "data"))
         assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         assertTrue(v.openScripts().last().contains("\"content\":\"data\""))
         assertEquals(2, v.openScripts().size)
@@ -146,5 +149,17 @@ class UserInjectionTest {
         v.init(WidgetConfig.builder("tok2").build())
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         assertEquals(emptyList<String>(), v.openScripts())
+    }
+
+    @Test
+    fun `a held open message waits for the new page to start`() {
+        val v = loaded(userConfig())
+        v.open("hi")
+        // the old page finishing must not take the message
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "old")
+        assertEquals(emptyList<String>(), v.openScripts())
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "new", null)
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "new")
+        assertTrue(v.openScripts().single().contains("\"openMessage\":\"hi\""))
     }
 }
