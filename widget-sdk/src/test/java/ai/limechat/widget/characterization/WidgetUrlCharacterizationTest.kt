@@ -3,6 +3,7 @@ package ai.limechat.widget.characterization
 import ai.limechat.widget.LimechatWidgetView
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.utils.UrlBuilder
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
@@ -179,65 +180,57 @@ class WidgetUrlCharacterizationTest {
         assertEquals("http://10.0.2.2:8787/widget$q", url(WidgetConfig.builder("tok").setBaseUrl("http://10.0.2.2:8787")))
     }
 
-    // ---- lc_open_message / lc_open_payload through the view (buildUrlWithParameters) ----
+    // ---- lc_open_message / lc_open_payload through UrlBuilder (public, unused by the view) ----
 
-    private fun view() = LimechatWidgetView(RuntimeEnvironment.getApplication())
+    private fun config() = WidgetConfig.builder("tok").build()
 
     @Test
     fun `lc_open_message escapes percent so the web double decode keeps the text`() {
         // the web reads the param with URLSearchParams (decode #1) and then decodeURIComponent again
         // (decode #2), so "%" is sent as "%25" before encoding.
-        val v = view()
-        v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "50% off + free")
         assertEquals(
             "$prod?website_token=tok&locale=en&color_scheme=light&lc_open_message=50%2525+off+%2B+free",
-            v.lastLoadedUrl()
+            UrlBuilder.buildWidgetUrl(config(), openMessage = "50% off + free")
         )
     }
 
     @Test
     fun `lc_open_message unicode and quotes`() {
-        val v = view()
-        v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "héllo \"you\" & 'me' 😊")
         assertEquals(
             "$prod?website_token=tok&locale=en&color_scheme=light" +
                 "&lc_open_message=h%C3%A9llo+%22you%22+%26+%27me%27+%F0%9F%98%8A",
-            v.lastLoadedUrl()
+            UrlBuilder.buildWidgetUrl(config(), openMessage = "héllo \"you\" & 'me' 😊")
         )
     }
 
     @Test
     fun `lc_open_payload is the android json of the map, encoded once`() {
-        val v = view()
         val data = linkedMapOf<String, Any>(
             "content" to "hi 50%",
             "submitted_values" to linkedMapOf("k" to "v/w")
         )
-        v.init(WidgetConfig.builder("tok").build(), null, initialMessageData = data)
         // {"content":"hi 50%","submitted_values":{"k":"v\/w"}}
         assertEquals(
             "$prod?website_token=tok&locale=en&color_scheme=light" +
                 "&lc_open_payload=%7B%22content%22%3A%22hi+50%5Cu0025%22%2C%22submitted_values%22%3A%7B%22k%22%3A%22v%5C%2Fw%22%7D%7D",
-            v.lastLoadedUrl()
+            UrlBuilder.buildWidgetUrl(config(), openPayload = JSONObject(data).toString())
         )
     }
 
     @Test
     fun `initial message is appended after cw_conversation`() {
-        tokenMemoryCache()["default"] = "stored1"
-        val v = view()
-        v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), null, initialMessage = "hello")
         assertEquals(
             "$prod?website_token=tok&locale=en&color_scheme=light&cw_conversation=stored1" +
                 "&lc_open_message=hello",
-            v.lastLoadedUrl()
+            UrlBuilder.buildWidgetUrl(config(), "stored1", openMessage = "hello")
         )
     }
 
     @Test
     fun `null initial message adds nothing`() {
-        val v = view()
-        v.init(WidgetConfig.builder("tok").build(), null, initialMessage = null)
-        assertEquals("$prod?website_token=tok&locale=en&color_scheme=light", v.lastLoadedUrl())
+        assertEquals(
+            "$prod?website_token=tok&locale=en&color_scheme=light",
+            UrlBuilder.buildWidgetUrl(config(), openMessage = null)
+        )
     }
 }

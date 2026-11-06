@@ -25,6 +25,13 @@ import java.time.Duration
 @Implements(WebView::class)
 class RecordingShadowWebView : ShadowWebView() {
     val scripts = mutableListOf<String>()
+    val loadedUrls = mutableListOf<String>()
+
+    @Implementation
+    override fun loadUrl(url: String) {
+        loadedUrls += url
+        super.loadUrl(url)
+    }
 
     @Implementation
     override fun evaluateJavascript(script: String, callback: ValueCallback<String>?) {

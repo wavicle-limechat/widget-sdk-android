@@ -284,10 +284,12 @@ class NavigationAndOpenCharacterizationTest {
     }
 
     @Test
-    fun `open(message) reloads the page with lc_open_message`() {
+    fun `open(message) holds the message and keeps it out of the url`() {
         val v = view()
         v.open("hi there")
-        assertEquals("$prod$q&lc_open_message=hi+there", v.lastLoadedUrl())
+        assertEquals("$prod$q", v.lastLoadedUrl())
+        v.widgetReady()
+        assertTrue(v.recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":\"hi there\""))
     }
 
     @Test
@@ -296,7 +298,7 @@ class NavigationAndOpenCharacterizationTest {
         val v = view()
         assertEquals("$prod$q&cw_conversation=stored1", v.lastLoadedUrl())
         v.open("hi")
-        assertEquals("$prod$q&cw_conversation=stored1&lc_open_message=hi", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=stored1", v.lastLoadedUrl())
     }
 
     @Test
@@ -304,7 +306,7 @@ class NavigationAndOpenCharacterizationTest {
         val v = view()
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
         v.open("hi")
-        assertEquals("$prod$q&cw_conversation=fresh&lc_open_message=hi", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
     }
 
     @Test
@@ -312,16 +314,72 @@ class NavigationAndOpenCharacterizationTest {
         val v = view(WidgetConfig.builder("tok").setExternalTokenManagement("ext1") {}.build())
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"newer"}""")
         v.open("hi")
-        assertEquals("$prod$q&cw_conversation=newer&lc_open_message=hi", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=newer", v.lastLoadedUrl())
     }
 
     @Test
-    fun `open(map) reloads with lc_open_payload and keeps cw_conversation`() {
+    fun `open(map) holds the payload and keeps cw_conversation in the url`() {
         tokenMemoryCache()["default"] = "stored1"
         val v = view()
         v.open(linkedMapOf<String, Any>("content" to "hi", "n" to 1))
-        // {"content":"hi","n":1}
-        assertEquals("$prod$q&cw_conversation=stored1&lc_open_payload=%7B%22content%22%3A%22hi%22%2C%22n%22%3A1%7D", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=stored1", v.lastLoadedUrl())
+        v.widgetReady()
+        assertTrue(v.recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":{\"content\":\"hi\",\"n\":1}"))
+    }
+
+    @Test
+    fun `open while ready posts the message and does not reload`() {
+        val v = view()
+        v.widgetReady()
+        val url = v.lastLoadedUrl()
+        v.recorder().scripts.clear()
+        v.open("hi")
+        assertEquals(url, v.lastLoadedUrl())
+        assertEquals(1, v.recorder().scripts.count { it.contains("\"open-with-message\"") })
+    }
+
+    @Test
+    fun `init with an initial message and no user holds it until ready`() {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").build(), null, "first")
+        assertEquals("$prod$q", v.lastLoadedUrl())
+        assertTrue(v.recorder().scripts.none { it.contains("open-with-message") })
+        v.widgetReady()
+        assertTrue(v.recorder().scripts.single { it.contains("open-with-message") }.contains("first"))
+    }
+
+    @Test
+    fun `open with an empty string or empty map does nothing`() {
+        val v = view(WidgetConfig.builder("tok").setUser(WidgetConfig.User(name = "N")).build())
+        v.widgetReady()
+        v.recorder().scripts.clear()
+        v.open("")
+        v.open(emptyMap<String, Any>())
+        assertTrue(v.recorder().scripts.isEmpty())
+        v.widgetReady()
+        assertTrue(v.recorder().scripts.none { it.contains("open-with-message") })
+    }
+
+    @Test
+    fun `back press does not resend an open message`() {
+        val v = view()
+        v.open("hi")
+        v.widgetReady()
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        v.postFromJs("""{"event":"set-cw-conversation"}""")
+        assertEquals(1, v.recorder().scripts.count { it.contains("open-with-message") })
+        assertTrue(v.recorder().loadedUrls.none { it.contains("lc_open_") })
+    }
+
+    @Test
+    fun `a message with percent, plus and unicode reaches the post unchanged`() {
+        val v = view()
+        val text = "50% off + free \u00e9 \ud83d\ude0a"
+        v.open(text)
+        v.widgetReady()
+        val script = v.recorder().scripts.single { it.contains("open-with-message") }
+        val json = script.substringAfter("JSON.stringify(").substringBefore("), '*')")
+        assertEquals(text, org.json.JSONObject(json).getString("openMessage"))
     }
 
     @Test

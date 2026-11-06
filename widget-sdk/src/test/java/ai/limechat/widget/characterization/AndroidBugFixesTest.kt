@@ -57,7 +57,7 @@ class AndroidBugFixesTest {
         val v = view()
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
         v.open("hi")
-        assertEquals("$prod$q&cw_conversation=fresh&lc_open_message=hi", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
     }
 
     @Test
@@ -65,21 +65,21 @@ class AndroidBugFixesTest {
         val v = view()
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
         v.open(linkedMapOf<String, Any>("content" to "hi"))
-        assertEquals("$prod$q&cw_conversation=fresh&lc_open_payload=%7B%22content%22%3A%22hi%22%7D", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
     }
 
     @Test
     fun `open(map) in external mode sends the config token`() {
         val v = view(WidgetConfig.builder("tok").setExternalTokenManagement("ext1") {}.build())
         v.open(linkedMapOf<String, Any>("content" to "hi"))
-        assertEquals("$prod$q&cw_conversation=ext1&lc_open_payload=%7B%22content%22%3A%22hi%22%7D", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=ext1", v.lastLoadedUrl())
     }
 
     @Test
     fun `open(message) without any token sends no cw_conversation`() {
         val v = view()
         v.open("hi")
-        assertEquals("$prod$q&lc_open_message=hi", v.lastLoadedUrl())
+        assertEquals("$prod$q", v.lastLoadedUrl())
     }
 
     // ---- a1: file chooser without a picker ----

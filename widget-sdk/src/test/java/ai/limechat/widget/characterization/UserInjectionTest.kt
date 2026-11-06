@@ -129,12 +129,14 @@ class UserInjectionTest {
     }
 
     @Test
-    fun `with no user, open(message) still goes in the url`() {
+    fun `with no user, open(message) holds the message and keeps it out of the url`() {
         val v = loaded(WidgetConfig.builder("tok").build())
         v.open("hi")
-        assertTrue(v.lastLoadedUrl()!!.contains("lc_open_message=hi"))
+        assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         assertEquals(emptyList<String>(), v.openScripts())
+        v.widgetReady()
+        assertTrue(v.openScripts().single().contains("\"openMessage\":\"hi\""))
     }
 
     @Test

@@ -119,32 +119,28 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     /**
      * Open the widget with an optional custom message
-     * @param message Optional string message to display when opening the widget. Null does nothing.
+     * @param message Optional string message to display when opening the widget. Null or empty does nothing.
      */
     fun open(message: String? = null) {
-        val config = this.config ?: return
-        if (message != null) {
-            if (userFields().isNotEmpty()) {
-                pendingOpen = message
-                loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
-            } else {
-                loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
-            }
-        }
+        if (!message.isNullOrEmpty()) deliverOpen(message)
     }
 
     /**
      * Open the widget with a custom message object
-     * @param messageData Message object that can contain 'content' key or other properties
+     * @param messageData Message object that can contain 'content' key or other properties. Empty does nothing.
      */
     fun open(messageData: Map<String, Any>) {
+        if (messageData.isNotEmpty()) deliverOpen(messageData)
+    }
+
+    private fun deliverOpen(message: Any) {
         val config = this.config ?: return
-        if (userFields().isNotEmpty()) {
-            pendingOpen = messageData
-            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
-        } else {
-            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
+        if (widgetReady) {
+            sendMessage("open-with-message", mapOf("openMessage" to message))
+            return
         }
+        pendingOpen = message
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     private fun loadUrl(url: String) {
@@ -215,20 +211,8 @@ class LimechatWidgetView @JvmOverloads constructor(
         // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
         bridge.setup()
 
-        if (userFields().isNotEmpty() && (initialMessage != null || initialMessageData != null)) {
-            pendingOpen = initialMessage ?: initialMessageData
-            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
-            return
-        }
-
-        loadUrl(
-            UrlBuilder.buildWidgetUrl(
-                config,
-                cwConversation,
-                openMessage = initialMessage,
-                openPayload = initialMessageData?.let { JSONObject(it).toString() }
-            )
-        )
+        pendingOpen = initialMessage?.takeIf { it.isNotEmpty() } ?: initialMessageData?.takeIf { it.isNotEmpty() }
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     private fun handleMessage(data: String) {
