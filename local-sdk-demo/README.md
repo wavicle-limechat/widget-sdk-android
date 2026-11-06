@@ -47,7 +47,6 @@ local-sdk-demo/
 
 ### 2. Verify Local SDK Usage
 
-- Check logs for "LOCAL SDK DEMO" messages
 - Verify dependency in `app/build.gradle.kts` shows `:widget-sdk`
 - Widget button appears in bottom-right corner
 - All functionality works with local development

@@ -14,7 +14,6 @@ import java.net.URL
  * val config = WidgetConfig.Builder("your-website-token")
  *     .setInstanceId("my-widget-1")
  *     .setUser(user)
- *     .setColorScheme(ColorScheme.DARK)
  *     .build()
  * ```
  */

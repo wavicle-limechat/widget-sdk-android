@@ -14,7 +14,6 @@
 - 🖥️ **Full-Screen Chat**: An immersive conversation experience.
 - 📎 **File Uploads**: Share images, documents, and other media.
 - 🔔 **Real-Time Messaging**: Instant notifications and message delivery.
-- 🎭 **Theme Support**: `colorScheme` accepts light, dark, and auto. The widget has no dark mode today, so it has no visible effect.
 - 🌍 **Multi-Language**: Support for localization and multiple languages.
 - 🔒 **Secure**: Built with enterprise-grade security and privacy standards.
 - 💾 **Chat Persistence**: Conversations persist across app restarts and widget instances.
@@ -137,56 +136,7 @@ class ChatActivity : FragmentActivity() {
 }
 ```
 
-## 🆕 New Features in v0.0.9
-
-### Chat Persistence
-
-The SDK now automatically persists conversations across app restarts and widget instances. Each widget instance maintains its own conversation state, ensuring users can continue their conversations seamlessly.
-
-```kotlin
-// Chat persistence is automatic - no additional configuration needed
-val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
-    .setInstanceId("unique-widget-instance") // Optional: for widget isolation
-    .build()
-```
-
-### Legacy Back Icon Support
-
-Control the native close behaviour with the `showLegacyBackIcon` property. When it is on and the view sits in an Activity, closing the widget finishes that Activity and `onClose()` is not called. Otherwise `onClose()` is called.
-
-```kotlin
-val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
-    .setShowLegacyBackIcon(true) // Enable legacy back icon
-    .build()
-```
-
-
-## 🔧 Common Issues
-
-### Dependency Resolution Error
-
-If you encounter a dependency resolution error, ensure you have `google()` and `mavenCentral()` in your `settings.gradle.kts`:
-
-```kotlin
-// settings.gradle.kts
-repositories {
-    google()
-    mavenCentral()
-    maven { url = uri("https://jitpack.io") }
-}
-```
-
-### AndroidX Compatibility
-
-The SDK requires AndroidX. To enable it, add the following to your `gradle.properties` file:
-
-```properties
-# gradle.properties
-android.useAndroidX=true
-android.enableJetifier=true
-```
-
-**For more solutions, see our [Troubleshooting Guide](CLIENT_INTEGRATION_GUIDE.md#-troubleshooting).**
+For persistence, back icon, message attributes, `open` and the full API reference, see the [integration guide](CLIENT_INTEGRATION_GUIDE.md). Common build issues are in its [troubleshooting section](CLIENT_INTEGRATION_GUIDE.md#-troubleshooting).
 
 ## 📊 SDK Status
 

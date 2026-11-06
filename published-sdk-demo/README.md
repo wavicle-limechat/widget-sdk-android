@@ -14,14 +14,12 @@ This demonstrates the LimeChat Widget Android SDK working with the published Jit
 ### Published SDK (This Demo)
 
 - **Dependency**: `com.github.wavicle-limechat:widget-sdk-android:0.0.8`
-- **Logs**: `🚀 PUBLISHED SDK DEMO - Using JitPack dependency`
 - **UI**: Green banner shows "Using PUBLISHED SDK from JitPack"
 - **Structure**: Standalone project, no `/widget-sdk` folder
 
 ### Local SDK (sample-app, example-project)
 
 - **Dependency**: `implementation(project(":widget-sdk"))`
-- **Logs**: Standard widget logging
 - **UI**: No "PUBLISHED SDK" indicators
 - **Structure**: Part of main project with `/widget-sdk` source
 
