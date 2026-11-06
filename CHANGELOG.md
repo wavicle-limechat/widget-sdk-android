@@ -26,12 +26,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `WidgetConfig.User` 5 arg constructor is back for java hosts.
 
 ### Added
-- `setMessageAttributes` on `LimechatWidgetView` and `LimechatWidgetButton`. Needs a widget build containing `c8126fb7cd`, older builds ignore it.
+- `platform=android` in the widget url, right after `website_token`.
+- `setMessageAttributes` on `LimechatWidgetView` and `LimechatWidgetButton`. Needs a widget build containing `c8126fb7cd`, older builds ignore it. Values that are not json (a `Date`, an unknown object) return `false`.
 - `LimechatWidgetView.reload()`.
 - `WidgetConfig.User.identifier`. When both `identifier` and `identifierHash` are set, a `set-user` message is sent. Nothing changes until a host sets both.
 - `WidgetConfig.Builder.setHideFilePicker`, which adds `hide_file_picker=true` to the widget URL.
 
 ### Fixed
+- A dead render process (API 26+) no longer kills the host app. The SDK replaces the WebView and reloads once. A second death before ready reports `Widget web process died again before ready` through `onError`.
+- `onLoaded` still fires when the token callback throws.
+- External token management accepts a token with no callback, or a callback with no token. `build()` used to throw.
 - A main frame http error (status 400 or above) now reaches `onError` as a `WEBVIEW_ERROR` with `statusCode` in `context`.
 
 ### Deprecated

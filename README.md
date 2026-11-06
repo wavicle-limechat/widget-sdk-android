@@ -83,12 +83,13 @@ class MainActivity : AppCompatActivity() {
         
         // 3. Add the button to your layout (e.g., bottom-right corner)
         val container = findViewById<FrameLayout>(R.id.main_container)
+        fun dp(value: Int) = (value * resources.displayMetrics.density).toInt()
         val layoutParams = FrameLayout.LayoutParams(
             ViewGroup.LayoutParams.WRAP_CONTENT,
             ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.END
-            setMargins(0, 0, 16.dp, 16.dp)
+            setMargins(0, 0, dp(16), dp(16))
         }
         container.addView(widgetButton, layoutParams)
     }

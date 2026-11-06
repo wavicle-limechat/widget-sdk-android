@@ -76,7 +76,7 @@ Add the LimeChat Widget SDK as a dependency in your app's `build.gradle.kts` fil
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.8")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.0.9")
 
     // The SDK requires the following AndroidX libraries
     implementation("androidx.core:core-ktx:1.12.0")
@@ -146,14 +146,14 @@ class MainActivity : AppCompatActivity() {
             ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.END
-            setMargins(0, 0, 16.dp, 16.dp) // Extension function for dp is recommended
+            setMargins(0, 0, dp(16), dp(16)) // dp() is the helper below
         }
         container.addView(widgetButton, layoutParams)
     }
 }
 ```
 
-> Tip: Create a simple extension function to convert dp to pixels: `fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()`
+> Tip: Create a simple helper to convert dp to pixels: `fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()`
 
 ---
 
@@ -238,13 +238,13 @@ widgetButton.layoutParams = FrameLayout.LayoutParams(
     ViewGroup.LayoutParams.WRAP_CONTENT
 ).apply {
     gravity = Gravity.BOTTOM or Gravity.START // Example: bottom-left
-    setMargins(16.dp, 0, 0, 16.dp)
+    setMargins(dp(16), 0, 0, dp(16))
 }
 ```
 
 ### Displaying Unread Messages
 
-You can show a badge on the widget button to indicate unread messages.
+You can show a badge on the widget button to indicate unread messages. The count is set by the host app. The widget does not update it.
 
 ```kotlin
 // Show a badge with 5 unread messages
@@ -356,8 +356,8 @@ val supportWidgetConfig = WidgetConfig.builder("YOUR_TOKEN")
 For advanced use cases, you can manage conversation tokens externally:
 
 ```kotlin
-// The token cannot be null. `build()` throws a ConfigurationError if the token or the callback is missing.
-// Load a token you stored earlier. A first launch with no token cannot use external token management yet.
+// Either value can be omitted. With no token, the widget starts from a stored token for this instance if there is one.
+// With no callback, the SDK stores the live token itself. With a callback, the SDK stores nothing.
 var conversationToken: String = storedToken // from your own storage
 
 val config = WidgetConfig.builder("YOUR_TOKEN")
@@ -393,7 +393,7 @@ val config = WidgetConfig.builder("YOUR_TOKEN")
     .build()
 ```
 
-`WidgetConfig.User` also takes `customAttributes`. They go with the customer's next message, not onto the contact.
+`WidgetConfig.User` also takes `customAttributes`. User custom attributes go with every message the customer types, not onto the contact.
 
 ```kotlin
 val user = WidgetConfig.User(
@@ -472,6 +472,19 @@ widgetView.init(config, object : WidgetCallback {
 ### Widget Events
 
 The widget sends only `set-cw-conversation` and `close-widget` today. The SDK handles both itself, so `onMessage` has no events yet.
+
+When the widget becomes ready, the SDK sends in this order: the user fields, the verified user, held message attributes, then a held `open` message. `onLoaded` follows.
+
+### Web Process Death
+
+On API 26 and above the system can kill the WebView's render process. The SDK handles it and never crashes the host app.
+
+1. The SDK replaces the dead WebView with a new one and clears the ready state, so `open` and `setMessageAttributes` hold.
+2. The first time, it reloads the page once with the live conversation token.
+3. If the process dies again before the widget is ready, it does not reload. It calls `onError` with `WEBVIEW_ERROR` and the message `Widget web process died again before ready`. The page is blank then, so close the screen from `onError`.
+4. The first time any page gets ready, this resets. A manual `reload()`, an `open` or a second `init` does not reset it.
+
+A held `open` message and unflushed message attributes stay held and go out at the next ready, attributes first. Attributes already sent are lost with the page. After step 3, a later `open(message)` or `reload()` still loads the page. The SDK does not retry on its own. On API 23 to 25 the system does not report this.
 
 ### Widget Close Events
 
@@ -592,9 +605,8 @@ val ok = widgetView.setMessageAttributes(mapOf(
 - You can call this at any time. Until the widget is ready they are held, and they are sent before an `open` message, so the first message carries them.
 - It returns `false` for anything other than a non-empty map, or for a value that cannot be serialised. Nothing is sent then.
 - The widget's auto-start `Hi` counts as the next message. With no welcome text, no pre-chat form and no conversation, the widget sends `Hi` on its own. If you did not call `open`, the attributes can land on `Hi` and not on what the customer types.
-- Values must be json values. A `Date` becomes its `toString()`, and an unknown object becomes `null`.
-- After a send the widget clears them. A failed send keeps them for the next try.
-- They do not survive a reload of the page. They do survive the widget being closed, because the view stays alive. Calling `init` a second time clears them. Calls made before the first `init` are kept.
+- Values must be json values: strings, numbers, booleans, `null`, and maps or lists of those. Anything else, such as a `Date`, makes the call return `false` and nothing is sent.
+- After the customer's message is sent, the widget clears them. If that message fails, the widget keeps them for the next one. Attributes already sent to the widget are lost on a page reload. Attributes still held are kept. They also survive the widget being closed, because the view stays alive. Calling `init` a second time clears them. Calls made before the first `init` are kept.
 - `LimechatWidgetButton.setMessageAttributes` forwards to the view set with `setWidgetView`. With no view it returns `false`.
 - This needs a widget build containing `c8126fb7cd` (pr #120, 2026-09-25). Older builds ignore the event silently.
 
@@ -698,7 +710,7 @@ Calling `init` again clears a held open message and unflushed message attributes
 
 ### WidgetConfig.Builder
 
-`WidgetConfig.builder(websiteToken)` returns the builder. `build()` throws `WidgetException.ConfigurationError` for a blank token, locale or instance ID, an invalid base URL, or an external token without a callback.
+`WidgetConfig.builder(websiteToken)` returns the builder. `build()` throws `WidgetException.ConfigurationError` for a blank token, locale or instance ID, or an invalid base URL.
 
 | Method | Description |
 | --- | --- |
@@ -706,7 +718,7 @@ Calling `init` again clears a held open message and unflushed message attributes
 | `setUser(user: WidgetConfig.User?)` | User details. |
 | `setCustomAttributes(attributes: Map<String, Any>?)` | Custom metadata sent with the widget url. |
 | `setBaseUrl(baseUrl: String)` | Custom domain. |
-| `setExternalTokenManagement(token: String?, onTokenChange: ((String) -> Unit)?)` | You store the conversation token. Both values are required. |
+| `setExternalTokenManagement(token: String?, onTokenChange: ((String) -> Unit)?)` | You store the conversation token. Either value can be omitted. |
 | `setInstanceId(instanceId: String?)` | Isolates stored conversations. No `:` or `/`. |
 | `setShowLegacyBackIcon(showLegacyBackIcon: Boolean)` | Legacy close behaviour. |
 | `setHideFilePicker(hideFilePicker: Boolean)` | Hide the attachment button. |
@@ -743,7 +755,7 @@ Calling `init` again clears a held open message and unflushed message attributes
 
 Stay updated with the latest SDK versions:
 
-- **Current Version**: 0.0.8
+- **Current Version**: v0.0.9
 - **Changelog**: Check GitHub releases
 - **Migration Guides**: Available for major version updates
 
