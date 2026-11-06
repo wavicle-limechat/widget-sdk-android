@@ -12,8 +12,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
 /**
- * Pins the bridge wrapper script and sendMessage. Both post `limechat-widget:` prefixed json
- * that the real page ignores.
+ * Pins the bridge wrapper script and sendMessage. sendMessage posts `chatwoot-widget:` prefixed
+ * json, the prefix the real page reads.
  */
 @RunWith(RobolectricTestRunner::class)
 class InjectedJsCharacterizationTest {
@@ -35,14 +35,34 @@ class InjectedJsCharacterizationTest {
     }
 
     @Test
-    fun `pins current behaviour - sendMessage posts limechat-widget prefixed json the page ignores`() {
+    fun `sendMessage posts chatwoot-widget prefixed json the page reads`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.init(WidgetConfig.builder("tok").build())
         v.recorder().scripts.clear()
         v.sendMessage("custom-event", linkedMapOf("k" to "v", "n" to 1))
         assertEquals(
-            listOf("window.postMessage('limechat-widget:{\"event\":\"custom-event\",\"k\":\"v\",\"n\":1}', '*');"),
+            listOf("window.postMessage('chatwoot-widget:' + JSON.stringify({\"event\":\"custom-event\",\"k\":\"v\",\"n\":1}), '*');"),
             v.recorder().scripts
         )
+    }
+
+    @Test
+    fun `sendMessage keeps apostrophes inside the json`() {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").build())
+        v.recorder().scripts.clear()
+        v.sendMessage("x", mapOf("name" to "O'Brien"))
+        val script = v.recorder().scripts.single()
+        assertTrue(script.contains("JSON.stringify("))
+        assertTrue(script.contains("\"name\":\"O'Brien\""))
+    }
+
+    @Test
+    fun `sendMessage serializes nested maps as objects`() {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").build())
+        v.recorder().scripts.clear()
+        v.sendMessage("x", mapOf("user" to mapOf("email" to "a@b.c")))
+        assertTrue(v.recorder().scripts.single().contains("\"user\":{\"email\":\"a@b.c\"}"))
     }
 }

@@ -109,16 +109,8 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Send a message to the widget
      */
     fun sendMessage(event: String, data: Map<String, Any> = emptyMap()) {
-        val message = JSONObject().apply {
-            put("event", event)
-            data.forEach { (key, value) -> put(key, value) }
-        }
-        
-        val script = """
-            window.postMessage('limechat-widget:${message}', '*');
-        """.trimIndent()
-        
-        webView.evaluateJavascript(script, null)
+        val message = JSONObject(mapOf<String, Any>("event" to event) + data)
+        webView.evaluateJavascript("window.postMessage('chatwoot-widget:' + JSON.stringify($message), '*');", null)
     }
 
     /**
