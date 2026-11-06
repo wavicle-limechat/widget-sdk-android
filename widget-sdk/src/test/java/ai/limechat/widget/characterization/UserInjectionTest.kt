@@ -129,4 +129,22 @@ class UserInjectionTest {
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         assertEquals(emptyList<String>(), v.openScripts())
     }
+
+    @Test
+    fun `re-init drops a held open message`() {
+        val v = loaded(userConfig())
+        v.open("from A")
+        v.init(WidgetConfig.builder("tok2").setUser(WidgetConfig.User(name = "B")).build())
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        assertEquals(emptyList<String>(), v.openScripts())
+    }
+
+    @Test
+    fun `re-init with no user drops a held open message`() {
+        val v = loaded(userConfig())
+        v.open("from A")
+        v.init(WidgetConfig.builder("tok2").build())
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        assertEquals(emptyList<String>(), v.openScripts())
+    }
 }

@@ -98,6 +98,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         initialMessage: String?,
         initialMessageData: Map<String, Any>?
     ) {
+        pendingOpen = null
         this.config = config
         this.callback = callback
 
