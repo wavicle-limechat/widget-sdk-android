@@ -142,7 +142,8 @@ class LimechatWidgetView @JvmOverloads constructor(
             return
         }
         pendingOpen = message
-        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+        // a load is already running: keep it, the held message goes out at ready
+        if (webView.progress !in 1..99) loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     /** Reload the widget. Does nothing before init. */

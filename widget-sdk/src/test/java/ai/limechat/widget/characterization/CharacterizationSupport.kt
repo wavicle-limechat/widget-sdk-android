@@ -26,6 +26,10 @@ import java.time.Duration
 class RecordingShadowWebView : ShadowWebView() {
     val scripts = mutableListOf<String>()
     val loadedUrls = mutableListOf<String>()
+    var progressValue = 0
+
+    @Implementation
+    fun getProgress(): Int = progressValue
 
     @Implementation
     override fun loadUrl(url: String) {
