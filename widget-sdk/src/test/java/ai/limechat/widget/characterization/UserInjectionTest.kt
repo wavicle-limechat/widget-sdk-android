@@ -89,4 +89,44 @@ class UserInjectionTest {
         val v = loaded(WidgetConfig.builder("tok").setUser(WidgetConfig.User(identifier = "id-1")).build())
         assertEquals(emptyList<String>(), v.setUserScripts())
     }
+
+    private fun userConfig() = WidgetConfig.builder("tok").setUser(WidgetConfig.User(name = "N")).build()
+
+    private fun LimechatWidgetView.openScripts() = recorder().scripts.filter { it.contains("\"open-with-message\"") }
+
+    @Test
+    fun `with a user, open(message) sends the message after rnUser and keeps it out of the url`() {
+        val v = loaded(userConfig())
+        v.open("hi")
+        assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        val scripts = v.recorder().scripts
+        val rn = scripts.indexOfLast { it.contains("rnUser") }
+        val open = scripts.indexOfFirst { it.contains("\"open-with-message\"") }
+        assertTrue(open > rn && rn >= 0)
+        assertTrue(scripts[open].contains("\"openMessage\":\"hi\""))
+    }
+
+    @Test
+    fun `with a user, init with initial message and open(messageData) wait for rnUser`() {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(userConfig(), null, "first")
+        assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        assertTrue(v.openScripts().single().contains("first"))
+        v.open(mapOf("content" to "data"))
+        assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        assertTrue(v.openScripts().last().contains("\"content\":\"data\""))
+        assertEquals(2, v.openScripts().size)
+    }
+
+    @Test
+    fun `with no user, open(message) still goes in the url`() {
+        val v = loaded(WidgetConfig.builder("tok").build())
+        v.open("hi")
+        assertTrue(v.lastLoadedUrl()!!.contains("lc_open_message=hi"))
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        assertEquals(emptyList<String>(), v.openScripts())
+    }
 }

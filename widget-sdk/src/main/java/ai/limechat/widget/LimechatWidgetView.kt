@@ -44,6 +44,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private lateinit var bridge: JsBridge
     private var instanceId = ""
     private var cwConversation: String? = null
+    private var pendingOpen: Any? = null
 
     init {
         webView = WebViewFactory.create(
@@ -54,6 +55,8 @@ class LimechatWidgetView @JvmOverloads constructor(
                 callback = { callback },
                 onPageLoaded = {
                     injectUser()
+                    pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
+                    pendingOpen = null
                     sendVerifiedUser()
                     callback?.onLoaded()
                 }
@@ -120,7 +123,12 @@ class LimechatWidgetView @JvmOverloads constructor(
     fun open(message: String? = null) {
         val config = this.config ?: return
         if (message != null) {
-            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
+            if (userFields().isNotEmpty()) {
+                pendingOpen = message
+                loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+            } else {
+                loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
+            }
         }
     }
 
@@ -130,7 +138,12 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     fun open(messageData: Map<String, Any>) {
         val config = this.config ?: return
-        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
+        if (userFields().isNotEmpty()) {
+            pendingOpen = messageData
+            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+        } else {
+            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
+        }
     }
 
     private fun loadUrl(url: String) {
@@ -162,14 +175,18 @@ class LimechatWidgetView @JvmOverloads constructor(
         webView.destroy()
     }
 
-    private fun injectUser() {
-        val user = config?.user ?: return
-        val fields = buildMap<String, Any> {
+    private fun userFields(): Map<String, Any> {
+        val user = config?.user ?: return emptyMap()
+        return buildMap {
             user.name?.let { put("name", it) }
             user.email?.let { put("email", it) }
             user.phoneNumber?.let { put("phone_number", it) }
             user.customAttributes?.let { put("custom_attributes", it) }
         }
+    }
+
+    private fun injectUser() {
+        val fields = userFields()
         if (fields.isEmpty()) return
         webView.evaluateJavascript(
             "if (window.chatwootWebChannel) { window.chatwootWebChannel.rnUser = ${JSONObject(fields)}; }",
@@ -194,6 +211,12 @@ class LimechatWidgetView @JvmOverloads constructor(
 
         // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
         bridge.setup()
+
+        if (userFields().isNotEmpty() && (initialMessage != null || initialMessageData != null)) {
+            pendingOpen = initialMessage ?: initialMessageData
+            loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+            return
+        }
 
         loadUrl(
             UrlBuilder.buildWidgetUrl(
