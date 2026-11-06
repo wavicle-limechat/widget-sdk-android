@@ -5,6 +5,19 @@ All notable changes to the LimeChat Android SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+- `sendMessage` now posts `chatwoot-widget:` prefixed json, the prefix the widget reads. It was ignored before. Apostrophes and nested maps now arrive intact.
+- Removed the `LimechatNative` web message listener and the injected `window.postMessage` wrappers. The widget calls `window.LimechatAndroid.postMessage` directly.
+- `show_legacy_back_icon` is no longer added to the widget URL. `setShowLegacyBackIcon` keeps its native close behaviour.
+- `%` in `lc_open_payload` is escaped so the payload is not dropped.
+- `WidgetConfig.User` is now sent to the widget through `window.chatwootWebChannel.rnUser` on every page load. Hosts that already pass a user will update contacts on the first message.
+
+### Added
+- `WidgetConfig.User.identifier`. When both `identifier` and `identifierHash` are set, a `set-user` message is sent. Nothing changes until a host sets both.
+- `WidgetConfig.Builder.setHideFilePicker`, which adds `hide_file_picker=true` to the widget URL.
+
 ## [v0.0.9] - 2024-12-19
 
 ### Added

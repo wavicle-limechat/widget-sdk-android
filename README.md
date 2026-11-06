@@ -14,7 +14,7 @@
 - 🖥️ **Full-Screen Chat**: An immersive conversation experience.
 - 📎 **File Uploads**: Share images, documents, and other media.
 - 🔔 **Real-Time Messaging**: Instant notifications and message delivery.
-- 🎭 **Theme Support**: Light, dark, and automatic theme switching.
+- 🎭 **Theme Support**: `colorScheme` accepts light, dark, and auto. The widget has no dark mode today, so it has no visible effect.
 - 🌍 **Multi-Language**: Support for localization and multiple languages.
 - 🔒 **Secure**: Built with enterprise-grade security and privacy standards.
 - 💾 **Chat Persistence**: Conversations persist across app restarts and widget instances.
@@ -131,9 +131,8 @@ class ChatActivity : FragmentActivity() {
             override fun onClose() { finish() } // Automatically called when user closes/minimizes widget
             override fun onError(error: WidgetError) { /* Handle any errors */ }
             override fun onMessage(message: Map<String, Any>) {
-                // Handle real-time events from the widget
+                // Handle events from the widget. The unread badge is host driven: call widgetButton.updateUnreadCount(count)
                 when (message["event"]) {
-                    "unread-count-changed" -> updateBadge(message["count"] as Int)
                     "conversation-started" -> trackAnalytics("chat_started")
                 }
             }
@@ -157,7 +156,7 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
 
 ### Legacy Back Icon Support
 
-Control the display of the legacy back icon in the widget with the new `showLegacyBackIcon` property.
+Control the native close behaviour with the `showLegacyBackIcon` property. When it is on and the view sits in an Activity, closing the widget finishes that Activity and `onClose()` is not called. Otherwise `onClose()` is called.
 
 ```kotlin
 val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
@@ -165,20 +164,6 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
     .build()
 ```
 
-**URL Parameter**: When enabled, `show_legacy_back_icon=true` is automatically added to the widget URL.
-
-### Widget Back Event Handling
-
-The SDK now handles the `widget-back` event, which behaves the same as the `close-widget` event.
-
-```kotlin
-widgetView.init(config, object : WidgetCallback {
-    override fun onClose() { 
-        // Called for both 'close-widget' and 'widget-back' events
-        finish() 
-    }
-})
-```
 
 ## 🔧 Common Issues
 

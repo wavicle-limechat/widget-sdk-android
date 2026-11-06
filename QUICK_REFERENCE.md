@@ -65,7 +65,7 @@ class ChatActivity : FragmentActivity() {
         val widgetView = LimechatWidgetView(this)
         setContentView(widgetView)
 
-        val config = WidgetConfig(websiteToken = "YOUR_WEBSITE_TOKEN")
+        val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN").build()
         widgetView.init(config)
     }
 }
@@ -78,35 +78,34 @@ class ChatActivity : FragmentActivity() {
 ### Passing User Information
 
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    user = WidgetConfig.User(
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setUser(WidgetConfig.User(
         name = "John Doe",
         email = "john@example.com"
-    )
-)
+    ))
+    .build()
 ```
 
 ### Custom Attributes
 
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    customAttributes = mapOf(
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setCustomAttributes(mapOf(
         "plan" to "premium",
         "source" to "android_app"
-    )
-)
+    ))
+    .build()
 ```
 
 ### Setting the Theme
 
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    colorScheme = WidgetConfig.ColorScheme.DARK // or LIGHT, or AUTO
-)
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setColorScheme(WidgetConfig.ColorScheme.DARK) // or LIGHT, or AUTO
+    .build()
 ```
+
+The widget has no dark mode today, so `colorScheme` has no visible effect.
 
 ---
 
@@ -129,10 +128,7 @@ widgetView.init(config, object : WidgetCallback {
     override fun onClose() { /* ... */ }
     override fun onError(error: WidgetError) { /* ... */ }
     override fun onMessage(message: Map<String, Any>) {
-        if (message["event"] == "unread-count-changed") {
-            val count = message["count"] as? Int ?: 0
-            // Update your UI
-        }
+        // Handle events from the widget
     }
 })
 ```
@@ -167,10 +163,9 @@ repositories {
 
 ### 3. Basic Integration
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "YOUR_WEBSITE_TOKEN",
-    user = WidgetConfig.User(name = "John", email = "john@example.com")
-)
+val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")
+    .setUser(WidgetConfig.User(name = "John", email = "john@example.com"))
+    .build()
 
 val widgetButton = LimechatWidgetButton(this)
 widgetButton.init(config)
@@ -235,41 +230,35 @@ widgetButton.init(config, customButton)
 
 ### Theme Integration
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "TOKEN",
-    colorScheme = WidgetConfig.ColorScheme.AUTO // Follows system theme
-)
+val config = WidgetConfig.builder("TOKEN")
+    .setColorScheme(WidgetConfig.ColorScheme.AUTO) // Follows system theme
+    .build()
 ```
+
+The widget has no dark mode today, so `colorScheme` has no visible effect.
 
 ### User Context
 ```kotlin
-val config = WidgetConfig(
-    websiteToken = "TOKEN",
-    user = WidgetConfig.User(
+val config = WidgetConfig.builder("TOKEN")
+    .setUser(WidgetConfig.User(
         name = "John Doe",
         email = "john@company.com",
         phoneNumber = "+1234567890"
-    ),
-    customAttributes = mapOf(
+    ))
+    .setCustomAttributes(mapOf(
         "user_id" to "12345",
         "plan" to "premium",
         "app_version" to BuildConfig.VERSION_NAME
-    )
-)
+    ))
+    .build()
 ```
 
 ## 📡 Event Handling
 
 ### Unread Count Updates
+The badge is host driven. The widget does not send an unread count, so call `updateUnreadCount` with your own value.
 ```kotlin
-override fun onMessage(message: Map<String, Any>) {
-    when (message["event"]) {
-        "unread-count-changed" -> {
-            val count = message["count"] as? Int ?: 0
-            widgetButton.updateUnreadCount(count)
-        }
-    }
-}
+widgetButton.updateUnreadCount(count)
 ```
 
 ### Error Handling
@@ -297,19 +286,8 @@ val config = WidgetConfig.builder("YOUR_TOKEN")
 ```kotlin
 // Control legacy back icon display
 val config = WidgetConfig.builder("YOUR_TOKEN")
-    .setShowLegacyBackIcon(true) // Adds show_legacy_back_icon=true to URL
+    .setShowLegacyBackIcon(true) // With an Activity context, close finishes the Activity and skips onClose()
     .build()
-```
-
-### Widget Back Event
-```kotlin
-// Handle back button clicks (same as close-widget)
-widgetView.init(config, object : WidgetCallback {
-    override fun onClose() {
-        // Called for both 'close-widget' and 'widget-back' events
-        finish()
-    }
-})
 ```
 
 ## 🔧 Common Issues & Fixes
@@ -332,13 +310,7 @@ android.enableJetifier=true
 ```
 
 ### ProGuard Rules
-```proguard
-# Add to proguard-rules.pro
--keep class ai.limechat.widget.** { *; }
--keepclassmembers class * {
-    @android.webkit.JavascriptInterface <methods>;
-}
-```
+No manual rules are needed. The SDK ships `consumer-rules.pro` and it is applied automatically.
 
 ### File Picker Not Working
 ```kotlin

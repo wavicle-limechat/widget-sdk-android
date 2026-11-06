@@ -121,13 +121,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // 1. Configure the widget with your token and user info
-        val config = WidgetConfig(
-            websiteToken = "YOUR_WEBSITE_TOKEN", // Replace with your token from the LimeChat dashboard
-            user = WidgetConfig.User(
+        val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN") // Replace with your token from the LimeChat dashboard
+            .setUser(WidgetConfig.User(
                 name = "John Doe",
                 email = "john@example.com"
-            )
-        )
+            ))
+            .build()
 
         // 2. Create the widget button
         val widgetButton = LimechatWidgetButton(this)
@@ -162,12 +161,13 @@ Here are some of the available options using the builder pattern:
 ```kotlin
 val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your LimeChat website token
     .setLocale("en")                                       // Optional: Language code (e.g., "en", "es", "fr")
-    .setColorScheme(WidgetConfig.ColorScheme.AUTO)         // Optional: LIGHT, DARK, or AUTO
+    .setColorScheme(WidgetConfig.ColorScheme.AUTO)         // Optional: LIGHT, DARK, or AUTO (no visible effect, the widget has no dark mode today)
     .setUser(WidgetConfig.User(                            // Optional: User information
         name = "John Doe",
         email = "john@company.com",
         phoneNumber = "+1234567890",
-        identifierHash = "USER_HASH_123"                   // Optional: For secure mode
+        identifier = "USER_ID_123",                        // Optional: For secure mode, needs identifierHash too
+        identifierHash = "USER_HASH_123"                   // Optional: For secure mode, needs identifier too
     ))
     .setCustomAttributes(mapOf(                            // Optional: Custom metadata
         "user_type" to "premium",
@@ -176,13 +176,15 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your Lim
     .setBaseUrl("https://app.limechat.ai")                 // Optional: For custom domains
     .setInstanceId("unique-widget-instance")               // Optional: For widget isolation and persistence
     .setShowLegacyBackIcon(true)                           // Optional: Enable legacy back icon (default: false)
+    .setHideFilePicker(true)                               // Optional: Hide the attachment button (default: false)
     .build()
 ```
 
 #### New Features in v0.0.9:
 
 - **`setInstanceId(String?)`**: Provides unique identification for widget instances, enabling proper conversation persistence and isolation between different widget instances in your app.
-- **`setShowLegacyBackIcon(Boolean)`**: Controls whether the legacy back icon is displayed in the widget. When enabled, adds `show_legacy_back_icon=true` to the widget URL.
+- **`setShowLegacyBackIcon(Boolean)`**: Controls the native close behaviour. When enabled and the view sits in an Activity, closing the widget finishes that Activity and `onClose()` is not called.
+- **`setHideFilePicker(Boolean)`**: Hides the attachment button in the widget (default: false).
 
 ### Custom Attributes
 
@@ -269,9 +271,9 @@ class ChatActivity : FragmentActivity() {
         setContentView(widgetView)
 
         // 2. Get config from intent or create a new one
-        val config = WidgetConfig(
-            websiteToken = intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN"
-        )
+        val config = WidgetConfig.builder(
+            intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN"
+        ).build()
 
         // 3. Initialize the view
         widgetView.init(config)
@@ -375,10 +377,9 @@ val user = WidgetConfig.User(
     phoneNumber = "+1987654321"
 )
 
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    user = user
-)
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setUser(user)
+    .build()
 ```
 
 ### Updating User Details
@@ -388,14 +389,14 @@ If the user logs in or out, you can re-initialize the widget with the new inform
 ```kotlin
 fun onUserLoggedIn(user: AppUser) {
     val chatUser = WidgetConfig.User(name = user.name, email = user.email)
-    val newConfig = WidgetConfig(websiteToken = "YOUR_TOKEN", user = chatUser)
+    val newConfig = WidgetConfig.builder("YOUR_TOKEN").setUser(chatUser).build()
     widgetButton.init(newConfig) // Re-initializes with the new user
 }
 ```
 
 ### Secure Mode
 
-For added security, you can use a server-generated hash to verify the user's identity.
+For added security, you can verify the user's identity. Secure mode needs both `identifier` and `identifierHash`. The hash is `HMAC-SHA256(hmac_token, identifier)`, generated on your backend. With only one of the two, nothing is sent.
 
 ```kotlin
 // This hash should be generated on your backend
@@ -403,6 +404,7 @@ val userHash = "SERVER_GENERATED_HASH"
 
 val user = WidgetConfig.User(
     email = "jane@example.com",
+    identifier = "USER_ID_123",
     identifierHash = userHash
 )
 ```
@@ -423,7 +425,7 @@ widgetView.init(config, object : WidgetCallback {
 
     override fun onClose() {
         // User has requested to close the widget (e.g., clicked minimize button or back button)
-        // Called for both 'close-widget' and 'widget-back' events
+        // Called when the widget close button is pressed
         // The SDK automatically handles minimize/close detection
         finish() // Example: close the activity
     }
@@ -444,25 +446,17 @@ widgetView.init(config, object : WidgetCallback {
 
 Here are some of the events you can receive in `onMessage`:
 
-- `unread-count-changed`: The number of unread messages has changed.
 - `conversation-started`: A new conversation has been started.
 - `agent-joined`: An agent has joined the chat.
 - `message-received`: A new message has been received.
 
 ### Widget Close Events
 
-The `onClose()` callback is triggered by the following events:
-
-- `close-widget`: User clicked the minimize/close button
-- `widget-back`: User clicked the back button (same behavior as close-widget)
+The `onClose()` callback is triggered by the `close-widget` event, when the user clicks the minimize/close button.
 
 ```kotlin
 private fun handleWidgetMessage(message: Map<String, Any>) {
     when (message["event"] as? String) {
-        "unread-count-changed" -> {
-            val count = message["count"] as? Int ?: 0
-            // Update a notification badge
-        }
         "conversation-started" -> {
             // Track an analytics event
         }
@@ -562,7 +556,7 @@ If you encounter issues, check the following common problems and solutions.
 - **AndroidX Compatibility**: Make sure your project has `android.useAndroidX=true` and `android.enableJetifier=true` in `gradle.properties`.
 - **Widget Not Loading**: Double-check your `websiteToken` and internet permissions. Use the `onError` callback to log any errors.
 - **Widget Not Closing**: Ensure you've implemented the `onClose()` callback in your `WidgetCallback`. The SDK automatically handles minimize/close button presses.
-- **ProGuard Issues**: If the widget crashes in release builds, add the ProGuard rules from the `widget-sdk/proguard-rules.pro` file to your app's ProGuard configuration.
+- **ProGuard Issues**: If the widget crashes in release builds, the SDK ships `consumer-rules.pro`, which is applied automatically, so no manual rules should be needed. Check your own ProGuard configuration.
 
 ---
 
