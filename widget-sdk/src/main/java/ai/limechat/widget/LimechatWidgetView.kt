@@ -47,6 +47,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var pendingOpen: Any? = null
     private var pageStarted = false
     private var widgetReady = false
+    private var pendingAttributes: Map<String, Any?> = emptyMap()
 
     init {
         webView = WebViewFactory.create(
@@ -98,6 +99,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         initialMessage: String?,
         initialMessageData: Map<String, Any>?
     ) {
+        if (this.config != null) pendingAttributes = emptyMap()
         pendingOpen = null
         this.config = config
         this.callback = callback
@@ -141,6 +143,26 @@ class LimechatWidgetView @JvmOverloads constructor(
         }
         pendingOpen = message
         loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+    }
+
+    /**
+     * Attach custom attributes to the customer's next message. Repeat calls merge, later keys win.
+     * Held until the widget is ready, and sent before a held open message.
+     * @return false for a null, empty or unserialisable value
+     */
+    fun setMessageAttributes(attributes: Map<String, Any?>?): Boolean {
+        val valid = !attributes.isNullOrEmpty() &&
+            runCatching { JSONObject(attributes).toString() != null }.getOrDefault(false)
+        if (!valid) return false
+        pendingAttributes = pendingAttributes + attributes!!
+        flushMessageAttributes()
+        return true
+    }
+
+    private fun flushMessageAttributes() {
+        if (!widgetReady || pendingAttributes.isEmpty()) return
+        sendMessage("set-message-attributes", mapOf("attributes" to pendingAttributes))
+        pendingAttributes = emptyMap()
     }
 
     private fun loadUrl(url: String) {
@@ -254,6 +276,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         widgetReady = true
         injectUser()
         sendVerifiedUser()
+        flushMessageAttributes()
         pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
         pendingOpen = null
         return true

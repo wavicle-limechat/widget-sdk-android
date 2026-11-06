@@ -132,6 +132,17 @@ class LimechatWidgetButton @JvmOverloads constructor(
     }
 
     /**
+     * Attach custom attributes to the customer's next message. Needs setWidgetView()
+     * @return false if no widget view is set or the value is invalid
+     */
+    fun setMessageAttributes(attributes: Map<String, Any?>?): Boolean {
+        return widgetView?.setMessageAttributes(attributes) ?: run {
+            Log.w(TAG, "WidgetView not set. Call setWidgetView() first")
+            false
+        }
+    }
+
+    /**
      * Clean up resources
      */
     fun destroy() {
