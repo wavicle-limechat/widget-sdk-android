@@ -52,11 +52,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                 context,
                 baseUrl = { config?.baseUrl },
                 callback = { callback },
-                onPageLoaded = {
-                    // Ensure messaging bridge is re-established on every load/HMR
-                    bridge.reattach()
-                    callback?.onLoaded()
-                }
+                onPageLoaded = { callback?.onLoaded() }
             ),
             WidgetChromeClient { filePicker }
         )

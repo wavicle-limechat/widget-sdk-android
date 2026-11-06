@@ -27,9 +27,6 @@ import org.robolectric.Shadows.shadowOf
  *   anything else (incl. loaded, widget-back) -> onMessage(map).
  * Unparseable payloads are dropped silently. Exceptions thrown by the host callback
  * are caught and reported as onError(JAVASCRIPT_ERROR).
- *
- * The WebMessageListener (`LimechatNative`) path can't run under robolectric; only the
- * js interface path is covered here.
  */
 @RunWith(RobolectricTestRunner::class)
 class BridgeCharacterizationTest {
