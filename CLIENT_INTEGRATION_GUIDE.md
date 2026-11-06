@@ -467,6 +467,8 @@ widgetView.init(config, object : WidgetCallback {
 
 `onLoaded` fires when the widget is ready to receive messages, once per page load, after `onConversationTokenChange`. A page that fails to load calls `onError` and never calls `onLoaded`. This includes a main page HTTP error (status 400 or above), which reaches `onError` as a `WEBVIEW_ERROR` with `statusCode` in `context`. A page that returns 200 but never starts the widget gives neither.
 
+`onError` also reports failures of subresources, such as a script or image on the page (`WidgetWebViewClient`). `onLoaded` can still follow, so an `onError` alone does not mean the page failed.
+
 ### Widget Events
 
 The widget sends only `set-cw-conversation` and `close-widget` today. The SDK handles both itself, so `onMessage` has no events yet.
@@ -560,6 +562,7 @@ widgetView.open(mapOf("content" to "I need help with my order."))
 - If it is not ready, the message is held until it is. A later `open` replaces a held one.
 - If the page fails to load, the message stays held until a later load succeeds, or until you call `init` again, which drops it.
 - A null, empty string or empty map does nothing.
+- Call `open` and `setMessageAttributes` on the main thread. Before ready they only hold a value, so a background call seems to work. After ready they call `evaluateJavascript`, which throws off the main thread.
 - `sendMessage` before the widget is ready is lost. Only `open` and `setMessageAttributes` wait.
 
 `reload()` loads the widget page again. A held message and unflushed message attributes are kept and sent at the next ready.
@@ -588,6 +591,8 @@ val ok = widgetView.setMessageAttributes(mapOf(
 - They are attached as `custom_attributes` to the customer's next message only. Repeat calls merge, later keys win. They are message attributes, not contact attributes.
 - You can call this at any time. Until the widget is ready they are held, and they are sent before an `open` message, so the first message carries them.
 - It returns `false` for anything other than a non-empty map, or for a value that cannot be serialised. Nothing is sent then.
+- The widget's auto-start `Hi` counts as the next message. With no welcome text, no pre-chat form and no conversation, the widget sends `Hi` on its own. If you did not call `open`, the attributes can land on `Hi` and not on what the customer types.
+- Values must be json values. A `Date` becomes its `toString()`, and an unknown object becomes `null`.
 - After a send the widget clears them. A failed send keeps them for the next try.
 - They do not survive a reload of the page. They do survive the widget being closed, because the view stays alive. Calling `init` a second time clears them. Calls made before the first `init` are kept.
 - `LimechatWidgetButton.setMessageAttributes` forwards to the view set with `setWidgetView`. With no view it returns `false`.
