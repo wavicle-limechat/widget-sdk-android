@@ -39,6 +39,7 @@ class LimechatWidgetButton @JvmOverloads constructor(
         private const val UNREAD_BADGE_MARGIN_DP = 4
         
         // SDK Version - this helps distinguish between local and published versions
+        @Deprecated("Unused. Removed at the next major.")
         const val SDK_VERSION = "0.0.5-local-dev"
         
         private const val DEFAULT_BACKGROUND_COLOR = 0xFF6366F1.toInt() // Purple
@@ -49,6 +50,8 @@ class LimechatWidgetButton @JvmOverloads constructor(
         /**
          * Get the current SDK version
          */
+        @Deprecated("Unused. Removed at the next major.")
+        @Suppress("DEPRECATION")
         fun getSDKVersion(): String = SDK_VERSION
     }
 

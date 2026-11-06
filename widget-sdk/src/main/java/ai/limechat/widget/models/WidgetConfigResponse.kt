@@ -11,22 +11,34 @@ data class WidgetConfigResponse(
     data class ConfigData(
         val widgetIconMobile: String? = null,
         val widgetIconDesktop: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val widgetBubbleText: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val welcomeTitle: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val welcomeTagline: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val replyTime: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val preChatFormEnabled: Boolean = false,
+        @Deprecated("Unused. Removed at the next major.")
         val preChatFormOptions: Map<String, Any>? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val brandName: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val brandUrl: String? = null,
+        @Deprecated("Unused. Removed at the next major.")
         val hideMessageBubbleText: Boolean = false,
+        @Deprecated("Unused. Removed at the next major.")
         val hideInputFieldText: Boolean = false,
+        @Deprecated("Unused. Removed at the next major.")
         val showPoweredBy: Boolean = true
     ) {
         companion object {
             /**
              * Parse ConfigData from JSON
              */
+            @Suppress("DEPRECATION")
             fun fromJson(json: JSONObject): ConfigData {
                 return ConfigData(
                     widgetIconMobile = json.optString("widgetIconMobile").takeIf { it.isNotEmpty() },
