@@ -109,6 +109,7 @@ The quickest way to get started is by adding the floating `LimechatWidgetButton`
 ```kotlin
 import ai.limechat.widget.LimechatWidgetButton
 import ai.limechat.widget.models.WidgetConfig
+import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -132,6 +133,11 @@ class MainActivity : AppCompatActivity() {
         // 2. Create the widget button
         val widgetButton = LimechatWidgetButton(this)
         widgetButton.init(config)
+
+        // The button only reports taps. Open the chat yourself, here a ChatActivity (see Full-Screen Widget below)
+        widgetButton.setOnClickListener {
+            startActivity(Intent(this, ChatActivity::class.java))
+        }
 
         // 3. Add the button to your layout (e.g., in the bottom-right corner)
         val container = findViewById<FrameLayout>(R.id.main_container)
@@ -208,7 +214,7 @@ While the default button works out of the box, you can customize its appearance 
 
 ### Using a Custom Button
 
-You can use your own `View` as the chat button. The SDK will handle opening the widget when the view is clicked.
+You can use your own `View` as the chat button. The SDK does not open the widget when it is tapped. Set a click listener on the `LimechatWidgetButton` and open the chat yourself, by starting your `ChatActivity` or showing your `LimechatWidgetView`. Call `setWidgetView` only if you want `widgetButton.open` and `widgetButton.setMessageAttributes` to reach a view.
 
 ```kotlin
 // In your layout XML or created programmatically
@@ -217,6 +223,9 @@ val myCustomButton: Button = findViewById(R.id.my_chat_button)
 // Initialize the widget with your custom button
 val widgetButton = LimechatWidgetButton(this)
 widgetButton.init(config, myCustomButton)
+widgetButton.setOnClickListener {
+    startActivity(Intent(this, ChatActivity::class.java))
+}
 ```
 
 ### Positioning the Button
@@ -347,7 +356,9 @@ val supportWidgetConfig = WidgetConfig.builder("YOUR_TOKEN")
 For advanced use cases, you can manage conversation tokens externally:
 
 ```kotlin
-var conversationToken: String? = null
+// The token cannot be null. `build()` throws a ConfigurationError if the token or the callback is missing.
+// Load a token you stored earlier. A first launch with no token cannot use external token management yet.
+var conversationToken: String = storedToken // from your own storage
 
 val config = WidgetConfig.builder("YOUR_TOKEN")
     .setExternalTokenManagement(
@@ -401,9 +412,11 @@ If the user logs in or out, you can re-initialize the widget with the new inform
 fun onUserLoggedIn(user: AppUser) {
     val chatUser = WidgetConfig.User(name = user.name, email = user.email)
     val newConfig = WidgetConfig.builder("YOUR_TOKEN").setUser(chatUser).build()
-    widgetButton.init(newConfig) // Re-initializes with the new user
+    widgetView.init(newConfig, callback) // Re-initializes with the new user
 }
 ```
+
+`widgetView.init` clears held message attributes and a held `open` message, then reloads the widget. `LimechatWidgetButton.init` does not do this. The button keeps the config for its icon only, and the view keeps the old user and token.
 
 ### Secure Mode
 

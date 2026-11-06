@@ -54,6 +54,7 @@ dependencies {
 To add the chat widget to your app, configure it with your `websiteToken` and user details. Then, create a `LimechatWidgetButton` and add it to your layout.
 
 ```kotlin
+import android.content.Intent
 import ai.limechat.widget.LimechatWidgetButton
 import ai.limechat.widget.models.WidgetConfig
 
@@ -74,6 +75,11 @@ class MainActivity : AppCompatActivity() {
         // 2. Create the floating chat button
         val widgetButton = LimechatWidgetButton(this)
         widgetButton.init(config)
+
+        // The button only reports taps. Open the chat yourself, here a ChatActivity (see the integration guide)
+        widgetButton.setOnClickListener {
+            startActivity(Intent(this, ChatActivity::class.java))
+        }
         
         // 3. Add the button to your layout (e.g., bottom-right corner)
         val container = findViewById<FrameLayout>(R.id.main_container)
@@ -98,7 +104,7 @@ Finally, ensure your app has the necessary permissions by adding the following t
 <uses-permission android:name="android.permission.INTERNET" />
 ```
 
-**That's it! Your chat widget is now ready.** 🎉
+**That's it! The button shows in your app, and a tap starts your `ChatActivity`.** 🎉
 
 ## 📖 Documentation
 
