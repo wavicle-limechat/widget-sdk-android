@@ -35,7 +35,7 @@ data class WidgetConfig internal constructor(
     /**
      * User information to be passed to the widget
      */
-    data class User(
+    data class User @JvmOverloads constructor(
         val name: String? = null,
         val email: String? = null,
         val phoneNumber: String? = null,
