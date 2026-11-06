@@ -304,6 +304,17 @@ class NavigationAndOpenCharacterizationTest {
     }
 
     @Test
+    fun `open at progress 100 before ready reloads`() {
+        val v = view()
+        v.recorder().progressValue = 100
+        v.recorder().loadedUrls.clear()
+        v.open("hi there")
+        assertEquals(1, v.recorder().loadedUrls.size)
+        v.widgetReady()
+        assertTrue(v.recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":\"hi there\""))
+    }
+
+    @Test
     fun `open with message keeps the stored cw_conversation in internal mode`() {
         tokenMemoryCache()["default"] = "stored1"
         val v = view()
