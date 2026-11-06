@@ -486,7 +486,7 @@ When the widget becomes ready, the SDK sends in this order: the user fields, the
 
 ### Web Process Death
 
-On API 26 and above the system can kill the WebView's render process. The SDK handles it and never crashes the host app.
+On API 26 and above the system can kill the WebView's render process. The SDK handles this for its own WebView, so the widget does not crash the host app. A WebView of your own needs its own `onRenderProcessGone`.
 
 1. The SDK replaces the dead WebView with a new one and clears the ready state, so `open` and `setMessageAttributes` hold.
 2. The first time, it reloads the page once with the live conversation token.
