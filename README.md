@@ -195,10 +195,18 @@ android.enableJetifier=true
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
 
+## Publishing
+
+Run `./validate-build.sh` first. It cleans, builds the SDK in release and debug, runs the tests and lint.
+
+Then run `./publish-to-jitpack.sh`. It asks for the new version, updates `widget-sdk/build.gradle.kts`, commits, tags `v<version>` and pushes the branch and the tag. JitPack builds the tag. Check it at https://jitpack.io/#wavicle-limechat/widget-sdk-android.
+
+Once the build is green, run `./test-jitpack-dependency.sh <version>`. It resolves `com.github.wavicle-limechat:widget-sdk-android:<version>` in a temporary project. `./check-jitpack-setup.sh` checks that the publishing files exist.
+
 ## 🤝 Support
 
 - **📖 Documentation**: [CLIENT_INTEGRATION_GUIDE.md](CLIENT_INTEGRATION_GUIDE.md)
-- **📦 Publishing Guide**: [PUBLISHING.md](PUBLISHING.md)
+- **📦 Publishing**: see the Publishing section above
 - **🐛 Bug Reports**: [GitHub Issues](https://github.com/wavicle-limechat/widget-sdk-android/issues)
 - **💬 General Support**: Contact the LimeChat support team.
 - **📧 Email**: support@limechat.ai
