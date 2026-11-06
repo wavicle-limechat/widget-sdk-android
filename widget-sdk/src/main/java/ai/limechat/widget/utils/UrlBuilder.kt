@@ -43,10 +43,6 @@ object UrlBuilder {
             }
         }
         
-        if (config.showLegacyBackIcon) {
-            params["show_legacy_back_icon"] = "true"
-        }
-        
         openMessage?.let { params["lc_open_message"] = it }
         openPayload?.let { params["lc_open_payload"] = it }
         

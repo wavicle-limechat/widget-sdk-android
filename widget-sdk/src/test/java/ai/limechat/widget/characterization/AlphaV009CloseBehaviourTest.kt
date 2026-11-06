@@ -95,10 +95,10 @@ class AlphaV009CloseBehaviourTest {
     }
 
     @Test
-    fun `alpha - legacy back icon still adds show_legacy_back_icon to the url`() {
+    fun `alpha - legacy back icon does not add show_legacy_back_icon to the url`() {
         val (_, v) = activityView(legacy = true, cb = RecordingCallback())
         assertEquals(
-            "https://app.limechat.ai/widget?website_token=tok&locale=en&color_scheme=light&show_legacy_back_icon=true",
+            "https://app.limechat.ai/widget?website_token=tok&locale=en&color_scheme=light",
             v.lastLoadedUrl()
         )
     }

@@ -20,7 +20,7 @@ import org.robolectric.RuntimeEnvironment
  * Encoding today: every key and value goes through java.net.URLEncoder once
  * (space -> `+`, `*` `-` `.` `_` unencoded, everything else %XX).
  * Param order today: website_token, locale, color_scheme, custom_attributes,
- * cw_conversation, show_legacy_back_icon, then lc_open_message / lc_open_payload.
+ * cw_conversation, then lc_open_message / lc_open_payload.
  */
 @RunWith(RobolectricTestRunner::class)
 class WidgetUrlCharacterizationTest {
@@ -148,9 +148,9 @@ class WidgetUrlCharacterizationTest {
     }
 
     @Test
-    fun `pins current behaviour - show_legacy_back_icon is sent as url param (web ignores it)`() {
+    fun `show_legacy_back_icon is not sent as a url param`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light&show_legacy_back_icon=true",
+            "$prod?website_token=tok&locale=en&color_scheme=light",
             url(WidgetConfig.builder("tok").setShowLegacyBackIcon(true))
         )
     }
@@ -165,7 +165,7 @@ class WidgetUrlCharacterizationTest {
             .setBaseUrl("https://staging.example.com")
         assertEquals(
             "https://staging.example.com/widget?website_token=tok&locale=ar&color_scheme=dark" +
-                "&custom_attributes=%7B%22k%22%3A%22v%22%7D&cw_conversation=cw1&show_legacy_back_icon=true",
+                "&custom_attributes=%7B%22k%22%3A%22v%22%7D&cw_conversation=cw1",
             url(b, cw = "cw1")
         )
     }
@@ -223,13 +223,13 @@ class WidgetUrlCharacterizationTest {
     }
 
     @Test
-    fun `initial message is appended after cw_conversation and show_legacy_back_icon`() {
+    fun `initial message is appended after cw_conversation`() {
         tokenMemoryCache()["default"] = "stored1"
         val v = view()
         v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), null, initialMessage = "hello")
         assertEquals(
             "$prod?website_token=tok&locale=en&color_scheme=light&cw_conversation=stored1" +
-                "&show_legacy_back_icon=true&lc_open_message=hello",
+                "&lc_open_message=hello",
             v.lastLoadedUrl()
         )
     }

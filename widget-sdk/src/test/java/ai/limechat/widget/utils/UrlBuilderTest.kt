@@ -81,7 +81,7 @@ class UrlBuilderTest {
     }
 
     @Test
-    fun `test show legacy back icon parameter`() {
+    fun `test show legacy back icon is not a url parameter`() {
         val configWithLegacyIcon = WidgetConfig.builder("test")
             .setShowLegacyBackIcon(true)
             .build()
@@ -92,7 +92,7 @@ class UrlBuilderTest {
         val urlWithLegacy = UrlBuilder.buildWidgetUrl(configWithLegacyIcon)
         val urlWithoutLegacy = UrlBuilder.buildWidgetUrl(configWithoutLegacyIcon)
 
-        assertTrue(urlWithLegacy.contains("show_legacy_back_icon=true"))
+        assertFalse(urlWithLegacy.contains("show_legacy_back_icon"))
         assertFalse(urlWithoutLegacy.contains("show_legacy_back_icon"))
     }
 }
