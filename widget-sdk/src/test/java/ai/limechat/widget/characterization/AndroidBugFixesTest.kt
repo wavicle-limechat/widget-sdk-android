@@ -223,6 +223,19 @@ class AndroidBugFixesTest {
         assertEquals(mapOf("scheme" to "mailto"), err.context)
     }
 
+    // ---- onLoaded still fires when the token callback throws ----
+
+    @Test
+    fun `calls onLoaded even when the token callback throws`() {
+        val throwing = RecordingCallback(throwOn = "onConversationTokenChange")
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").build(), throwing)
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"tok-1"}""")
+
+        assertEquals(listOf("onConversationTokenChange", "onLoaded", "onError"), throwing.events)
+    }
+
     // ---- logs: no conversation token, no raw bridge payload ----
 
     @Test

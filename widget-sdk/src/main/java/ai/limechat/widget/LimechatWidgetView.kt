@@ -280,8 +280,11 @@ class LimechatWidgetView @JvmOverloads constructor(
                             CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
                         BridgeEvents.SET_CW_CONVERSATION -> {
                             val firstReady = markWidgetReady()
-                            handleConversationTokenUpdate(message["cw_conversation"] as? String)
-                            callback?.takeIf { firstReady }?.onLoaded()
+                            try {
+                                handleConversationTokenUpdate(message["cw_conversation"] as? String)
+                            } finally {
+                                callback?.takeIf { firstReady }?.onLoaded()
+                            }
                         }
                         else -> callback?.onMessage(message)
                     }
