@@ -15,7 +15,7 @@ class MessageHandlerTest {
 
     @Test
     fun `test process message with prefix`() {
-        val message = """limechat-widget:{"event":"loaded","status":"success"}"""
+        val message = """{"event":"loaded","status":"success"}"""
         val result = messageHandler.processMessage(message)
 
         assertNotNull(result)
@@ -35,7 +35,7 @@ class MessageHandlerTest {
 
     @Test
     fun `test process invalid json message`() {
-        val message = """limechat-widget:invalid-json"""
+        val message = """invalid-json"""
         val result = messageHandler.processMessage(message)
 
         assertNull(result)
@@ -49,7 +49,7 @@ class MessageHandlerTest {
 
     @Test
     fun `test process message with nested objects`() {
-        val message = """limechat-widget:{"event":"set-user","user":{"name":"John","email":"john@example.com"},"metadata":{"timestamp":1234567890}}"""
+        val message = """{"event":"set-user","user":{"name":"John","email":"john@example.com"},"metadata":{"timestamp":1234567890}}"""
         val result = messageHandler.processMessage(message)
 
         assertNotNull(result)
@@ -67,7 +67,7 @@ class MessageHandlerTest {
 
     @Test
     fun `test process message with null values`() {
-        val message = """limechat-widget:{"event":"test","value":null,"number":42}"""
+        val message = """{"event":"test","value":null,"number":42}"""
         val result = messageHandler.processMessage(message)
 
         assertNotNull(result)
@@ -78,7 +78,7 @@ class MessageHandlerTest {
 
     @Test
     fun `test process message with special characters`() {
-        val message = """limechat-widget:{"event":"message","text":"Hello \"World\"!","emoji":"😊"}"""
+        val message = """{"event":"message","text":"Hello \"World\"!","emoji":"😊"}"""
         val result = messageHandler.processMessage(message)
 
         assertNotNull(result)

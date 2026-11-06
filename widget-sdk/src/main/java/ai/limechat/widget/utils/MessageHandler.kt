@@ -6,10 +6,6 @@ import org.json.JSONObject
 /** Utility class for handling messages from the widget */
 class MessageHandler {
 
-    companion object {
-        private const val MESSAGE_PREFIX = "limechat-widget:"
-    }
-
     /**
      * Process a message from the WebView
      * @param data Raw message data
@@ -17,23 +13,13 @@ class MessageHandler {
      */
     fun processMessage(data: String): Map<String, Any?>? {
         return try {
-            val message = extractMessage(data)
-            if (isJsonString(message)) {
-                parseJsonMessage(message)
+            if (isJsonString(data)) {
+                parseJsonMessage(data)
             } else {
                 null
             }
         } catch (e: Exception) {
             null
-        }
-    }
-
-    /** Extract message content by removing prefix */
-    private fun extractMessage(data: String): String {
-        return if (data.startsWith(MESSAGE_PREFIX)) {
-            data.removePrefix(MESSAGE_PREFIX)
-        } else {
-            data
         }
     }
 

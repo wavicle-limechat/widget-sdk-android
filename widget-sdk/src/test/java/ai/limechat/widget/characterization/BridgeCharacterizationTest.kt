@@ -21,8 +21,8 @@ import org.robolectric.Shadows.shadowOf
  * Pins what happens when the page calls window.LimechatAndroid.postMessage(payload)
  * on develop @ 3456551 (LimechatWidgetView.handleMessage, :611-642).
  *
- * Dispatch today: MessageHandler strips an optional `limechat-widget:` prefix, parses a json
- * object, then switches on `event ?: type` (only if they are strings):
+ * Dispatch today: MessageHandler parses a json object (a prefix makes it unparseable), then switches
+ * on `event ?: type` (only if they are strings):
  *   close-widget -> onClose, set-cw-conversation -> token update,
  *   anything else (incl. loaded, widget-back) -> onMessage(map).
  * Unparseable payloads are dropped silently. Exceptions thrown by the host callback
@@ -62,9 +62,9 @@ class BridgeCharacterizationTest {
     }
 
     @Test
-    fun `prefixed limechat-widget payload is accepted`() {
+    fun `limechat-widget prefixed payload is dropped silently`() {
         view.postFromJs("""limechat-widget:{"event":"close-widget"}""")
-        assertEquals(listOf("onClose"), cb.events)
+        assertEquals(emptyList<String>(), cb.events)
     }
 
     @Test
