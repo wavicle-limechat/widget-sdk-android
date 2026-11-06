@@ -43,6 +43,8 @@ object UrlBuilder {
             }
         }
         
+        if (config.hideFilePicker) params["hide_file_picker"] = "true"
+
         openMessage?.let { params["lc_open_message"] = it }
         openPayload?.let { params["lc_open_payload"] = it.replace("%", "\\u0025") }
         

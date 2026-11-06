@@ -95,4 +95,13 @@ class UrlBuilderTest {
         assertFalse(urlWithLegacy.contains("show_legacy_back_icon"))
         assertFalse(urlWithoutLegacy.contains("show_legacy_back_icon"))
     }
+
+    @Test
+    fun `test hide file picker parameter`() {
+        val hidden = UrlBuilder.buildWidgetUrl(WidgetConfig.builder("test").setHideFilePicker(true).build())
+        val default = UrlBuilder.buildWidgetUrl(WidgetConfig.builder("test").build())
+
+        assertTrue(hidden.contains("hide_file_picker=true"))
+        assertFalse(default.contains("hide_file_picker"))
+    }
 }

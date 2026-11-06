@@ -28,7 +28,8 @@ data class WidgetConfig internal constructor(
     val conversationToken: String?,
     val onConversationTokenChange: ((String) -> Unit)?,
     val instanceId: String?,
-    val showLegacyBackIcon: Boolean
+    val showLegacyBackIcon: Boolean,
+    val hideFilePicker: Boolean
 ) : Serializable {
     
     /**
@@ -65,6 +66,7 @@ data class WidgetConfig internal constructor(
         private var onConversationTokenChange: ((String) -> Unit)? = null
         private var instanceId: String? = null
         private var showLegacyBackIcon: Boolean = false
+        private var hideFilePicker: Boolean = false
         
         /**
          * Set the locale for the widget
@@ -137,6 +139,14 @@ data class WidgetConfig internal constructor(
         }
         
         /**
+         * Hide the attachment button in the widget
+         */
+        fun setHideFilePicker(hideFilePicker: Boolean): Builder {
+            this.hideFilePicker = hideFilePicker
+            return this
+        }
+        
+        /**
          * Build and validate the configuration
          * 
          * @throws WidgetException.ConfigurationError if configuration is invalid
@@ -154,7 +164,8 @@ data class WidgetConfig internal constructor(
                 conversationToken = conversationToken,
                 onConversationTokenChange = onConversationTokenChange,
                 instanceId = instanceId,
-                showLegacyBackIcon = showLegacyBackIcon
+                showLegacyBackIcon = showLegacyBackIcon,
+                hideFilePicker = hideFilePicker
             )
         }
         
