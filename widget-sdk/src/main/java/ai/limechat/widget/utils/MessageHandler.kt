@@ -1,6 +1,5 @@
 package ai.limechat.widget.utils
 
-import org.json.JSONException
 import org.json.JSONObject
 
 /** Utility class for handling messages from the widget */
@@ -13,32 +12,8 @@ class MessageHandler {
      */
     fun processMessage(data: String): Map<String, Any?>? {
         return try {
-            if (isJsonString(data)) {
-                parseJsonMessage(data)
-            } else {
-                null
-            }
+            jsonToMap(JSONObject(data))
         } catch (e: Exception) {
-            null
-        }
-    }
-
-    /** Check if string is valid JSON */
-    private fun isJsonString(string: String): Boolean {
-        return try {
-            JSONObject(string)
-            true
-        } catch (e: JSONException) {
-            false
-        }
-    }
-
-    /** Parse JSON message into a map */
-    private fun parseJsonMessage(message: String): Map<String, Any?>? {
-        return try {
-            val json = JSONObject(message)
-            jsonToMap(json)
-        } catch (e: JSONException) {
             null
         }
     }
