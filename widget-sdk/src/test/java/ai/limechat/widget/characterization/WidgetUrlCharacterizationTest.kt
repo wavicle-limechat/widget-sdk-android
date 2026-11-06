@@ -20,7 +20,7 @@ import org.robolectric.RuntimeEnvironment
  *
  * Encoding today: every key and value goes through java.net.URLEncoder once
  * (space -> `+`, `*` `-` `.` `_` unencoded, everything else %XX).
- * Param order today: website_token, locale, color_scheme, custom_attributes,
+ * Param order today: website_token, platform, locale, color_scheme, custom_attributes,
  * cw_conversation, then lc_open_message / lc_open_payload.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -39,9 +39,17 @@ class WidgetUrlCharacterizationTest {
     // ---- UrlBuilder.buildWidgetUrl ----
 
     @Test
+    fun `the url has platform android after website_token`() {
+        assertEquals(
+            "https://app.limechat.ai/widget?website_token=abc&platform=android&locale=en&color_scheme=light",
+            url(WidgetConfig.builder("abc"))
+        )
+    }
+
+    @Test
     fun `minimal config`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light",
             url(WidgetConfig.builder("tok"))
         )
     }
@@ -49,11 +57,11 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `locale and color scheme dark and auto`() {
         assertEquals(
-            "$prod?website_token=tok&locale=hi&color_scheme=dark",
+            "$prod?website_token=tok&platform=android&locale=hi&color_scheme=dark",
             url(WidgetConfig.builder("tok").setLocale("hi").setColorScheme(WidgetConfig.ColorScheme.DARK))
         )
         assertEquals(
-            "$prod?website_token=tok&locale=pt-BR&color_scheme=auto",
+            "$prod?website_token=tok&platform=android&locale=pt-BR&color_scheme=auto",
             url(WidgetConfig.builder("tok").setLocale("pt-BR").setColorScheme(WidgetConfig.ColorScheme.AUTO))
         )
     }
@@ -61,7 +69,7 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `website token with special chars and unicode is URLEncoder encoded`() {
         assertEquals(
-            "$prod?website_token=a+b%2Bc%2F%C3%A9%26x%3Dy*%7E&locale=en&color_scheme=light",
+            "$prod?website_token=a+b%2Bc%2F%C3%A9%26x%3Dy*%7E&platform=android&locale=en&color_scheme=light",
             url(WidgetConfig.builder("a b+c/é&x=y*~"))
         )
     }
@@ -69,7 +77,7 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `custom attributes simple`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&custom_attributes=%7B%22plan%22%3A%22pro%22%7D",
             url(WidgetConfig.builder("tok").setCustomAttributes(mapOf("plan" to "pro")))
         )
@@ -85,7 +93,7 @@ class WidgetUrlCharacterizationTest {
         )
         // {"b":1,"a":{"x":true},"list":[1,2],"d":1.5}
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&custom_attributes=%7B%22b%22%3A1%2C%22a%22%3A%7B%22x%22%3Atrue%7D%2C%22list%22%3A%5B1%2C2%5D%2C%22d%22%3A1.5%7D",
             url(WidgetConfig.builder("tok").setCustomAttributes(attrs))
         )
@@ -95,7 +103,7 @@ class WidgetUrlCharacterizationTest {
     fun `custom attributes with plus ampersand equals percent`() {
         // {"q":"a+b&c=d%e"}
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&custom_attributes=%7B%22q%22%3A%22a%2Bb%26c%3Dd%25e%22%7D",
             url(WidgetConfig.builder("tok").setCustomAttributes(mapOf("q" to "a+b&c=d%e")))
         )
@@ -105,7 +113,7 @@ class WidgetUrlCharacterizationTest {
     fun `pins current behaviour - custom attributes json escapes slash as backslash slash`() {
         // android org.json writes {"url":"https:\/\/x.com\/p"}
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&custom_attributes=%7B%22url%22%3A%22https%3A%5C%2F%5C%2Fx.com%5C%2Fp%22%7D",
             url(WidgetConfig.builder("tok").setCustomAttributes(mapOf("url" to "https://x.com/p")))
         )
@@ -115,7 +123,7 @@ class WidgetUrlCharacterizationTest {
     fun `custom attributes unicode and emoji are utf-8 percent encoded, not json-escaped`() {
         // {"name":"Zoë 😊"}
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&custom_attributes=%7B%22name%22%3A%22Zo%C3%AB+%F0%9F%98%8A%22%7D",
             url(WidgetConfig.builder("tok").setCustomAttributes(mapOf("name" to "Zoë 😊")))
         )
@@ -124,7 +132,7 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `empty custom attributes map is omitted`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light",
             url(WidgetConfig.builder("tok").setCustomAttributes(emptyMap()))
         )
     }
@@ -132,11 +140,11 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `cw_conversation from argument, blank argument omitted`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light&cw_conversation=abc.def-1",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light&cw_conversation=abc.def-1",
             url(WidgetConfig.builder("tok"), cw = "abc.def-1")
         )
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light",
             url(WidgetConfig.builder("tok"), cw = "  ")
         )
     }
@@ -144,14 +152,14 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `cw_conversation falls back to external config token, argument wins`() {
         val ext = WidgetConfig.builder("tok").setExternalTokenManagement("ext1") {}
-        assertEquals("$prod?website_token=tok&locale=en&color_scheme=light&cw_conversation=ext1", url(ext))
-        assertEquals("$prod?website_token=tok&locale=en&color_scheme=light&cw_conversation=arg", url(ext, cw = "arg"))
+        assertEquals("$prod?website_token=tok&platform=android&locale=en&color_scheme=light&cw_conversation=ext1", url(ext))
+        assertEquals("$prod?website_token=tok&platform=android&locale=en&color_scheme=light&cw_conversation=arg", url(ext, cw = "arg"))
     }
 
     @Test
     fun `show_legacy_back_icon is not sent as a url param`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light",
             url(WidgetConfig.builder("tok").setShowLegacyBackIcon(true))
         )
     }
@@ -165,7 +173,7 @@ class WidgetUrlCharacterizationTest {
             .setShowLegacyBackIcon(true)
             .setBaseUrl("https://staging.example.com")
         assertEquals(
-            "https://staging.example.com/widget?website_token=tok&locale=ar&color_scheme=dark" +
+            "https://staging.example.com/widget?website_token=tok&platform=android&locale=ar&color_scheme=dark" +
                 "&custom_attributes=%7B%22k%22%3A%22v%22%7D&cw_conversation=cw1",
             url(b, cw = "cw1")
         )
@@ -173,7 +181,7 @@ class WidgetUrlCharacterizationTest {
 
     @Test
     fun `base url trailing slashes are all trimmed, path kept`() {
-        val q = "?website_token=tok&locale=en&color_scheme=light"
+        val q = "?website_token=tok&platform=android&locale=en&color_scheme=light"
         assertEquals("https://example.com/widget$q", url(WidgetConfig.builder("tok").setBaseUrl("https://example.com/")))
         assertEquals("https://example.com/widget$q", url(WidgetConfig.builder("tok").setBaseUrl("https://example.com//")))
         assertEquals("https://example.com/sub/widget$q", url(WidgetConfig.builder("tok").setBaseUrl("https://example.com/sub/")))
@@ -189,7 +197,7 @@ class WidgetUrlCharacterizationTest {
         // the web reads the param with URLSearchParams (decode #1) and then decodeURIComponent again
         // (decode #2), so "%" is sent as "%25" before encoding.
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light&lc_open_message=50%2525+off+%2B+free",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light&lc_open_message=50%2525+off+%2B+free",
             UrlBuilder.buildWidgetUrl(config(), openMessage = "50% off + free")
         )
     }
@@ -197,7 +205,7 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `lc_open_message unicode and quotes`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&lc_open_message=h%C3%A9llo+%22you%22+%26+%27me%27+%F0%9F%98%8A",
             UrlBuilder.buildWidgetUrl(config(), openMessage = "héllo \"you\" & 'me' 😊")
         )
@@ -211,7 +219,7 @@ class WidgetUrlCharacterizationTest {
         )
         // {"content":"hi 50%","submitted_values":{"k":"v\/w"}}
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light" +
                 "&lc_open_payload=%7B%22content%22%3A%22hi+50%5Cu0025%22%2C%22submitted_values%22%3A%7B%22k%22%3A%22v%5C%2Fw%22%7D%7D",
             UrlBuilder.buildWidgetUrl(config(), openPayload = JSONObject(data).toString())
         )
@@ -220,7 +228,7 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `initial message is appended after cw_conversation`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light&cw_conversation=stored1" +
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light&cw_conversation=stored1" +
                 "&lc_open_message=hello",
             UrlBuilder.buildWidgetUrl(config(), "stored1", openMessage = "hello")
         )
@@ -229,7 +237,7 @@ class WidgetUrlCharacterizationTest {
     @Test
     fun `null initial message adds nothing`() {
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light",
+            "$prod?website_token=tok&platform=android&locale=en&color_scheme=light",
             UrlBuilder.buildWidgetUrl(config(), openMessage = null)
         )
     }

@@ -28,7 +28,7 @@ class ConversationTokenCharacterizationTest {
     private val ctx: Context get() = RuntimeEnvironment.getApplication()
     private val prefs: SharedPreferences
         get() = ctx.getSharedPreferences("limechat_widget_conversations", Context.MODE_PRIVATE)
-    private val q = "?website_token=tok&locale=en&color_scheme=light"
+    private val q = "?website_token=tok&platform=android&locale=en&color_scheme=light"
     private val prod = "https://app.limechat.ai/widget"
 
     @Before
@@ -111,7 +111,7 @@ class ConversationTokenCharacterizationTest {
     fun `pins current behaviour - key default is shared across website tokens`() {
         setToken(view(WidgetConfig.builder("websiteA").build()), "tokFromA")
         assertEquals(
-            "$prod?website_token=websiteB&locale=en&color_scheme=light&cw_conversation=tokFromA",
+            "$prod?website_token=websiteB&platform=android&locale=en&color_scheme=light&cw_conversation=tokFromA",
             view(WidgetConfig.builder("websiteB").build()).lastLoadedUrl()
         )
     }

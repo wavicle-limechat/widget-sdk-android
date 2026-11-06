@@ -24,6 +24,7 @@ object UrlBuilder {
         val params = mutableMapOf<String, String>()
         
         params["website_token"] = config.websiteToken
+        params["platform"] = "android"
         params["locale"] = config.locale
         
         params["color_scheme"] = when (config.colorScheme) {

@@ -33,7 +33,7 @@ import org.robolectric.Shadows.shadowOf
 class NavigationAndOpenCharacterizationTest {
 
     private val prod = "https://app.limechat.ai/widget"
-    private val q = "?website_token=tok&locale=en&color_scheme=light"
+    private val q = "?website_token=tok&platform=android&locale=en&color_scheme=light"
     private lateinit var cb: RecordingCallback
 
     @Before
