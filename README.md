@@ -105,7 +105,6 @@ Finally, ensure your app has the necessary permissions by adding the following t
 
 For more detailed information, check out our comprehensive documentation and examples.
 
-- **[🚀 Quick Reference](QUICK_REFERENCE.md)**: Common code snippets and quick examples.
 - **[📚 Full Integration Guide](CLIENT_INTEGRATION_GUIDE.md)**: A complete guide to integrating and customizing the widget.
 - **[🔧 Working Example](published-sdk-demo/)**: A sample application demonstrating a complete integration.
 

@@ -537,11 +537,63 @@ helpButton.setOnClickListener {
 
 If you encounter issues, check the following common problems and solutions.
 
-- **Dependency Resolution Error**: Ensure JitPack is in your `settings.gradle.kts` and the dependency name is correct.
+- **Dependency Resolution Error**: Ensure `google()`, `mavenCentral()` and JitPack are in your repositories and the dependency name is correct.
+
+  ```kotlin
+  // settings.gradle.kts
+  dependencyResolutionManagement {
+      repositories {
+          google()
+          mavenCentral()
+          maven { url = uri("https://jitpack.io") }
+      }
+  }
+  ```
+
 - **AndroidX Compatibility**: Make sure your project has `android.useAndroidX=true` and `android.enableJetifier=true` in `gradle.properties`.
+
+  ```properties
+  # gradle.properties
+  android.useAndroidX=true
+  android.enableJetifier=true
+  ```
+
 - **Widget Not Loading**: Double-check your `websiteToken` and internet permissions. Use the `onError` callback to log any errors.
 - **Widget Not Closing**: Ensure you've implemented the `onClose()` callback in your `WidgetCallback`. The SDK automatically handles minimize/close button presses.
+- **File Picker Not Working**: Create the `WidgetFilePicker` in `onCreate`, before the activity starts, and attach it to the view.
+
+  ```kotlin
+  override fun onCreate(savedInstanceState: Bundle?) {
+      super.onCreate(savedInstanceState)
+      val widgetFilePicker = WidgetFilePicker(this) // Create here, not later
+      widgetView.attachFilePicker(widgetFilePicker)
+  }
+  ```
+
 - **ProGuard Issues**: If the widget crashes in release builds, the SDK ships `consumer-rules.pro`, which is applied automatically, so no manual rules should be needed. Check your own ProGuard configuration.
+
+### Checklists
+
+Before integration:
+
+- [ ] JitPack repository added
+- [ ] Internet permission in `AndroidManifest.xml`
+- [ ] AndroidX enabled in `gradle.properties`
+- [ ] Your LimeChat website token ready
+
+Testing:
+
+- [ ] Widget button appears and is clickable
+- [ ] Widget opens and loads correctly
+- [ ] File upload works (if needed)
+- [ ] Proper cleanup in `onDestroy()`
+- [ ] Works in a release build with ProGuard
+
+Go live:
+
+- [ ] Replace the test token with the production token
+- [ ] Test on multiple devices and screen sizes
+- [ ] Error handling implemented
 
 ---
 
