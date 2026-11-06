@@ -53,6 +53,12 @@ fun idleMain() = shadowOf(Looper.getMainLooper()).idle()
 
 fun idleMainFor(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))
 
+/** Starts a page, then posts set-cw-conversation the way the widget does when it mounts. */
+fun LimechatWidgetView.widgetReady() {
+    shadowOf(webView()).webViewClient.onPageStarted(webView(), "x", null)
+    postFromJs("""{"event":"set-cw-conversation"}""")
+}
+
 /** Runs the main looper until [condition] is true. Needed when real IO threads post back to main. */
 fun waitOnMain(timeoutMs: Long = 5000, condition: () -> Boolean) {
     val end = System.currentTimeMillis() + timeoutMs

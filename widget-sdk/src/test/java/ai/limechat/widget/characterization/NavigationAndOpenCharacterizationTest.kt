@@ -137,10 +137,36 @@ class NavigationAndOpenCharacterizationTest {
     }
 
     @Test
-    fun `onPageFinished calls onLoaded`() {
+    fun `onPageFinished alone does not call onLoaded`() {
         val v = view()
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "$prod$q")
+        assertTrue(cb.events.isEmpty())
+    }
+
+    @Test
+    fun `onLoaded fires once when the widget is ready, even after a second page finish`() {
+        val v = view()
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "$prod$q")
+        v.widgetReady()
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "$prod$q")
+        v.postFromJs("""{"event":"set-cw-conversation"}""")
         assertEquals(listOf("onLoaded"), cb.events)
+    }
+
+    @Test
+    fun `onLoaded fires after the token callback`() {
+        val v = view()
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"tokA"}""")
+        assertEquals(listOf("onConversationTokenChange", "onLoaded"), cb.events)
+    }
+
+    @Test
+    fun `a new page fires onLoaded again`() {
+        val v = view()
+        v.widgetReady()
+        v.widgetReady()
+        assertEquals(listOf("onLoaded", "onLoaded"), cb.events)
     }
 
     // ---- file chooser ----

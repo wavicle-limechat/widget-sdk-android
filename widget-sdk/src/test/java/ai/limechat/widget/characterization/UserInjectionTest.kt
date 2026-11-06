@@ -73,6 +73,7 @@ class UserInjectionTest {
                 .setUser(WidgetConfig.User(name = "N", identifier = "id-1", identifierHash = "h"))
                 .build()
         )
+        v.widgetReady()
         val script = v.setUserScripts().single()
         assertTrue(script.contains("\"identifier\":\"id-1\""))
         assertTrue(script.contains("\"identifier_hash\":\"h\""))
@@ -167,9 +168,6 @@ class UserInjectionTest {
         assertTrue(v.openScripts().single().contains("\"openMessage\":\"hi\""))
     }
 
-    private fun LimechatWidgetView.widgetReady() =
-        postFromJs("""{"event":"set-cw-conversation","cw_conversation":"t"}""")
-
     @Test
     fun `a fragment onPageFinished with no onPageStarted does not send the held message`() {
         val v = loaded(userConfig())
@@ -208,7 +206,32 @@ class UserInjectionTest {
     fun `set-cw-conversation from the old page does not take a message held for the next load`() {
         val v = loaded(userConfig())
         v.open("hi")
-        v.widgetReady()
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"t"}""")
         assertEquals(emptyList<String>(), v.openScripts())
+    }
+
+    @Test
+    fun `identifier and hash send set-user once at ready and not on page finish`() {
+        val v = loaded(
+            WidgetConfig.builder("tok")
+                .setUser(WidgetConfig.User(name = "N", identifier = "id-1", identifierHash = "h"))
+                .build()
+        )
+        assertEquals(emptyList<String>(), v.setUserScripts())
+        v.widgetReady()
+        v.postFromJs("""{"event":"set-cw-conversation"}""")
+        assertEquals(1, v.setUserScripts().size)
+    }
+
+    @Test
+    fun `a new page sends set-user again`() {
+        val v = loaded(
+            WidgetConfig.builder("tok")
+                .setUser(WidgetConfig.User(name = "N", identifier = "id-1", identifierHash = "h"))
+                .build()
+        )
+        v.widgetReady()
+        v.widgetReady()
+        assertEquals(2, v.setUserScripts().size)
     }
 }

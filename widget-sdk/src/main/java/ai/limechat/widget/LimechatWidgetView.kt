@@ -45,7 +45,8 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var instanceId = ""
     private var cwConversation: String? = null
     private var pendingOpen: Any? = null
-    private var pendingOpenArmed = false
+    private var pageStarted = false
+    private var widgetReady = false
 
     init {
         webView = WebViewFactory.create(
@@ -54,12 +55,11 @@ class LimechatWidgetView @JvmOverloads constructor(
                 context,
                 baseUrl = { config?.baseUrl },
                 callback = { callback },
-                onPageStarted = { pendingOpenArmed = pendingOpen != null },
-                onPageLoaded = {
-                    injectUser()
-                    sendVerifiedUser()
-                    callback?.onLoaded()
-                }
+                onPageStarted = {
+                    pageStarted = true
+                    widgetReady = false
+                },
+                onPageLoaded = { injectUser() }
             ),
             WidgetChromeClient { filePicker }
         )
@@ -99,7 +99,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         initialMessageData: Map<String, Any>?
     ) {
         pendingOpen = null
-        pendingOpenArmed = false
         this.config = config
         this.callback = callback
 
@@ -127,7 +126,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         if (message != null) {
             if (userFields().isNotEmpty()) {
                 pendingOpen = message
-                pendingOpenArmed = false
                 loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
             } else {
                 loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openMessage = message))
@@ -143,7 +141,6 @@ class LimechatWidgetView @JvmOverloads constructor(
         val config = this.config ?: return
         if (userFields().isNotEmpty()) {
             pendingOpen = messageData
-            pendingOpenArmed = false
             loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
         } else {
             loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation, openPayload = JSONObject(messageData).toString()))
@@ -152,6 +149,8 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     private fun loadUrl(url: String) {
         Log.d(TAG, "Loading widget URL: ${url.substringBefore('?')}")
+        pageStarted = false
+        widgetReady = false
         webView.loadUrl(url)
     }
 
@@ -218,7 +217,6 @@ class LimechatWidgetView @JvmOverloads constructor(
 
         if (userFields().isNotEmpty() && (initialMessage != null || initialMessageData != null)) {
             pendingOpen = initialMessage ?: initialMessageData
-            pendingOpenArmed = false
             loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
             return
         }
@@ -242,8 +240,9 @@ class LimechatWidgetView @JvmOverloads constructor(
                         BridgeEvents.CLOSE_WIDGET ->
                             CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
                         BridgeEvents.SET_CW_CONVERSATION -> {
-                            flushPendingOpen()
+                            val firstReady = markWidgetReady()
                             handleConversationTokenUpdate(message["cw_conversation"] as? String)
+                            callback?.takeIf { firstReady }?.onLoaded()
                         }
                         else -> callback?.onMessage(message)
                     }
@@ -264,13 +263,16 @@ class LimechatWidgetView @JvmOverloads constructor(
      * The widget posts set-cw-conversation in the same task that registers its message listener,
      * so this is the first moment a held open message can be received. onPageFinished is too early:
      * hash routing finishes a fragment navigation before the widget mounts.
+     * Returns true the first time the widget is ready on this page.
      */
-    private fun flushPendingOpen() {
-        if (!pendingOpenArmed) return
+    private fun markWidgetReady(): Boolean {
+        if (!pageStarted || widgetReady) return false
+        widgetReady = true
         injectUser()
+        sendVerifiedUser()
         pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
         pendingOpen = null
-        pendingOpenArmed = false
+        return true
     }
 
     private fun handleConversationTokenUpdate(token: String?) {
