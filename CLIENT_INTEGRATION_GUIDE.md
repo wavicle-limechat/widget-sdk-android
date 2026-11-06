@@ -27,20 +27,26 @@
 5. [Full-Screen Widget](#️-full-screen-widget)
     - [Creating a Widget Activity](#creating-a-widget-activity)
     - [Launching the Activity](#launching-the-activity)
-6. [User Management](#-user-management)
+6. [Chat Persistence](#-chat-persistence)
+    - [How It Works](#how-it-works)
+    - [Configuration](#configuration)
+    - [Instance ID Usage](#instance-id-usage)
+    - [External Token Management](#external-token-management)
+7. [User Management](#-user-management)
     - [Passing User Information](#passing-user-information)
     - [Updating User Details](#updating-user-details)
     - [Secure Mode](#secure-mode)
-7. [Handling Events](#-handling-events)
+8. [Handling Events](#-handling-events)
     - [Implementing WidgetCallback](#implementing-widgetcallback)
-    - [Available Events](#available-events)
-8. [File Uploads](#-file-uploads)
+    - [Widget Events](#widget-events)
+    - [Web Process Death](#web-process-death)
+9. [File Uploads](#-file-uploads)
     - [Enabling File Uploads](#enabling-file-uploads)
     - [Permissions for File Uploads](#permissions-for-file-uploads)
-9. [Custom Message Widget Buttons](#-custom-message-widget-buttons)
-10. [Message Attributes](#-message-attributes)
-11. [Troubleshooting](#-troubleshooting)
-12. [API Reference](#-api-reference)
+10. [Custom Message Widget Buttons](#-custom-message-widget-buttons)
+11. [Message Attributes](#-message-attributes)
+12. [Troubleshooting](#-troubleshooting)
+13. [API Reference](#-api-reference)
 
 ---
 
@@ -190,6 +196,9 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your Lim
 
 - **`setInstanceId(String?)`**: Provides unique identification for widget instances, enabling proper conversation persistence and isolation between different widget instances in your app.
 - **`setShowLegacyBackIcon(Boolean)`**: Controls the native close behaviour. When enabled and the view sits in an Activity, closing the widget finishes that Activity and `onClose()` is not called.
+
+#### Added after v0.0.9:
+
 - **`setHideFilePicker(Boolean)`**: Hides the attachment button in the widget (default: false).
 
 ### Custom Attributes

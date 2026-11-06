@@ -16,13 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `sendMessage` now posts `chatwoot-widget:` prefixed json, the prefix the widget reads. It was ignored before. Apostrophes and nested maps now arrive intact.
 - Removed the `LimechatNative` web message listener and the injected `window.postMessage` wrappers. The widget calls `window.LimechatAndroid.postMessage` directly.
 - `show_legacy_back_icon` is no longer added to the widget URL. `setShowLegacyBackIcon` keeps its native close behaviour.
-- The widget url is logged without its query string, so `website_token`, `custom_attributes` and `lc_open_*` no longer reach logcat.
-- `%` in `lc_open_payload` is escaped so the payload is not dropped.
+- The widget url is logged without its query string, so `website_token` and `custom_attributes` no longer reach logcat.
 - `WidgetConfig.User` is now sent to the widget through `window.chatwootWebChannel.rnUser` on every page load. Hosts that already pass a user will update contacts on the first message.
-- When a user is set, `open` messages are sent after `rnUser`, and only to the page that was loaded for them. A held message is dropped on re-init.
 - A held `open` message is now sent when the widget posts `set-cw-conversation`, not on page finish. The page finish can come before the widget listens, which lost the message.
 - Under external token management, the live conversation token is kept and used for reload and open, and is not overwritten by the config token.
-- `%` in `lc_open_message` is escaped so the text is not dropped.
 - The `WidgetConfig.User` 5 arg constructor is back for java hosts.
 
 ### Added

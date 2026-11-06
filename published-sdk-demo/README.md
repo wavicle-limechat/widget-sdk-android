@@ -17,7 +17,7 @@ This demonstrates the LimeChat Widget Android SDK working with the published Jit
 - **UI**: Green banner shows "Using PUBLISHED SDK from JitPack"
 - **Structure**: Standalone project, no `/widget-sdk` folder
 
-### Local SDK (sample-app, example-project)
+### Local SDK (local-sdk-demo, example-project)
 
 - **Dependency**: `implementation(project(":widget-sdk"))`
 - **UI**: No "PUBLISHED SDK" indicators
