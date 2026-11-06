@@ -383,6 +383,32 @@ class NavigationAndOpenCharacterizationTest {
     }
 
     @Test
+    fun `reload loads the url with the live token`() {
+        val v = view()
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
+        v.reload()
+        assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
+        assertEquals(2, v.recorder().loadedUrls.size)
+    }
+
+    @Test
+    fun `reload keeps a held open message and sends it at the next ready`() {
+        val v = view()
+        v.open("hi")
+        v.reload()
+        assertTrue(v.recorder().scripts.none { it.contains("open-with-message") })
+        v.widgetReady()
+        assertEquals(1, v.recorder().scripts.count { it.contains("open-with-message") })
+    }
+
+    @Test
+    fun `reload before init does nothing`() {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.reload()
+        assertNull(v.lastLoadedUrl())
+    }
+
+    @Test
     fun `open before init does nothing`() {
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
         v.open("hi")

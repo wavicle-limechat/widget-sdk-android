@@ -145,6 +145,12 @@ class LimechatWidgetView @JvmOverloads constructor(
         loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
+    /** Reload the widget. Does nothing before init. */
+    fun reload() {
+        val config = this.config ?: return
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+    }
+
     /**
      * Attach custom attributes to the customer's next message. Repeat calls merge, later keys win.
      * Held until the widget is ready, and sent before a held open message.
