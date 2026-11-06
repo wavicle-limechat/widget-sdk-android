@@ -260,10 +260,10 @@ class LimechatWidgetView @JvmOverloads constructor(
         }
         
         val config = this.config
+        cwConversation = token
         if (config?.onConversationTokenChange != null) {
             config.onConversationTokenChange.invoke(token)
         } else {
-            cwConversation = token
             ConversationTokenStore.save(context, instanceId, token)
         }
         

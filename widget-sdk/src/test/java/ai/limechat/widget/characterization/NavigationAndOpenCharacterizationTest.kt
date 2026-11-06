@@ -259,11 +259,11 @@ class NavigationAndOpenCharacterizationTest {
     }
 
     @Test
-    fun `pins current behaviour - open with message keeps the original external config token, not the updated one`() {
+    fun `open with message uses the live token under external token management`() {
         val v = view(WidgetConfig.builder("tok").setExternalTokenManagement("ext1") {}.build())
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"newer"}""")
         v.open("hi")
-        assertEquals("$prod$q&cw_conversation=ext1&lc_open_message=hi", v.lastLoadedUrl())
+        assertEquals("$prod$q&cw_conversation=newer&lc_open_message=hi", v.lastLoadedUrl())
     }
 
     @Test
