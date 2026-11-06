@@ -15,6 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `%` in `lc_open_payload` is escaped so the payload is not dropped.
 - `WidgetConfig.User` is now sent to the widget through `window.chatwootWebChannel.rnUser` on every page load. Hosts that already pass a user will update contacts on the first message.
 - When a user is set, `open` messages are sent after `rnUser`, and only to the page that was loaded for them. A held message is dropped on re-init.
+- A held `open` message is now sent when the widget posts `set-cw-conversation`, not on page finish. The page finish can come before the widget listens, which lost the message.
 - Under external token management, the live conversation token is kept and used for reload and open, and is not overwritten by the config token.
 - `%` in `lc_open_message` is escaped so the text is not dropped.
 - The `WidgetConfig.User` 5 arg constructor is back for java hosts.

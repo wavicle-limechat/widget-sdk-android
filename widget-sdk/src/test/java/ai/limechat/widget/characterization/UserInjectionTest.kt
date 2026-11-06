@@ -101,6 +101,7 @@ class UserInjectionTest {
         assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
         shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        v.widgetReady()
         val scripts = v.recorder().scripts
         val rn = scripts.indexOfLast { it.contains("rnUser") }
         val open = scripts.indexOfFirst { it.contains("\"open-with-message\"") }
@@ -115,11 +116,13 @@ class UserInjectionTest {
         assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
         shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        v.widgetReady()
         assertTrue(v.openScripts().single().contains("first"))
         v.open(mapOf("content" to "data"))
         assertTrue(!v.lastLoadedUrl()!!.contains("lc_open_"))
         shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        v.widgetReady()
         assertTrue(v.openScripts().last().contains("\"content\":\"data\""))
         assertEquals(2, v.openScripts().size)
     }
@@ -160,6 +163,52 @@ class UserInjectionTest {
         assertEquals(emptyList<String>(), v.openScripts())
         shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "new", null)
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "new")
+        v.widgetReady()
         assertTrue(v.openScripts().single().contains("\"openMessage\":\"hi\""))
+    }
+
+    private fun LimechatWidgetView.widgetReady() =
+        postFromJs("""{"event":"set-cw-conversation","cw_conversation":"t"}""")
+
+    @Test
+    fun `a fragment onPageFinished with no onPageStarted does not send the held message`() {
+        val v = loaded(userConfig())
+        v.open("hi")
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x#/")
+        assertEquals(emptyList<String>(), v.openScripts())
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        assertEquals(emptyList<String>(), v.openScripts())
+    }
+
+    @Test
+    fun `set-cw-conversation sends the held message once, after rnUser`() {
+        val v = loaded(userConfig())
+        v.open("hi")
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        v.widgetReady()
+        val scripts = v.recorder().scripts
+        val open = scripts.indexOfFirst { it.contains("\"open-with-message\"") }
+        assertTrue(open > scripts.indexOfLast { it.contains("rnUser") })
+        assertTrue(scripts[open].contains("\"openMessage\":\"hi\""))
+        assertEquals(1, v.openScripts().size)
+    }
+
+    @Test
+    fun `a second set-cw-conversation does not resend the held message`() {
+        val v = loaded(userConfig())
+        v.open("hi")
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        v.widgetReady()
+        v.widgetReady()
+        assertEquals(1, v.openScripts().size)
+    }
+
+    @Test
+    fun `set-cw-conversation from the old page does not take a message held for the next load`() {
+        val v = loaded(userConfig())
+        v.open("hi")
+        v.widgetReady()
+        assertEquals(emptyList<String>(), v.openScripts())
     }
 }

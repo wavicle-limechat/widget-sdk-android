@@ -57,11 +57,6 @@ class LimechatWidgetView @JvmOverloads constructor(
                 onPageStarted = { pendingOpenArmed = pendingOpen != null },
                 onPageLoaded = {
                     injectUser()
-                    if (pendingOpenArmed) {
-                        pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
-                        pendingOpen = null
-                        pendingOpenArmed = false
-                    }
                     sendVerifiedUser()
                     callback?.onLoaded()
                 }
@@ -246,8 +241,10 @@ class LimechatWidgetView @JvmOverloads constructor(
                     when (BridgeEvents.nameOf(message)) {
                         BridgeEvents.CLOSE_WIDGET ->
                             CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
-                        BridgeEvents.SET_CW_CONVERSATION ->
+                        BridgeEvents.SET_CW_CONVERSATION -> {
+                            flushPendingOpen()
                             handleConversationTokenUpdate(message["cw_conversation"] as? String)
+                        }
                         else -> callback?.onMessage(message)
                     }
                 }
@@ -261,6 +258,19 @@ class LimechatWidgetView @JvmOverloads constructor(
                 )
             }
         }
+    }
+
+    /**
+     * The widget posts set-cw-conversation in the same task that registers its message listener,
+     * so this is the first moment a held open message can be received. onPageFinished is too early:
+     * hash routing finishes a fragment navigation before the widget mounts.
+     */
+    private fun flushPendingOpen() {
+        if (!pendingOpenArmed) return
+        injectUser()
+        pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
+        pendingOpen = null
+        pendingOpenArmed = false
     }
 
     private fun handleConversationTokenUpdate(token: String?) {
