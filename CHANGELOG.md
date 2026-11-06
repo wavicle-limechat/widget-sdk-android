@@ -7,7 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> **Upgrade note: unverified contact update.** User details passed to the SDK reach the widget through `rnUser` with no verification. On the customer's first message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and the identifier hash (`identifierHash`) so the contact is verified.
+
 ### Changed
+- `onLoaded` fires once per page, when the widget is ready (its first `set-cw-conversation`), after `onConversationTokenChange`. It used to fire on every page finish, twice per load. A failed page gives `onError` and no `onLoaded`.
+- `open` sends the message now if the widget is ready, with no reload. If not ready it holds the message, with no url parameter, and sends it at ready. An empty string or empty map does nothing. A held message stays held after a failed load.
+- `set-user` is sent once per page, at ready, not on every page finish. Back press no longer resends an open message.
 - `sendMessage` now posts `chatwoot-widget:` prefixed json, the prefix the widget reads. It was ignored before. Apostrophes and nested maps now arrive intact.
 - Removed the `LimechatNative` web message listener and the injected `window.postMessage` wrappers. The widget calls `window.LimechatAndroid.postMessage` directly.
 - `show_legacy_back_icon` is no longer added to the widget URL. `setShowLegacyBackIcon` keeps its native close behaviour.
@@ -21,8 +26,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `WidgetConfig.User` 5 arg constructor is back for java hosts.
 
 ### Added
+- `setMessageAttributes` on `LimechatWidgetView` and `LimechatWidgetButton`. Needs a widget build containing `c8126fb7cd`, older builds ignore it.
+- `LimechatWidgetView.reload()`.
 - `WidgetConfig.User.identifier`. When both `identifier` and `identifierHash` are set, a `set-user` message is sent. Nothing changes until a host sets both.
 - `WidgetConfig.Builder.setHideFilePicker`, which adds `hide_file_picker=true` to the widget URL.
+
+### Fixed
+- A main frame http error (status 400 or above) now reaches `onError` as a `WEBVIEW_ERROR` with `statusCode` in `context`.
+
+### Deprecated
+Removed at the next major.
+- `WidgetError.ErrorCode`: `CONFIG_ERROR`, `NETWORK_ERROR`, `FILE_PICKER_ERROR`, `INITIALIZATION_ERROR`, `UNKNOWN_ERROR`.
+- `WidgetConfigResponse.ConfigData`: every property except `widgetIconMobile` and `widgetIconDesktop`.
+- `LimechatWidgetButton.SDK_VERSION` and `getSDKVersion()`.
+- `UrlBuilder.buildWidgetUrl` parameters `openMessage` and `openPayload`. The SDK no longer uses them.
+
+### Removed
+- `WidgetException` subclasses `NetworkError`, `JavaScriptError`, `WebViewError`, `FilePickerError`, `PersistenceError` and `UnknownError`. They were never thrown. `ConfigurationError` stays.
 
 ## [v0.0.9] - 2024-12-19
 
