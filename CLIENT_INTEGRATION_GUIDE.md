@@ -482,7 +482,7 @@ widgetView.init(config, object : WidgetCallback {
 
 The widget sends only `set-cw-conversation` and `close-widget` today. The SDK handles both itself, so `onMessage` has no events yet.
 
-When the widget becomes ready, the SDK sends in this order: the user fields, the verified user, held message attributes, then a held `open` message. `onLoaded` follows.
+When the widget becomes ready, the SDK sends in this order: the user fields, the verified user, held message attributes, then a held `open` message. Then `onConversationTokenChange` and `onLoaded` fire.
 
 ### Web Process Death
 
