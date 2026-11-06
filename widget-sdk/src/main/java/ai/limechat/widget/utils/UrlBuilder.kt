@@ -44,7 +44,7 @@ object UrlBuilder {
         }
         
         openMessage?.let { params["lc_open_message"] = it }
-        openPayload?.let { params["lc_open_payload"] = it }
+        openPayload?.let { params["lc_open_payload"] = it.replace("%", "\\u0025") }
         
         return buildUrl(baseUrl, "widget", params)
     }

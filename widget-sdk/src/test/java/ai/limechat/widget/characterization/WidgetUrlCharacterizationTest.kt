@@ -184,9 +184,10 @@ class WidgetUrlCharacterizationTest {
     private fun view() = LimechatWidgetView(RuntimeEnvironment.getApplication())
 
     @Test
-    fun `pins current behaviour - lc_open_message is URLEncoder encoded once, web double-decodes and drops values with percent`() {
+    fun `pins current behaviour - lc_open_message is URLEncoder encoded once, web double-decodes and falls back to the raw value on a bad percent`() {
         // the web reads the param with URLSearchParams (decode #1) and then decodeURIComponent again
-        // (decode #2). "50% off" survives decode #1 as "50% off", then decode #2 throws on "% o".
+        // (decode #2). "50% off" survives decode #1 as "50% off", then decode #2 throws on "% o"
+        // and the web falls back to the raw value, so the message still arrives.
         val v = view()
         v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "50% off + free")
         assertEquals(
@@ -217,7 +218,7 @@ class WidgetUrlCharacterizationTest {
         // {"content":"hi 50%","submitted_values":{"k":"v\/w"}}
         assertEquals(
             "$prod?website_token=tok&locale=en&color_scheme=light" +
-                "&lc_open_payload=%7B%22content%22%3A%22hi+50%25%22%2C%22submitted_values%22%3A%7B%22k%22%3A%22v%5C%2Fw%22%7D%7D",
+                "&lc_open_payload=%7B%22content%22%3A%22hi+50%5Cu0025%22%2C%22submitted_values%22%3A%7B%22k%22%3A%22v%5C%2Fw%22%7D%7D",
             v.lastLoadedUrl()
         )
     }
