@@ -104,4 +104,15 @@ class UrlBuilderTest {
         assertTrue(hidden.contains("hide_file_picker=true"))
         assertFalse(default.contains("hide_file_picker"))
     }
+
+    @Test
+    fun `lc_open_message survives the widget double decode`() {
+        val config = WidgetConfig.builder("test-token").build()
+        for (message in listOf("a%20b", "50% off")) {
+            val url = UrlBuilder.buildWidgetUrl(config, openMessage = message)
+            val raw = url.substringAfter("lc_open_message=").substringBefore('&')
+            val once = java.net.URLDecoder.decode(raw, "UTF-8")
+            assertEquals(message, java.net.URLDecoder.decode(once, "UTF-8"))
+        }
+    }
 }

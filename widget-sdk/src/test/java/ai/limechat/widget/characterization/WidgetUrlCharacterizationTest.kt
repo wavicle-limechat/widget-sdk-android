@@ -184,14 +184,13 @@ class WidgetUrlCharacterizationTest {
     private fun view() = LimechatWidgetView(RuntimeEnvironment.getApplication())
 
     @Test
-    fun `pins current behaviour - lc_open_message is URLEncoder encoded once, web double-decodes and falls back to the raw value on a bad percent`() {
+    fun `lc_open_message escapes percent so the web double decode keeps the text`() {
         // the web reads the param with URLSearchParams (decode #1) and then decodeURIComponent again
-        // (decode #2). "50% off" survives decode #1 as "50% off", then decode #2 throws on "% o"
-        // and the web falls back to the raw value, so the message still arrives.
+        // (decode #2), so "%" is sent as "%25" before encoding.
         val v = view()
         v.init(WidgetConfig.builder("tok").build(), null, initialMessage = "50% off + free")
         assertEquals(
-            "$prod?website_token=tok&locale=en&color_scheme=light&lc_open_message=50%25+off+%2B+free",
+            "$prod?website_token=tok&locale=en&color_scheme=light&lc_open_message=50%2525+off+%2B+free",
             v.lastLoadedUrl()
         )
     }
