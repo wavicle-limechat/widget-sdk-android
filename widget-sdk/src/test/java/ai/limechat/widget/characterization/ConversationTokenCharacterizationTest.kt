@@ -173,4 +173,30 @@ class ConversationTokenCharacterizationTest {
         v.init(config)
         assertEquals("$prod$q&cw_conversation=ext1", v.lastLoadedUrl())
     }
+
+    @Test
+    fun `callback with no token builds, reports the token and stores nothing`() {
+        val got = mutableListOf<String>()
+        val config = WidgetConfig.builder("tok").setInstanceId("cb-only")
+            .setExternalTokenManagement(null) { got += it }.build()
+        val cb = RecordingCallback()
+        val v = view(config, cb)
+        assertEquals("$prod$q", v.lastLoadedUrl())
+        setToken(v, "live1")
+        assertEquals(listOf("live1"), got)
+        assertEquals(listOf("live1"), cb.tokens)
+        assertNull(prefs.getString("cb-only", null))
+        assertNull(tokenMemoryCache()["cb-only"])
+    }
+
+    @Test
+    fun `token with no callback builds, uses it and stores the live token`() {
+        val config = WidgetConfig.builder("tok").setInstanceId("tok-only")
+            .setExternalTokenManagement("start1", null).build()
+        val v = view(config)
+        assertEquals("$prod$q&cw_conversation=start1", v.lastLoadedUrl())
+        setToken(v, "live2")
+        assertEquals("live2", prefs.getString("tok-only", null))
+        assertEquals("live2", tokenMemoryCache()["tok-only"])
+    }
 }

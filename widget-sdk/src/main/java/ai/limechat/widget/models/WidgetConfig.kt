@@ -109,7 +109,7 @@ data class WidgetConfig internal constructor(
         
         /**
          * Set external conversation token management
-         * Both token and callback must be provided for external management
+         * Either value can be omitted. A token only is used as the starting token, a callback only receives the live token.
          */
         fun setExternalTokenManagement(
             token: String?,
@@ -181,21 +181,6 @@ data class WidgetConfig internal constructor(
             
             if (locale.isBlank()) {
                 throw WidgetException.ConfigurationError("Locale cannot be blank")
-            }
-            
-            val hasToken = conversationToken != null
-            val hasCallback = onConversationTokenChange != null
-            
-            if (hasToken && !hasCallback) {
-                throw WidgetException.ConfigurationError(
-                    "External token management requires both token and callback"
-                )
-            }
-            
-            if (!hasToken && hasCallback) {
-                throw WidgetException.ConfigurationError(
-                    "External token management requires both token and callback"
-                )
             }
             
             instanceId?.let { id ->
