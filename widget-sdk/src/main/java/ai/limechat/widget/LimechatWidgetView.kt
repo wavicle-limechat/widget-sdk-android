@@ -54,6 +54,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                 callback = { callback },
                 onPageLoaded = {
                     injectUser()
+                    sendVerifiedUser()
                     callback?.onLoaded()
                 }
             ),
@@ -181,6 +182,18 @@ class LimechatWidgetView @JvmOverloads constructor(
             "if (window.chatwootWebChannel) { window.chatwootWebChannel.rnUser = ${JSONObject(fields)}; }",
             null
         )
+    }
+
+    private fun sendVerifiedUser() {
+        val user = config?.user ?: return
+        val identifier = user.identifier?.takeIf { it.isNotBlank() } ?: return
+        val hash = user.identifierHash?.takeIf { it.isNotBlank() } ?: return
+        val fields = buildMap<String, Any> {
+            user.name?.let { put("name", it) }
+            user.email?.let { put("email", it) }
+            put("identifier_hash", hash)
+        }
+        sendMessage("set-user", mapOf("identifier" to identifier, "user" to fields))
     }
 
     private fun loadWidget(initialMessage: String?, initialMessageData: Map<String, Any>?) {

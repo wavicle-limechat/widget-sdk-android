@@ -39,7 +39,8 @@ data class WidgetConfig internal constructor(
         val email: String? = null,
         val phoneNumber: String? = null,
         val identifierHash: String? = null,
-        val customAttributes: Map<String, Any>? = null
+        val customAttributes: Map<String, Any>? = null,
+        val identifier: String? = null
     ) : Serializable
     
     /**

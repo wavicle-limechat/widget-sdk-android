@@ -63,4 +63,30 @@ class UserInjectionTest {
         shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
         assertEquals(2, v.userScripts().size)
     }
+
+    private fun LimechatWidgetView.setUserScripts() = recorder().scripts.filter { it.contains("'chatwoot-widget:'") && it.contains("\"set-user\"") }
+
+    @Test
+    fun `identifier and hash together send one set-user`() {
+        val v = loaded(
+            WidgetConfig.builder("tok")
+                .setUser(WidgetConfig.User(name = "N", identifier = "id-1", identifierHash = "h"))
+                .build()
+        )
+        val script = v.setUserScripts().single()
+        assertTrue(script.contains("\"identifier\":\"id-1\""))
+        assertTrue(script.contains("\"identifier_hash\":\"h\""))
+    }
+
+    @Test
+    fun `hash without identifier sends no set-user`() {
+        val v = loaded(WidgetConfig.builder("tok").setUser(WidgetConfig.User(identifierHash = "h")).build())
+        assertEquals(emptyList<String>(), v.setUserScripts())
+    }
+
+    @Test
+    fun `identifier without hash sends no set-user`() {
+        val v = loaded(WidgetConfig.builder("tok").setUser(WidgetConfig.User(identifier = "id-1")).build())
+        assertEquals(emptyList<String>(), v.setUserScripts())
+    }
 }
