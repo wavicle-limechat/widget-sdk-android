@@ -43,6 +43,17 @@ class MessageAttributesTest {
     }
 
     @Test
+    fun `returns false for a Date and an unknown object, also nested`() {
+        val v = view()
+        v.widgetReady()
+        assertFalse(v.setMessageAttributes(mapOf("d" to java.util.Date())))
+        assertFalse(v.setMessageAttributes(mapOf("o" to Any())))
+        assertFalse(v.setMessageAttributes(mapOf("n" to mapOf("d" to java.util.Date()))))
+        assertFalse(v.setMessageAttributes(mapOf("l" to listOf(1, Any()))))
+        assertTrue(v.attrScripts().isEmpty())
+    }
+
+    @Test
     fun `before ready it sends nothing`() {
         val v = view()
         assertTrue(v.setMessageAttributes(mapOf("a" to 1)))

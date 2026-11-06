@@ -184,12 +184,22 @@ class LimechatWidgetView @JvmOverloads constructor(
      * @return false for a null, empty or unserialisable value
      */
     fun setMessageAttributes(attributes: Map<String, Any?>?): Boolean {
-        val valid = !attributes.isNullOrEmpty() &&
-            runCatching { JSONObject(attributes).toString() != null }.getOrDefault(false)
+        val valid = !attributes.isNullOrEmpty() && isJsonValue(attributes)
         if (!valid) return false
         pendingAttributes = pendingAttributes + attributes!!
         flushMessageAttributes()
         return true
+    }
+
+    private fun isJsonValue(value: Any?): Boolean = when (value) {
+        null, is String, is Boolean -> true
+        is Double -> value.isFinite()
+        is Float -> value.isFinite()
+        is Number -> true
+        is Map<*, *> -> value.all { (k, v) -> k is String && isJsonValue(v) }
+        is Collection<*> -> value.all(::isJsonValue)
+        is Array<*> -> value.all(::isJsonValue)
+        else -> false
     }
 
     private fun flushMessageAttributes() {
