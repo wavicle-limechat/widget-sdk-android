@@ -35,7 +35,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         const val TAG = "LimechatWidgetView"
     }
 
-    private val webView: WebView
+    private lateinit var webView: WebView
     private var config: WidgetConfig? = null
     private var callback: WidgetCallback? = null
     private var filePicker: WidgetFilePicker? = null
@@ -47,9 +47,14 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var pendingOpen: Any? = null
     private var pageStarted = false
     private var widgetReady = false
+    private var processRecoveryUsed = false
     private var pendingAttributes: Map<String, Any?> = emptyMap()
 
     init {
+        createWebView()
+    }
+
+    private fun createWebView() {
         webView = WebViewFactory.create(
             context,
             WidgetWebViewClient(
@@ -60,12 +65,33 @@ class LimechatWidgetView @JvmOverloads constructor(
                     pageStarted = true
                     widgetReady = false
                 },
-                onPageLoaded = { injectUser() }
+                onPageLoaded = { injectUser() },
+                onRenderGone = { handleRenderGone(it) }
             ),
             WidgetChromeClient { filePicker }
         )
         bridge = JsBridge(webView) { handleMessage(it) }
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
+    }
+
+    /**
+     * The render process died. The dead webview is replaced, never reused.
+     * Reload once, then report until a page gets ready.
+     */
+    private fun handleRenderGone(dead: WebView) {
+        if (dead !== webView) return
+        removeView(dead)
+        dead.destroy()
+        pageStarted = false
+        widgetReady = false
+        createWebView()
+        if (config != null) bridge.setup()
+        if (processRecoveryUsed) {
+            callback?.onError(WidgetError(WidgetError.ErrorCode.WEBVIEW_ERROR, "Widget web process died again before ready"))
+            return
+        }
+        processRecoveryUsed = true
+        reload()
     }
 
     /**
@@ -281,6 +307,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private fun markWidgetReady(): Boolean {
         if (!pageStarted || widgetReady) return false
         widgetReady = true
+        processRecoveryUsed = false
         injectUser()
         sendVerifiedUser()
         flushMessageAttributes()

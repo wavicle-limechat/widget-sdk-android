@@ -2,11 +2,14 @@ package ai.limechat.widget.internal
 
 import ai.limechat.widget.WidgetCallback
 import ai.limechat.widget.WidgetError
+import android.annotation.TargetApi
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.net.Uri
+import android.os.Build
+import android.webkit.RenderProcessGoneDetail
 import android.webkit.WebResourceError
 import android.webkit.WebResourceRequest
 import android.webkit.WebResourceResponse
@@ -18,7 +21,8 @@ internal class WidgetWebViewClient(
     private val baseUrl: () -> String?,
     private val callback: () -> WidgetCallback?,
     private val onPageStarted: () -> Unit,
-    private val onPageLoaded: () -> Unit
+    private val onPageLoaded: () -> Unit,
+    private val onRenderGone: (WebView) -> Unit
 ) : WebViewClient() {
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -29,6 +33,16 @@ internal class WidgetWebViewClient(
     override fun onPageFinished(view: WebView, url: String) {
         super.onPageFinished(view, url)
         onPageLoaded()
+    }
+
+    /**
+     * Api 26+. On 23 to 25 the system never calls this, the process death is not reported there.
+     * Returning true keeps the host app alive. The dead webview must not be reused.
+     */
+    @TargetApi(Build.VERSION_CODES.O)
+    override fun onRenderProcessGone(view: WebView, detail: RenderProcessGoneDetail): Boolean {
+        onRenderGone(view)
+        return true
     }
 
     override fun onReceivedError(
