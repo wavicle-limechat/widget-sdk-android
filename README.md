@@ -130,11 +130,8 @@ class ChatActivity : FragmentActivity() {
             override fun onLoaded() { /* Widget is ready */ }
             override fun onClose() { finish() } // Automatically called when user closes/minimizes widget
             override fun onError(error: WidgetError) { /* Handle any errors */ }
-            override fun onMessage(message: Map<String, Any>) {
-                // Handle events from the widget. The unread badge is host driven: call widgetButton.updateUnreadCount(count)
-                when (message["event"]) {
-                    "conversation-started" -> trackAnalytics("chat_started")
-                }
+            override fun onMessage(message: Map<String, Any?>) {
+                // No widget events reach this callback yet. The unread badge is host driven: call widgetButton.updateUnreadCount(count)
             }
         })
     }

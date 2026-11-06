@@ -435,34 +435,19 @@ widgetView.init(config, object : WidgetCallback {
         Log.e("LimeChat", "Widget error: ${error.message}")
     }
 
-    override fun onMessage(message: Map<String, Any>) {
-        // A message was received from the widget
-        handleWidgetMessage(message)
+    override fun onMessage(message: Map<String, Any?>) {
+        // No widget events reach this callback yet
     }
 })
 ```
 
-### Available Events
+### Widget Events
 
-Here are some of the events you can receive in `onMessage`:
-
-- `conversation-started`: A new conversation has been started.
-- `agent-joined`: An agent has joined the chat.
-- `message-received`: A new message has been received.
+The widget sends only `set-cw-conversation` and `close-widget` today. The SDK handles both itself, so `onMessage` has no events yet.
 
 ### Widget Close Events
 
 The `onClose()` callback is triggered by the `close-widget` event, when the user clicks the minimize/close button.
-
-```kotlin
-private fun handleWidgetMessage(message: Map<String, Any>) {
-    when (message["event"] as? String) {
-        "conversation-started" -> {
-            // Track an analytics event
-        }
-    }
-}
-```
 
 ---
 

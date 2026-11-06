@@ -127,8 +127,8 @@ widgetView.init(config, object : WidgetCallback {
     override fun onLoaded() { /* ... */ }
     override fun onClose() { /* ... */ }
     override fun onError(error: WidgetError) { /* ... */ }
-    override fun onMessage(message: Map<String, Any>) {
-        // Handle events from the widget
+    override fun onMessage(message: Map<String, Any?>) {
+        // No widget events reach this callback yet
     }
 })
 ```
@@ -204,7 +204,7 @@ class ChatActivity : FragmentActivity() {
             override fun onLoaded() { /* Widget ready */ }
             override fun onClose() { finish() }
             override fun onError(error: WidgetError) { /* Handle error */ }
-            override fun onMessage(message: Map<String, Any>) { /* Handle events */ }
+            override fun onMessage(message: Map<String, Any?>) { /* No events yet */ }
         })
     }
 }

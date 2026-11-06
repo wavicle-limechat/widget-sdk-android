@@ -131,7 +131,7 @@ data class WidgetConfig internal constructor(
         }
         
         /**
-         * Set whether to show the legacy back icon in the widget
+         * Set whether closing the widget uses the legacy back behaviour
          */
         fun setShowLegacyBackIcon(showLegacyBackIcon: Boolean): Builder {
             this.showLegacyBackIcon = showLegacyBackIcon
