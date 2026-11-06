@@ -52,7 +52,10 @@ class LimechatWidgetView @JvmOverloads constructor(
                 context,
                 baseUrl = { config?.baseUrl },
                 callback = { callback },
-                onPageLoaded = { callback?.onLoaded() }
+                onPageLoaded = {
+                    injectUser()
+                    callback?.onLoaded()
+                }
             ),
             WidgetChromeClient { filePicker }
         )
@@ -163,6 +166,21 @@ class LimechatWidgetView @JvmOverloads constructor(
      */
     private fun redactUrl(url: String): String {
         return url.replace(Regex("(cw_conversation=)[^&#]*"), "$1<redacted>")
+    }
+
+    private fun injectUser() {
+        val user = config?.user ?: return
+        val fields = buildMap<String, Any> {
+            user.name?.let { put("name", it) }
+            user.email?.let { put("email", it) }
+            user.phoneNumber?.let { put("phone_number", it) }
+            user.customAttributes?.let { put("custom_attributes", it) }
+        }
+        if (fields.isEmpty()) return
+        webView.evaluateJavascript(
+            "if (window.chatwootWebChannel) { window.chatwootWebChannel.rnUser = ${JSONObject(fields)}; }",
+            null
+        )
     }
 
     private fun loadWidget(initialMessage: String?, initialMessageData: Map<String, Any>?) {
