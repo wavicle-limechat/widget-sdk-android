@@ -19,7 +19,7 @@ import org.robolectric.Shadows.shadowOf
  * refactor/back-button-client-integration line), which a client runs today. Ported into
  * chore/sdk-drift-cleanup by plan task b0 (LimechatWidgetView.handleCloseEvent).
  *
- * 0.0.9-alpha routes `close-widget` (and the since-removed `widget-back` and `limechat://close`)
+ * 0.0.9-alpha routes `close-widget`, `widget-back` (and the since-removed `limechat://close`)
  * through handleCloseEvent():
  *   - showLegacyBackIcon = true and the view's context is an Activity -> activity.finish(),
  *     host onClose() is NOT called
@@ -83,6 +83,15 @@ class AlphaV009CloseBehaviourTest {
         v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), cb)
         v.postFromJs("""{"event":"close-widget"}""")
         assertEquals(listOf("onClose"), cb.events)
+    }
+
+    @Test
+    fun `alpha - widget-back behaves like close-widget`() {
+        val cb = RecordingCallback()
+        val (activity, v) = activityView(legacy = false, cb = cb)
+        v.postFromJs("""{"event":"widget-back"}""")
+        assertEquals(listOf("onClose"), cb.events)
+        assertFalse(activity.isFinishing)
     }
 
     @Test

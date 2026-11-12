@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `onLoaded` still fires when the token callback throws.
 - External token management accepts a token with no callback, or a callback with no token. `build()` used to throw.
 - A main frame http error (status 400 or above) now reaches `onError` as a `WEBVIEW_ERROR` with `statusCode` in `context`.
+- `widget-back` closes the widget again, as in 0.0.9.
 
 ### Deprecated
 Removed at the next major.

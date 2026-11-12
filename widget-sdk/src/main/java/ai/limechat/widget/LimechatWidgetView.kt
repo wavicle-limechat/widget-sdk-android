@@ -286,7 +286,7 @@ class LimechatWidgetView @JvmOverloads constructor(
                 val processed = messageHandler.processMessage(data)
                 processed?.let { message ->
                     when (BridgeEvents.nameOf(message)) {
-                        BridgeEvents.CLOSE_WIDGET ->
+                        BridgeEvents.CLOSE_WIDGET, BridgeEvents.WIDGET_BACK ->
                             CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
                         BridgeEvents.SET_CW_CONVERSATION -> {
                             val firstReady = markWidgetReady()

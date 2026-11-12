@@ -23,8 +23,8 @@ import org.robolectric.Shadows.shadowOf
  *
  * Dispatch today: MessageHandler parses a json object (a prefix makes it unparseable), then switches
  * on `event ?: type` (only if they are strings):
- *   close-widget -> onClose, set-cw-conversation -> token update,
- *   anything else (incl. loaded, widget-back) -> onMessage(map).
+ *   close-widget and widget-back -> onClose, set-cw-conversation -> token update,
+ *   anything else (incl. loaded) -> onMessage(map).
  * Unparseable payloads are dropped silently. Exceptions thrown by the host callback
  * are caught and reported as onError(JAVASCRIPT_ERROR).
  */
@@ -74,10 +74,15 @@ class BridgeCharacterizationTest {
     }
 
     @Test
-    fun `loaded and widget-back are unknown events and go to onMessage`() {
+    fun `loaded is an unknown event and goes to onMessage`() {
         view.postFromJs("""{"event":"loaded"}""")
+        assertEquals(listOf("onMessage"), cb.events)
+    }
+
+    @Test
+    fun `widget-back calls onClose, not onMessage`() {
         view.postFromJs("""{"event":"widget-back"}""")
-        assertEquals(listOf("onMessage", "onMessage"), cb.events)
+        assertEquals(listOf("onClose"), cb.events)
     }
 
     @Test
