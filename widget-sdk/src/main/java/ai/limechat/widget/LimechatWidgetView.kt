@@ -201,14 +201,14 @@ class LimechatWidgetView @JvmOverloads constructor(
     }
 
     /**
-     * `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token (and a token you passed in, until you pass a new one), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
+     * `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token and the user (and a token or user you passed in, until you pass new ones), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
      * Does nothing before init.
      */
     fun reset() {
         val config = this.config ?: return
         ConversationTokenStore.clear(context, instanceId)
         cwConversation = null
-        this.config = config.copy(conversationToken = null)
+        this.config = config.copy(conversationToken = null, user = null)
         pendingAttributes = emptyMap()
         pendingOpen = null
         reload()

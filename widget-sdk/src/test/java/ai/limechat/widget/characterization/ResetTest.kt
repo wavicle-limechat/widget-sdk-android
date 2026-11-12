@@ -13,6 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import java.lang.reflect.Modifier
 
 /** reset() clears the conversation: store, live token, a config token, held attributes and a held open message. */
@@ -122,5 +123,42 @@ class ResetTest {
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"tokB"}""")
         assertEquals("tokB", prefToken())
         assertEquals("tokB", tokenMemoryCache()["default"])
+    }
+
+    private fun userConfig() = WidgetConfig.builder("tok")
+        .setUser(WidgetConfig.User(name = "N", identifier = "id-1", identifierHash = "h"))
+        .build()
+
+    private fun LimechatWidgetView.finishPage() {
+        shadowOf(webView()).webViewClient.onPageFinished(webView(), "x")
+    }
+
+    @Test
+    fun `reset with a user set sends no set-user and no rnUser on the reloaded page`() {
+        val v = view(userConfig())
+        v.finishPage()
+        v.widgetReady()
+        v.reset()
+        val before = v.recorder().scripts.size
+        v.finishPage()
+        v.widgetReady()
+        val after = v.recorder().scripts.drop(before)
+        assertTrue(after.none { it.contains("rnUser") })
+        assertTrue(after.none { it.contains("\"set-user\"") })
+        assertNull(identityMemory()["default"])
+    }
+
+    @Test
+    fun `init with a user after reset sends set-user again`() {
+        val v = view(userConfig())
+        v.widgetReady()
+        v.reset()
+        v.init(userConfig())
+        val before = v.recorder().scripts.size
+        v.finishPage()
+        v.widgetReady()
+        val after = v.recorder().scripts.drop(before)
+        assertTrue(after.any { it.contains("rnUser") })
+        assertEquals(1, after.count { it.contains("\"set-user\"") })
     }
 }
