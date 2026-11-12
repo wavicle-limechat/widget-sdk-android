@@ -236,4 +236,55 @@ class UserInjectionTest {
         v.widgetReady()
         assertEquals(2, v.setUserScripts().size)
     }
+
+    private fun LimechatWidgetView.openMessage(): org.json.JSONObject {
+        val script = recorder().scripts.single { it.contains("open-with-message") }
+        val json = script.substringAfter("JSON.stringify(").substringBefore("), '*')")
+        return org.json.JSONObject(json).getJSONObject("openMessage")
+    }
+
+    private fun readyView(): LimechatWidgetView {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").build())
+        v.widgetReady()
+        return v
+    }
+
+    @Test
+    fun `open with submitted_values and no content sends Hi`() {
+        val v = readyView()
+        v.open(mapOf("submitted_values" to listOf("a")))
+        val m = v.openMessage()
+        assertEquals("Hi", m.getString("content"))
+        assertTrue(m.has("submitted_values"))
+    }
+
+    @Test
+    fun `open with empty content and other keys sends Hi`() {
+        val v = readyView()
+        v.open(mapOf("content" to "", "n" to 1))
+        assertEquals("Hi", v.openMessage().getString("content"))
+    }
+
+    @Test
+    fun `open with existing content keeps it`() {
+        val v = readyView()
+        v.open(mapOf("content" to "yo", "n" to 1))
+        assertEquals("yo", v.openMessage().getString("content"))
+    }
+
+    @Test
+    fun `open with only empty content is unchanged`() {
+        val v = readyView()
+        v.open(mapOf("content" to ""))
+        assertEquals("", v.openMessage().getString("content"))
+    }
+
+    @Test
+    fun `init initialMessageData without content sends Hi at ready`() {
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").build(), null, mapOf<String, Any>("submitted_values" to "x"))
+        v.widgetReady()
+        assertEquals("Hi", v.openMessage().getString("content"))
+    }
 }

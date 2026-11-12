@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `onLoaded` fires once per page, when the widget is ready (its first `set-cw-conversation`), after `onConversationTokenChange`. It used to fire on every page finish, twice per load. A failed page gives `onError` and no `onLoaded`.
-- `open` sends the message now if the widget is ready, with no reload. If not ready it holds the message, with no url parameter, and sends it at ready. An empty string or empty map does nothing. A held message stays held after a failed load.
+- `open` sends the message now if the widget is ready, with no reload. If not ready it holds the message, with no url parameter, and sends it at ready. An empty string or empty map does nothing. A held message stays held after a failed load. A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, as in the web SDK. This also applies to `initialMessageData`.
 - `set-user` is sent once per page, at ready, not on every page finish. Back press no longer resends an open message.
 - `sendMessage` now posts `chatwoot-widget:` prefixed json, the prefix the widget reads. It was ignored before. Apostrophes and nested maps now arrive intact.
 - Removed the `LimechatNative` web message listener and the injected `window.postMessage` wrappers. The widget calls `window.LimechatAndroid.postMessage` directly.

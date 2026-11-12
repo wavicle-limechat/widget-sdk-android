@@ -584,6 +584,7 @@ widgetView.open(mapOf("content" to "I need help with my order."))
 - If it is not ready, the message is held until it is. A later `open` replaces a held one.
 - If the page fails to load, the message stays held until a later load succeeds, or until you call `init` again, which drops it.
 - A null, empty string or empty map does nothing.
+- A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, as in the web SDK. This also applies to `initialMessageData` at init. A lone `content: ""` is sent as is.
 - Call `open` and `setMessageAttributes` on the main thread. Before ready they only hold a value, so a background call seems to work. After ready they call `evaluateJavascript`, which throws off the main thread.
 - `sendMessage` before the widget is ready is lost. Only `open` and `setMessageAttributes` wait.
 
@@ -697,7 +698,7 @@ Go live:
 | `init(config, callback, initialMessage: String?)` | Load the widget and hold a first message. |
 | `init(config, callback, initialMessageData: Map<String, Any>?)` | Same, with a message object. |
 | `open(message: String? = null)` | Send a message, now if ready, else when ready. Null or empty does nothing. |
-| `open(messageData: Map<String, Any>)` | Same, with a message object. Empty does nothing. |
+| `open(messageData: Map<String, Any>)` | Same, with a message object. Empty does nothing. With no `content` and other keys, such as `submitted_values`, it gets `content: "Hi"`, as in the web SDK. |
 | `setMessageAttributes(attributes: Map<String, Any?>?): Boolean` | See Message Attributes. |
 | `sendMessage(event: String, data: Map<String, Any> = emptyMap())` | Post an event to the widget. Lost if the widget is not ready. |
 | `reload()` | Load the widget page again. Does nothing before `init`. |

@@ -159,9 +159,17 @@ class LimechatWidgetView @JvmOverloads constructor(
     /**
      * Open the widget with a custom message object
      * @param messageData Message object that can contain 'content' key or other properties. Empty does nothing.
+     * A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, as in the web SDK.
      */
     fun open(messageData: Map<String, Any>) {
-        if (messageData.isNotEmpty()) deliverOpen(messageData)
+        if (messageData.isNotEmpty()) deliverOpen(withDefaultContent(messageData))
+    }
+
+    /** A message object with no content and other keys gets `content: "Hi"`, as in the web SDK. */
+    private fun withDefaultContent(message: Map<String, Any>): Map<String, Any> {
+        val content = message["content"]
+        val missing = content == null || content === JSONObject.NULL || content == ""
+        return if (missing && message.keys.any { it != "content" }) message + ("content" to "Hi") else message
     }
 
     private fun deliverOpen(message: Any) {
@@ -280,7 +288,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
         bridge.setup()
 
-        pendingOpen = initialMessage?.takeIf { it.isNotEmpty() } ?: initialMessageData?.takeIf { it.isNotEmpty() }
+        pendingOpen = initialMessage?.takeIf { it.isNotEmpty() } ?: initialMessageData?.takeIf { it.isNotEmpty() }?.let { withDefaultContent(it) }
         loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
