@@ -37,6 +37,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - External token management accepts a token with no callback, or a callback with no token. `build()` used to throw.
 - A main frame http error (status 400 or above) now reaches `onError` as a `WEBVIEW_ERROR` with `statusCode` in `context`.
 - `widget-back` closes the widget again, as in 0.0.9.
+- Embedded iframes can navigate. Only top-frame navigations are checked against the widget host.
 - `init()` or `reload()` followed by `open(...)` no longer loads the page twice.
 
 ### Deprecated

@@ -162,10 +162,18 @@ class AndroidBugFixesTest {
     }
 
     @Test
-    fun `external loads without a gesture or outside the main frame stay blocked`() {
+    fun `external loads without a gesture stay blocked`() {
         val v = view()
         assertTrue(override(v, "https://google.com/", gesture = false))
-        assertTrue(override(v, "https://google.com/", mainFrame = false))
+        assertNull(app.nextStartedActivity)
+        assertEquals(emptyList<String>(), cb.events)
+    }
+
+    @Test
+    fun `subframe navigations to other origins load in the frame and open nothing`() {
+        val v = view()
+        assertFalse(override(v, "https://google.com/", mainFrame = false))
+        assertFalse(override(v, "https://google.com/", mainFrame = false, gesture = false))
         assertNull(app.nextStartedActivity)
         assertEquals(emptyList<String>(), cb.events)
     }

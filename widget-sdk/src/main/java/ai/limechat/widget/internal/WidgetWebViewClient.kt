@@ -80,6 +80,7 @@ internal class WidgetWebViewClient(
     }
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+        if (!request.isForMainFrame) return false
         val url = request.url.toString()
 
         // Only allow loading the widget URL (same scheme + host + port as baseUrl)
