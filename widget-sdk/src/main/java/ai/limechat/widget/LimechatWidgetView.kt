@@ -47,6 +47,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var pendingOpen: Any? = null
     private var pageStarted = false
     private var widgetReady = false
+    private var loadPending = false
     private var processRecoveryUsed = false
     private var pendingAttributes: Map<String, Any?> = emptyMap()
 
@@ -66,7 +67,8 @@ class LimechatWidgetView @JvmOverloads constructor(
                     widgetReady = false
                 },
                 onPageLoaded = { injectUser() },
-                onRenderGone = { handleRenderGone(it) }
+                onRenderGone = { handleRenderGone(it) },
+                onMainFrameError = { loadPending = false }
             ),
             WidgetChromeClient { filePicker }
         )
@@ -85,6 +87,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         pageStarted = false
         widgetReady = false
         createWebView()
+        loadPending = false
         if (config != null) bridge.setup()
         if (processRecoveryUsed) {
             callback?.onError(WidgetError(WidgetError.ErrorCode.WEBVIEW_ERROR, "Widget web process died again before ready"))
@@ -169,7 +172,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         }
         pendingOpen = message
         // a load is already running: keep it, the held message goes out at ready
-        if (webView.progress !in 1..99) loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+        if (!loadPending) loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     /** Reload the widget. Does nothing before init. */
@@ -212,6 +215,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         Log.d(TAG, "Loading widget URL: ${url.substringBefore('?')}")
         pageStarted = false
         widgetReady = false
+        loadPending = true
         webView.loadUrl(url)
     }
 
@@ -320,6 +324,7 @@ class LimechatWidgetView @JvmOverloads constructor(
     private fun markWidgetReady(): Boolean {
         if (!pageStarted || widgetReady) return false
         widgetReady = true
+        loadPending = false
         processRecoveryUsed = false
         injectUser()
         sendVerifiedUser()

@@ -60,6 +60,13 @@ fun LimechatWidgetView.postFromJs(payload: String, method: String = "postMessage
     idleMain()
 }
 
+/** A main frame load error, so the next open() has to load again. */
+fun LimechatWidgetView.failMainFrameLoad() {
+    shadowOf(webView()).webViewClient.onReceivedError(
+        webView(), FakeRequest("https://app.limechat.ai/widget"), android.webkit.FakeWebResourceError(-2, "net::ERR_FAILED")
+    )
+}
+
 fun idleMain() = shadowOf(Looper.getMainLooper()).idle()
 
 fun idleMainFor(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(ms))

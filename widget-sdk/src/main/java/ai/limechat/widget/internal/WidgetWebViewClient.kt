@@ -22,7 +22,8 @@ internal class WidgetWebViewClient(
     private val callback: () -> WidgetCallback?,
     private val onPageStarted: () -> Unit,
     private val onPageLoaded: () -> Unit,
-    private val onRenderGone: (WebView) -> Unit
+    private val onRenderGone: (WebView) -> Unit,
+    private val onMainFrameError: () -> Unit
 ) : WebViewClient() {
 
     override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) {
@@ -51,6 +52,7 @@ internal class WidgetWebViewClient(
         error: WebResourceError
     ) {
         super.onReceivedError(view, request, error)
+        if (request.isForMainFrame) onMainFrameError()
         callback()?.onError(
             WidgetError(
                 WidgetError.ErrorCode.WEBVIEW_ERROR,
@@ -67,6 +69,7 @@ internal class WidgetWebViewClient(
     ) {
         super.onReceivedHttpError(view, request, errorResponse)
         if (!request.isForMainFrame) return
+        onMainFrameError()
         callback()?.onError(
             WidgetError(
                 WidgetError.ErrorCode.WEBVIEW_ERROR,

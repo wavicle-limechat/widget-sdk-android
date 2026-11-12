@@ -303,15 +303,65 @@ class NavigationAndOpenCharacterizationTest {
         assertTrue(v.recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":\"hi there\""))
     }
 
+    private fun LimechatWidgetView.assertOpenHolds() {
+        recorder().loadedUrls.clear()
+        open("hi there")
+        assertEquals(emptyList<String>(), recorder().loadedUrls)
+        widgetReady()
+        assertTrue(recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":\"hi there\""))
+    }
+
+    private fun LimechatWidgetView.assertOpenReloads() {
+        recorder().loadedUrls.clear()
+        open("hi there")
+        assertEquals(1, recorder().loadedUrls.size)
+        widgetReady()
+        assertTrue(recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":\"hi there\""))
+    }
+
     @Test
-    fun `open at progress 100 before ready reloads`() {
+    fun `open right after init holds and does not load again`() {
+        view().assertOpenHolds()
+    }
+
+    @Test
+    fun `open right after reload holds and does not load again`() {
         val v = view()
-        v.recorder().progressValue = 100
-        v.recorder().loadedUrls.clear()
-        v.open("hi there")
-        assertEquals(1, v.recorder().loadedUrls.size)
         v.widgetReady()
-        assertTrue(v.recorder().scripts.single { it.contains("\"open-with-message\"") }.contains("\"openMessage\":\"hi there\""))
+        v.reload()
+        v.assertOpenHolds()
+    }
+
+    @Test
+    fun `open after a main frame load error reloads`() {
+        val v = view()
+        shadowOf(v.webView()).webViewClient.onReceivedError(
+            v.webView(), FakeRequest("$prod$q"), FakeWebResourceError(-2, "net::ERR_FAILED")
+        )
+        v.assertOpenReloads()
+    }
+
+    @Test
+    fun `open after a main frame http error reloads`() {
+        val v = view()
+        shadowOf(v.webView()).webViewClient.onReceivedHttpError(
+            v.webView(), FakeRequest("$prod$q"), WebResourceResponse("text/html", "utf-8", 503, "x", emptyMap(), null)
+        )
+        v.assertOpenReloads()
+    }
+
+    @Test
+    fun `open after a second render process death reloads`() {
+        val v = view()
+        val detail = object : android.webkit.RenderProcessGoneDetail() {
+            override fun didCrash() = false
+            override fun rendererPriorityAtExit() = 0
+        }
+        repeat(2) {
+            val dead = v.webView()
+            shadowOf(dead).webViewClient.onRenderProcessGone(dead, detail)
+        }
+        v.assertOpenReloads()
     }
 
     @Test
@@ -327,6 +377,7 @@ class NavigationAndOpenCharacterizationTest {
     fun `open with message keeps a token received via set-cw-conversation`() {
         val v = view()
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
+        v.failMainFrameLoad()
         v.open("hi")
         assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
     }
@@ -335,6 +386,7 @@ class NavigationAndOpenCharacterizationTest {
     fun `open with message uses the live token under external token management`() {
         val v = view(WidgetConfig.builder("tok").setExternalTokenManagement("ext1") {}.build())
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"newer"}""")
+        v.failMainFrameLoad()
         v.open("hi")
         assertEquals("$prod$q&cw_conversation=newer", v.lastLoadedUrl())
     }

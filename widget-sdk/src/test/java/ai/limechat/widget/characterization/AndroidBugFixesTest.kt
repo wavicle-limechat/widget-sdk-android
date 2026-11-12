@@ -56,6 +56,7 @@ class AndroidBugFixesTest {
         tokenMemoryCache()["default"] = "stored1"
         val v = view()
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
+        v.failMainFrameLoad()
         v.open("hi")
         assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
     }
@@ -64,6 +65,7 @@ class AndroidBugFixesTest {
     fun `open(map) keeps a token received via set-cw-conversation`() {
         val v = view()
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"fresh"}""")
+        v.failMainFrameLoad()
         v.open(linkedMapOf<String, Any>("content" to "hi"))
         assertEquals("$prod$q&cw_conversation=fresh", v.lastLoadedUrl())
     }
