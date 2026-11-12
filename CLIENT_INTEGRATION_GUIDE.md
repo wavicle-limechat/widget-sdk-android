@@ -4,7 +4,7 @@
 
 | Version | Repository | Platform |  |
 | --- | --- | --- | --- |
-| v0.0.9 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
+| v0.2.0-beta.1 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
 
 ---
 
@@ -82,7 +82,7 @@ Add the LimeChat Widget SDK as a dependency in your app's `build.gradle.kts` fil
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.0.9")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0-beta.1")
 
     // The SDK requires the following AndroidX libraries
     implementation("androidx.core:core-ktx:1.12.0")
@@ -195,7 +195,7 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your Lim
 #### New Features in v0.0.9:
 
 - **`setInstanceId(String?)`**: Provides unique identification for widget instances, enabling proper conversation persistence and isolation between different widget instances in your app.
-- **`setShowLegacyBackIcon(Boolean)`**: Controls the native close behaviour. When enabled and the view sits in an Activity, closing the widget finishes that Activity and `onClose()` is not called.
+- **`setShowLegacyBackIcon(Boolean)`**: Controls the native close behaviour. Closing the widget always calls `onClose()` when a callback is set. Only when no callback is set and this is enabled, and the view sits in an Activity, does closing finish that Activity.
 
 #### Added after v0.0.9:
 
@@ -411,7 +411,7 @@ val user = WidgetConfig.User(
 )
 ```
 
-User details reach the widget without verification. On the customer's first message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and `identifierHash` (see Secure Mode) so the contact is verified.
+User details reach the widget without verification. On every customer message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and `identifierHash` (see Secure Mode) so the contact is verified.
 
 ### Updating User Details
 
@@ -766,7 +766,7 @@ Calling `init` again clears a held open message and unflushed message attributes
 
 Stay updated with the latest SDK versions:
 
-- **Current Version**: v0.0.9
+- **Current Version**: v0.2.0-beta.1
 - **Changelog**: Check GitHub releases
 - **Migration Guides**: Available for major version updates
 

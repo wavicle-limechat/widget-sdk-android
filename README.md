@@ -17,7 +17,7 @@
 - 🌍 **Multi-Language**: Support for localization and multiple languages.
 - 🔒 **Secure**: Built with enterprise-grade security and privacy standards.
 - 💾 **Chat Persistence**: Conversations persist across app restarts and widget instances.
-- 🔙 **Back Button Support**: Configurable legacy back icon with proper event handling.
+- 🔙 **Back Button Support**: Close and back events call `onClose`. With no callback set, `setShowLegacyBackIcon(true)` finishes the host activity instead.
 
 ## 🛠️ Requirements
 
@@ -147,7 +147,7 @@ For persistence, back icon, message attributes, `open` and the full API referenc
 
 ## 📊 SDK Status
 
-- **Current Version**: v0.0.9
+- **Current Version**: v0.2.0-beta.1
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
 

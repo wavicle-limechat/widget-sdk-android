@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.0-beta.1]
 
-> **Upgrade note: unverified contact update.** User details passed to the SDK reach the widget through `rnUser` with no verification. On the customer's first message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and the identifier hash (`identifierHash`) so the contact is verified.
+> **Upgrade note: unverified contact update.** User details passed to the SDK reach the widget through `rnUser` with no verification. On every customer message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and the identifier hash (`identifierHash`) so the contact is verified.
 
 ### Changed
 - `onLoaded` fires once per page, when the widget is ready (its first `set-cw-conversation`), after `onConversationTokenChange`. It used to fire on every page finish, twice per load. A failed page gives `onError` and no `onLoaded`.
@@ -17,9 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `set-user` is sent once per page, at ready, not on every page finish. Back press no longer resends an open message.
 - `sendMessage` now posts `chatwoot-widget:` prefixed json, the prefix the widget reads. It was ignored before. Apostrophes and nested maps now arrive intact.
 - Removed the `LimechatNative` web message listener and the injected `window.postMessage` wrappers. The widget calls `window.LimechatAndroid.postMessage` directly.
-- `show_legacy_back_icon` is no longer added to the widget URL. `setShowLegacyBackIcon` keeps its native close behaviour.
+- `show_legacy_back_icon` is no longer added to the widget URL. `setShowLegacyBackIcon` no longer changes the url. `close-widget` always calls `onClose` when a callback is set, as in v0.0.9. Only with no callback and the legacy back icon on does it finish the host activity.
 - The widget url is logged without its query string, so `website_token` and `custom_attributes` no longer reach logcat.
-- `WidgetConfig.User` is now sent to the widget through `window.chatwootWebChannel.rnUser` on every page load. Hosts that already pass a user will update contacts on the first message.
+- `WidgetConfig.User` is now sent to the widget through `window.chatwootWebChannel.rnUser` on every page load. Hosts that already pass a user will update contacts with every message.
 - A held `open` message is now sent when the widget posts `set-cw-conversation`, not on page finish. The page finish can come before the widget listens, which lost the message.
 - Under external token management, the live conversation token is kept and used for reload and open, and is not overwritten by the config token.
 - The `WidgetConfig.User` 5 arg constructor is back for java hosts.
