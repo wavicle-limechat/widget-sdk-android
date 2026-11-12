@@ -616,6 +616,8 @@ val ok = widgetView.setMessageAttributes(mapOf(
 - The widget's auto-start `Hi` counts as the next message. With no welcome text, no pre-chat form and no conversation, the widget sends `Hi` on its own. If you did not call `open`, the attributes can land on `Hi` and not on what the customer types.
 - Values must be json values: strings, numbers, booleans, `null`, and maps or lists of those. Anything else, such as a `Date`, makes the call return `false` and nothing is sent.
 - After the customer's message is sent, the widget clears them. If that message fails, the widget keeps them for the next one. Attributes already sent to the widget are lost on a page reload. Attributes still held are kept. They also survive the widget being closed, because the view stays alive. Calling `init` a second time clears them. Calls made before the first `init` are kept.
+- File attachments and email-only submits don't consume held attributes.
+- Explicit `custom_attributes` on the message payload win over held ones for the same key.
 - `LimechatWidgetButton.setMessageAttributes` forwards to the view set with `setWidgetView`. With no view it returns `false`.
 - This needs a widget build containing `c8126fb7cd` (pr #120, 2026-09-25). Older builds ignore the event silently.
 
