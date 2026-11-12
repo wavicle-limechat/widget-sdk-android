@@ -22,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - Instance-based isolation using instanceId
  * - Thread-safe operations for concurrent access
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 class WidgetManager private constructor(private val context: Context) {
     
     companion object {

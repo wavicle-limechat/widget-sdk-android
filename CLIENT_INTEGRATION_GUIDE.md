@@ -750,7 +750,7 @@ Calling `init` again clears a held open message and unflushed message attributes
 
 ### WidgetError
 
-`code` (`WEBVIEW_ERROR` or `JAVASCRIPT_ERROR`), `message`, `originalError: Throwable?`, `context: Map<String, Any>?`. A main page HTTP error has `statusCode` in `context`. Other `ErrorCode` values are deprecated and unused.
+`code` (`WEBVIEW_ERROR` or `JAVASCRIPT_ERROR`), `message`, `originalError: Throwable?`, `context: Map<String, Any>?`. A main page HTTP error has `statusCode` in `context`. Other `ErrorCode` values are deprecated and unused, and will be removed in the next major release.
 
 ---
 

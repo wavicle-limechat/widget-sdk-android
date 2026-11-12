@@ -13,7 +13,7 @@ import android.util.Log
  * - Debug mode support
  * - Consistent tag formatting
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 object WidgetLogger {
     
     private const val BASE_TAG = "LimechatWidget"

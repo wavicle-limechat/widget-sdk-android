@@ -12,7 +12,7 @@ package ai.limechat.widget.core
  * }
  * ```
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 sealed class WidgetResult<out T> {
     
     /**

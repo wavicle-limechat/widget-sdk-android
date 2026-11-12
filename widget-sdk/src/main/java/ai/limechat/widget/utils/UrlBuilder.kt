@@ -11,8 +11,8 @@ object UrlBuilder {
     
     /**
      * Build the complete widget URL with query parameters
-     * @param openMessage Unused by the SDK. Removed at the next major.
-     * @param openPayload Unused by the SDK. Removed at the next major.
+     * @param openMessage Unused by the SDK. Will be removed in the next major release.
+     * @param openPayload Unused by the SDK. Will be removed in the next major release.
      */
     fun buildWidgetUrl(
         config: WidgetConfig,

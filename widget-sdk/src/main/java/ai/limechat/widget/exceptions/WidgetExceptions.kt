@@ -3,7 +3,7 @@ package ai.limechat.widget.exceptions
 /**
  * Base exception for all widget-related errors
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 sealed class WidgetException(
     message: String,
     cause: Throwable? = null
@@ -61,7 +61,7 @@ sealed class WidgetException(
 /**
  * Extension functions for better error handling
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 fun <T> Result<T>.handleWidgetError(
     onFailure: (WidgetException) -> Unit = {}
 ): T? {

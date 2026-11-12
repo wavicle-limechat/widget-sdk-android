@@ -37,15 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `widget-back` closes the widget again, as in 0.0.9.
 
 ### Deprecated
-Removed at the next major.
-- `WidgetError.ErrorCode`: `CONFIG_ERROR`, `NETWORK_ERROR`, `FILE_PICKER_ERROR`, `INITIALIZATION_ERROR`, `UNKNOWN_ERROR`.
-- `WidgetConfigResponse.ConfigData`: every property except `widgetIconMobile` and `widgetIconDesktop`.
-- `LimechatWidgetButton.SDK_VERSION` and `getSDKVersion()`.
-- `UrlBuilder.buildWidgetUrl` parameters `openMessage` and `openPayload`. The SDK no longer uses them.
-- Unused by the SDK, kept for compatibility, removed at the next major:
-  - `WidgetConfig.User.hasIdentifyingInfo()` and `getPrimaryIdentifier()`, `WidgetConfig.TokenManagement`, `WidgetConfig.tokenManagement`, `WidgetConfig.isExternalTokenManagementValid`, `WidgetConfig.simple` and `WidgetConfig.withInstanceId`.
-  - `WidgetException` subclasses `NetworkError`, `JavaScriptError`, `WebViewError`, `FilePickerError`, `PersistenceError` and `UnknownError`. They were never thrown. `ConfigurationError` stays.
-  - `core.WidgetManager`, `core.WidgetLogger`, `core.WidgetResult`, `button.WidgetButtonRenderer`, `utils.WidgetUrlBuilder`, `webview.WidgetWebViewManager`, `models.WidgetMessage`, `models.WidgetState`, `exceptions.WidgetException` and `Result.handleWidgetError`.
+- `WidgetError.ErrorCode`: `CONFIG_ERROR`, `NETWORK_ERROR`, `FILE_PICKER_ERROR`, `INITIALIZATION_ERROR`, `UNKNOWN_ERROR` will be removed in the next major release.
+- `WidgetConfigResponse.ConfigData`: every property except `widgetIconMobile` and `widgetIconDesktop` will be removed in the next major release.
+- `LimechatWidgetButton.SDK_VERSION` and `getSDKVersion()` will be removed in the next major release.
+- `UrlBuilder.buildWidgetUrl` parameters `openMessage` and `openPayload` will be removed in the next major release. The SDK no longer uses them.
+- Unused by the SDK and kept for compatibility:
+  - `WidgetConfig.User.hasIdentifyingInfo()` and `getPrimaryIdentifier()`, `WidgetConfig.TokenManagement`, `WidgetConfig.tokenManagement`, `WidgetConfig.isExternalTokenManagementValid`, `WidgetConfig.simple` and `WidgetConfig.withInstanceId` will be removed in the next major release.
+  - `WidgetException` subclasses `NetworkError`, `JavaScriptError`, `WebViewError`, `FilePickerError`, `PersistenceError` and `UnknownError` will be removed in the next major release. They were never thrown. `ConfigurationError` stays.
+  - `core.WidgetManager`, `core.WidgetLogger`, `core.WidgetResult`, `button.WidgetButtonRenderer`, `utils.WidgetUrlBuilder`, `webview.WidgetWebViewManager`, `models.WidgetMessage`, `models.WidgetState`, `exceptions.WidgetException` and `Result.handleWidgetError` will be removed in the next major release.
 
 ## [v0.0.9] - 2024-12-19
 

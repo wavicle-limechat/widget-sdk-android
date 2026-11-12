@@ -5,7 +5,7 @@ import org.json.JSONObject
 /**
  * Represents a message to be sent to the widget
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 sealed class WidgetMessage {
     
     /**

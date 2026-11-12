@@ -15,7 +15,7 @@ import kotlinx.coroutines.*
 /**
  * Manages WebView configuration, security, and messaging for the widget
  */
-@Deprecated("Unused by the SDK. Will be removed in the next major version.")
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 class WidgetWebViewManager(
     private val context: Context,
     private val config: WidgetConfig,
