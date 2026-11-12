@@ -42,9 +42,10 @@ Removed at the next major.
 - `WidgetConfigResponse.ConfigData`: every property except `widgetIconMobile` and `widgetIconDesktop`.
 - `LimechatWidgetButton.SDK_VERSION` and `getSDKVersion()`.
 - `UrlBuilder.buildWidgetUrl` parameters `openMessage` and `openPayload`. The SDK no longer uses them.
-
-### Removed
-- `WidgetException` subclasses `NetworkError`, `JavaScriptError`, `WebViewError`, `FilePickerError`, `PersistenceError` and `UnknownError`. They were never thrown. `ConfigurationError` stays.
+- Unused by the SDK, kept for compatibility, removed at the next major:
+  - `WidgetConfig.User.hasIdentifyingInfo()` and `getPrimaryIdentifier()`, `WidgetConfig.TokenManagement`, `WidgetConfig.tokenManagement`, `WidgetConfig.isExternalTokenManagementValid`, `WidgetConfig.simple` and `WidgetConfig.withInstanceId`.
+  - `WidgetException` subclasses `NetworkError`, `JavaScriptError`, `WebViewError`, `FilePickerError`, `PersistenceError` and `UnknownError`. They were never thrown. `ConfigurationError` stays.
+  - `core.WidgetManager`, `core.WidgetLogger`, `core.WidgetResult`, `button.WidgetButtonRenderer`, `utils.WidgetUrlBuilder`, `webview.WidgetWebViewManager`, `models.WidgetMessage`, `models.WidgetState`, `exceptions.WidgetException` and `Result.handleWidgetError`.
 
 ## [v0.0.9] - 2024-12-19
 

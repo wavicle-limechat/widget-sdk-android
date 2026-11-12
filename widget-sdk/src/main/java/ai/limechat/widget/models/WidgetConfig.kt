@@ -41,7 +41,27 @@ data class WidgetConfig internal constructor(
         val identifierHash: String? = null,
         val customAttributes: Map<String, Any>? = null,
         val identifier: String? = null
-    ) : Serializable
+    ) : Serializable {
+        
+        /**
+         * Check if user has any identifying information
+         */
+        @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+        fun hasIdentifyingInfo(): Boolean {
+            return !name.isNullOrBlank() || 
+                   !email.isNullOrBlank() || 
+                   !phoneNumber.isNullOrBlank() || 
+                   !identifierHash.isNullOrBlank()
+        }
+        
+        /**
+         * Get primary identifier for the user
+         */
+        @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+        fun getPrimaryIdentifier(): String? {
+            return identifierHash ?: email ?: phoneNumber ?: name
+        }
+    }
     
     /**
      * Color scheme options for the widget
@@ -51,6 +71,38 @@ data class WidgetConfig internal constructor(
         DARK,
         AUTO
     }
+    
+    /**
+     * Token management mode
+     */
+    @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+    enum class TokenManagement {
+        /** SDK manages tokens internally using instanceId */
+        INTERNAL,
+        /** App manages tokens externally via callbacks */
+        EXTERNAL
+    }
+    
+    /**
+     * Get the token management mode based on configuration
+     */
+    @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+    @Suppress("DEPRECATION")
+    val tokenManagement: TokenManagement
+        get() = if (conversationToken != null || onConversationTokenChange != null) {
+            TokenManagement.EXTERNAL
+        } else {
+            TokenManagement.INTERNAL
+        }
+    
+    /**
+     * Check if configuration is valid for external token management
+     */
+    @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+    @Suppress("DEPRECATION")
+    val isExternalTokenManagementValid: Boolean
+        get() = tokenManagement == TokenManagement.INTERNAL || 
+                (conversationToken != null && onConversationTokenChange != null)
     
     /**
      * Builder for WidgetConfig with validation
@@ -201,5 +253,19 @@ data class WidgetConfig internal constructor(
          * Create a builder for WidgetConfig
          */
         fun builder(websiteToken: String): Builder = Builder(websiteToken)
+        
+        /**
+         * Create a simple configuration with just website token
+         * Uses all default values
+         */
+        @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+        fun simple(websiteToken: String): WidgetConfig = builder(websiteToken).build()
+        
+        /**
+         * Create configuration with instance ID for conversation isolation
+         */
+        @Deprecated("Unused by the SDK. Will be removed in the next major version.")
+        fun withInstanceId(websiteToken: String, instanceId: String): WidgetConfig =
+            builder(websiteToken).setInstanceId(instanceId).build()
     }
 }
