@@ -351,7 +351,8 @@ class LimechatWidgetView @JvmOverloads constructor(
                     when (BridgeEvents.nameOf(message)) {
                         BridgeEvents.CLOSE_WIDGET, BridgeEvents.WIDGET_BACK ->
                             CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
-                        BridgeEvents.SET_CW_CONVERSATION -> {
+                        // the old page can still post after reset() or reload(): only the current page counts
+                        BridgeEvents.SET_CW_CONVERSATION -> if (!pageStarted) Unit else {
                             val firstReady = markWidgetReady()
                             try {
                                 handleConversationTokenUpdate(message["cw_conversation"] as? String)

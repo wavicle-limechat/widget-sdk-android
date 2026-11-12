@@ -161,4 +161,17 @@ class ResetTest {
         assertTrue(after.any { it.contains("rnUser") })
         assertEquals(1, after.count { it.contains("\"set-user\"") })
     }
+
+    @Test
+    fun `after reset a set-cw-conversation from the old page does not save or emit its token`() {
+        val cb = RecordingCallback()
+        val v = LimechatWidgetView(ctx).also { it.init(WidgetConfig.builder("tok").build(), cb) }
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"tokA"}""")
+        v.reset()
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"old"}""", currentPage = false)
+        assertNull(prefToken())
+        assertTrue(tokenMemoryCache().isEmpty())
+        assertEquals(listOf("tokA"), cb.tokens)
+        assertEquals("$prod$q", v.lastLoadedUrl())
+    }
 }

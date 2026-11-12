@@ -125,7 +125,7 @@ class ConversationTokenCharacterizationTest {
         v.postFromJs("""{"event":"set-cw-conversation"}""")
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":123}""")
         v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":null}""")
-        assertEquals(emptyList<String>(), cb.events)
+        assertEquals(emptyList<String>(), cb.tokens)
         assertTrue(prefs.all.isEmpty())
     }
 

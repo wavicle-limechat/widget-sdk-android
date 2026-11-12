@@ -88,7 +88,7 @@ class BridgeCharacterizationTest {
     @Test
     fun `set-cw-conversation calls onConversationTokenChange only, not onMessage`() {
         view.postFromJs("""{"event":"set-cw-conversation","type":"set-cw-conversation","cw_conversation":"tokA"}""")
-        assertEquals(listOf("onConversationTokenChange"), cb.events)
+        assertEquals(listOf("onConversationTokenChange", "onLoaded"), cb.events)
         assertEquals(listOf("tokA"), cb.tokens)
     }
 

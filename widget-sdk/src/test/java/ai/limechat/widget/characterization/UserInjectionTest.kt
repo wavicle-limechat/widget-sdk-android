@@ -208,7 +208,7 @@ class UserInjectionTest {
     fun `set-cw-conversation from the old page does not take a message held for the next load`() {
         val v = loaded(userConfig())
         v.open("hi")
-        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"t"}""")
+        v.postFromJs("""{"event":"set-cw-conversation","cw_conversation":"t"}""", currentPage = false)
         assertEquals(emptyList<String>(), v.openScripts())
     }
 

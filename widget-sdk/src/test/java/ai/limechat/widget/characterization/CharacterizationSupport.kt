@@ -51,7 +51,8 @@ fun LimechatWidgetView.recorder(): RecordingShadowWebView = Shadow.extract(webVi
 fun LimechatWidgetView.lastLoadedUrl(): String? = shadowOf(webView()).lastLoadedUrl
 
 /** Calls window.LimechatAndroid.<method>(payload) the way the page does, then runs the main looper. */
-fun LimechatWidgetView.postFromJs(payload: String, method: String = "postMessage") {
+fun LimechatWidgetView.postFromJs(payload: String, method: String = "postMessage", currentPage: Boolean = true) {
+    if (currentPage) startCurrentPage()
     val bridge = shadowOf(webView()).getJavascriptInterface("LimechatAndroid")
         ?: error("LimechatAndroid js interface not registered")
     val m = bridge.javaClass.getMethod(method, String::class.java)
@@ -60,8 +61,23 @@ fun LimechatWidgetView.postFromJs(payload: String, method: String = "postMessage
     idleMain()
 }
 
+// the load count at which each view's page was last started by startCurrentPage()
+private val startedAtLoad = java.util.WeakHashMap<LimechatWidgetView, Int>()
+
+/**
+ * The widget ignores set-cw-conversation from a page that has not started. Starts the page of the
+ * latest load once, so a post from js counts as coming from the current page.
+ */
+fun LimechatWidgetView.startCurrentPage() {
+    val loads = recorder().loadedUrls.size
+    if (startedAtLoad[this] == loads) return
+    startedAtLoad[this] = loads
+    shadowOf(webView()).webViewClient.onPageStarted(webView(), "x", null)
+}
+
 /** A main frame load error, so the next open() has to load again. */
 fun LimechatWidgetView.failMainFrameLoad() {
+    shadowOf(webView()).webViewClient.onPageStarted(webView(), "x", null)
     shadowOf(webView()).webViewClient.onReceivedError(
         webView(), FakeRequest("https://app.limechat.ai/widget"), android.webkit.FakeWebResourceError(-2, "net::ERR_FAILED")
     )
@@ -74,6 +90,7 @@ fun idleMainFor(ms: Long) = shadowOf(Looper.getMainLooper()).idleFor(Duration.of
 /** Starts a page, then posts set-cw-conversation the way the widget does when it mounts. */
 fun LimechatWidgetView.widgetReady() {
     shadowOf(webView()).webViewClient.onPageStarted(webView(), "x", null)
+    startedAtLoad[this] = recorder().loadedUrls.size
     postFromJs("""{"event":"set-cw-conversation"}""")
 }
 
