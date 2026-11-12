@@ -44,7 +44,6 @@ class WidgetActivity : FragmentActivity() {
         // Create configuration using builder pattern
         val config = WidgetConfig.builder(websiteToken)
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = userName,
                 email = userEmail,

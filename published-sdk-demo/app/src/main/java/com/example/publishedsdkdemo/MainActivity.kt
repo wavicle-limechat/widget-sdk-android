@@ -64,7 +64,6 @@ class MainActivity : AppCompatActivity() {
         // Create widget configuration using builder pattern
         val config = WidgetConfig.builder(WEBSITE_TOKEN)
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = "Published SDK Demo User",
                 email = "demo@published.com"

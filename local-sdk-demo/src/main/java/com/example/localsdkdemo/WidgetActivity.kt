@@ -48,7 +48,6 @@ class WidgetActivity : FragmentActivity() {
         val config = WidgetConfig.builder(websiteToken)
             .setBaseUrl("https://app.limechat.ai")
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = userName,
                 email = userEmail,

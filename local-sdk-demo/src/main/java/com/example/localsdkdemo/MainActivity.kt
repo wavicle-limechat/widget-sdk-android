@@ -77,7 +77,6 @@ class MainActivity : AppCompatActivity() {
         // Create widget configuration for floating button using builder pattern
         val config = WidgetConfig.builder(WEBSITE_TOKEN)
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = "Local SDK Demo User",
                 email = "demo@local.com"
