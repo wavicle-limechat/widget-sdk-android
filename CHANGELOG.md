@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0-beta.1]
+
 > **Upgrade note: unverified contact update.** User details passed to the SDK reach the widget through `rnUser` with no verification. On the customer's first message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and the identifier hash (`identifierHash`) so the contact is verified.
 
 ### Changed
@@ -168,6 +170,7 @@ For existing users upgrading from v0.0.8:
 
 ## Version History
 
+- **v0.2.0-beta.1** (unreleased): see the [0.2.0-beta.1] section above
 - **v0.0.9** (2024-12-19): Chat persistence, back button support, builder pattern
 - **v0.0.8** (Previous): Basic widget functionality
 - **v0.0.7** and earlier: Initial releases and bug fixes

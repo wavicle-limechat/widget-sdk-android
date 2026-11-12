@@ -45,7 +45,7 @@ Next, add the SDK dependency to your app's `build.gradle.kts` file:
 ```kotlin
 // app/build.gradle.kts  
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.0.9")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0-beta.1")
 }
 ```
 
