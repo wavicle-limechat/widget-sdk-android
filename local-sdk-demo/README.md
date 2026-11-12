@@ -6,7 +6,7 @@ This is an example Android application that demonstrates how to use the **local*
 
 | Aspect | Published SDK Demo | Local SDK Demo |
 |--------|-------------------|----------------|
-| **Dependency** | `implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.8")` | `implementation(project(":widget-sdk"))` |
+| **Dependency** | `implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0")` | `implementation(project(":widget-sdk"))` |
 | **Source** | JitPack published artifact | Local project module |
 | **Purpose** | Proves published SDK works independently | Proves local SDK works for development |
 | **Use Case** | Production integration testing | Development and testing |
@@ -47,7 +47,6 @@ local-sdk-demo/
 
 ### 2. Verify Local SDK Usage
 
-- Check logs for "LOCAL SDK DEMO" messages
 - Verify dependency in `app/build.gradle.kts` shows `:widget-sdk`
 - Widget button appears in bottom-right corner
 - All functionality works with local development

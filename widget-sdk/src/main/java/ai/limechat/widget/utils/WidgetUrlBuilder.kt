@@ -7,6 +7,7 @@ import android.util.Log
 /**
  * Responsible for building widget URLs with proper parameters
  */
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 class WidgetUrlBuilder(private val config: WidgetConfig) {
     
     companion object {

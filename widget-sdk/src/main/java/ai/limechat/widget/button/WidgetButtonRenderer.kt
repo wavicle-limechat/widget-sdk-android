@@ -21,6 +21,7 @@ import java.net.URL
 /**
  * Handles the visual rendering and styling of the widget button
  */
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 class WidgetButtonRenderer(private val context: Context) {
     
     companion object {

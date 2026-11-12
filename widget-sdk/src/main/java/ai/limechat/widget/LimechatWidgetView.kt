@@ -1,23 +1,27 @@
 package ai.limechat.widget
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.net.Uri
-import android.os.Build
-import android.util.AttributeSet
-import android.util.Log
-import android.webkit.*
-import android.widget.FrameLayout
-import androidx.webkit.JavaScriptReplyProxy
-import androidx.webkit.WebMessageCompat
-import androidx.webkit.WebViewCompat
-import androidx.webkit.WebViewFeature
+import ai.limechat.widget.internal.BridgeEvents
+import ai.limechat.widget.internal.CloseHandler
+import ai.limechat.widget.internal.ConversationTokenStore
+import ai.limechat.widget.internal.JsBridge
+import ai.limechat.widget.internal.WebViewFactory
+import ai.limechat.widget.internal.WidgetChromeClient
+import ai.limechat.widget.internal.WidgetWebViewClient
 import ai.limechat.widget.models.WidgetConfig
 import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
-import kotlinx.coroutines.*
+import android.content.Context
+import android.util.AttributeSet
+import android.os.SystemClock
+import android.util.Log
+import android.webkit.WebView
+import android.widget.FrameLayout
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import org.json.JSONObject
-import java.net.URLEncoder
 
 /**
  * Main widget view that renders the Limechat widget in a hardened WebView
@@ -30,38 +34,88 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     companion object {
         private const val TAG = "LimechatWidgetView"
-        private const val MESSAGE_LISTENER_NAME = "LimechatNative"
-        private const val JS_INTERFACE_NAME = "LimechatAndroid"
-        private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
-        private const val PREFS_NAME = "limechat_widget_conversations"
-        
-        // In-memory conversation token cache for performance
-        // Persists across widget instance recreation within same app session
-        private val inMemoryTokenCache = mutableMapOf<String, String>()
+
+        // a page that finished loading this long ago and is still not ready is treated as failed
+        private const val READY_TIMEOUT_MS = 10_000L
+
+        /**
+         * Clears the stored conversation token for an instance (null or blank means "default").
+         * A view that is showing is not reloaded: if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again. Call it on logout.
+         */
+        @JvmStatic
+        @JvmOverloads
+        fun reset(context: Context, instanceId: String? = null) {
+            ConversationTokenStore.clear(context.applicationContext, instanceId?.takeIf { it.isNotBlank() } ?: "default")
+        }
     }
 
-    private val webView: WebView
+    private lateinit var webView: WebView
     private var config: WidgetConfig? = null
     private var callback: WidgetCallback? = null
     private var filePicker: WidgetFilePicker? = null
     private val coroutineScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
     private val messageHandler = MessageHandler()
-    private var isMessagingSetup = false
-    private var webMessageListenerAdded = false
-    private var jsInterfaceAdded = false
-    
-    // Unique instance identifier (like React Native component instance)
-    private var instanceId: String
-    
-    // Conversation token management (like React Native's component state)
+    private lateinit var bridge: JsBridge
+    private var instanceId = ""
     private var cwConversation: String? = null
+    private var pendingOpen: Any? = null
+    private var pageStarted = false
+    private var widgetReady = false
+    private var loadPending = false
+    private var pageFinishedAt: Long? = null
+
+    // monotonic, injectable for tests
+    internal var clock: () -> Long = { SystemClock.elapsedRealtime() }
+    private var processRecoveryUsed = false
+    private var pendingAttributes: Map<String, Any?> = emptyMap()
 
     init {
-        webView = createHardenedWebView()
+        createWebView()
+    }
+
+    private fun createWebView() {
+        webView = WebViewFactory.create(
+            context,
+            WidgetWebViewClient(
+                context,
+                baseUrl = { config?.baseUrl },
+                callback = { callback },
+                onPageStarted = {
+                    pageStarted = true
+                    widgetReady = false
+                },
+                onPageLoaded = {
+                    pageFinishedAt = clock()
+                    injectUser()
+                },
+                onRenderGone = { handleRenderGone(it) },
+                onMainFrameError = { loadPending = false }
+            ),
+            WidgetChromeClient { filePicker }
+        )
+        bridge = JsBridge(webView) { handleMessage(it) }
         addView(webView, LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT))
-        
-        // instanceId will be set during init() based on config
-        instanceId = ""
+    }
+
+    /**
+     * The render process died. The dead webview is replaced, never reused.
+     * Reload once, then report until a page gets ready.
+     */
+    private fun handleRenderGone(dead: WebView) {
+        if (dead !== webView) return
+        removeView(dead)
+        dead.destroy()
+        pageStarted = false
+        widgetReady = false
+        createWebView()
+        loadPending = false
+        if (config != null) bridge.setup()
+        if (processRecoveryUsed) {
+            callback?.onError(WidgetError(WidgetError.ErrorCode.WEBVIEW_ERROR, "Widget web process died again before ready"))
+            return
+        }
+        processRecoveryUsed = true
+        reload()
     }
 
     /**
@@ -90,39 +144,27 @@ class LimechatWidgetView @JvmOverloads constructor(
      * This is the main init method that all other overloads delegate to
      */
     private fun init(
-        config: WidgetConfig, 
-        callback: WidgetCallback? = null, 
-        initialMessage: String? = null,
-        initialMessageData: Map<String, Any>? = null
+        config: WidgetConfig,
+        callback: WidgetCallback?,
+        initialMessage: String?,
+        initialMessageData: Map<String, Any>?
     ) {
+        if (this.config != null) pendingAttributes = emptyMap()
+        pendingOpen = null
         this.config = config
         this.callback = callback
-        
-        // Set instance ID from config or generate a default one
-        instanceId = if (!config.instanceId.isNullOrBlank()) {
-            // App-provided instance ID - gives app full control over widget isolation
-            config.instanceId
-        } else {
-            // Default: single instance per website token (like before the isolation fix)
-            "default"
-        }
-        
-        Log.d(TAG, "Widget instance ID: $instanceId")
-        
-        // Initialize conversation token (like React Native's cwConversation state)
-        if (config.conversationToken != null) {
-            // External token management - app provides token
-            cwConversation = config.conversationToken
-            Log.d(TAG, "Using external conversation token: ${config.conversationToken?.take(8) ?: "none"}")
-        } else {
-            // Internal token management - SDK manages persistence using instanceId
-            cwConversation = loadConversationToken(instanceId)
-            Log.d(TAG, "Instance $instanceId - Loaded conversation token: ${cwConversation?.take(8) ?: "none"}")
-        }
-        
-        // Note: File picker should be attached separately using attachFilePicker()
-        // to ensure it's created during onCreate() of the activity
-        
+
+        instanceId = config.instanceId?.takeIf { it.isNotBlank() } ?: "default"
+
+        // a different user than the last one seen on this instance starts a new conversation. A token the host passed still wins.
+        val identity = identityOf(config.user)
+        val previous = ConversationTokenStore.identity(instanceId)
+        if (previous != null && previous != identity) ConversationTokenStore.clear(context, instanceId)
+        ConversationTokenStore.setIdentity(instanceId, identity)
+
+        cwConversation = config.conversationToken ?: ConversationTokenStore.load(context, instanceId)
+
+        // the file picker is attached separately with attachFilePicker() so it can be created in the activity's onCreate()
         loadWidget(initialMessage, initialMessageData)
     }
 
@@ -130,106 +172,114 @@ class LimechatWidgetView @JvmOverloads constructor(
      * Send a message to the widget
      */
     fun sendMessage(event: String, data: Map<String, Any> = emptyMap()) {
-        val message = JSONObject().apply {
-            put("event", event)
-            data.forEach { (key, value) -> put(key, value) }
-        }
-        
-        val script = """
-            window.postMessage('limechat-widget:${message}', '*');
-        """.trimIndent()
-        
-        webView.evaluateJavascript(script, null)
+        val message = JSONObject(mapOf<String, Any>("event" to event) + data)
+        webView.evaluateJavascript("window.postMessage('chatwoot-widget:' + JSON.stringify($message), '*');", null)
     }
 
     /**
      * Open the widget with an optional custom message
-     * @param message Optional string message to display when opening the widget
+     * @param message Optional string message to display when opening the widget. Null or empty does nothing.
      */
     fun open(message: String? = null) {
-        if (message != null) {
-            // Use URL parameters approach since we're loading the widget directly
-            reloadWidgetWithMessage(message)
-        } else {
-            // Regular widget opening via JavaScript event
-            val script = """
-                if (window.bus && window.bus.${'$'}emit) {
-                    window.bus.${'$'}emit('widget:toggle');
-                }
-            """.trimIndent()
-            webView.evaluateJavascript(script, null)
-        }
+        if (!message.isNullOrEmpty()) deliverOpen(message)
     }
 
     /**
      * Open the widget with a custom message object
-     * @param messageData Message object that can contain 'content' key or other properties
+     * @param messageData Message object that can contain 'content' key or other properties. Empty does nothing.
+     * A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, like the web SDK's `setOpenMessage`.
      */
     fun open(messageData: Map<String, Any>) {
-        // Use URL parameters approach with JSON payload
-        reloadWidgetWithMessageData(messageData)
+        if (messageData.isNotEmpty()) deliverOpen(withDefaultContent(messageData))
     }
 
-    /**
-     * Utility method to build URL with parameters
-     */
-    private fun buildUrlWithParameters(baseUrl: String, params: Map<String, String>): String {
-        return try {
-            val urlBuilder = StringBuilder(baseUrl)
-            val hasQuery = baseUrl.contains("?")
-            
-            params.forEach { (key, value) ->
-                val separator = if (!hasQuery && urlBuilder.toString() == baseUrl) "?" else "&"
-                val encodedValue = URLEncoder.encode(value, "UTF-8")
-                urlBuilder.append("$separator$key=$encodedValue")
-            }
-            
-            urlBuilder.toString()
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to build URL with parameters", e)
-            baseUrl
+    /** A message object with no content and other keys gets `content: "Hi"`, like the web SDK's `setOpenMessage`. */
+    private fun withDefaultContent(message: Map<String, Any>): Map<String, Any> {
+        val content = message["content"]
+        val missing = content == null || content === JSONObject.NULL || content == ""
+        return if (missing && message.keys.any { it != "content" }) message + ("content" to "Hi") else message
+    }
+
+    private fun deliverOpen(message: Any) {
+        val config = this.config ?: return
+        if (widgetReady) {
+            sendMessage("open-with-message", mapOf("openMessage" to message))
+            return
         }
+        pendingOpen = message
+        // the page loaded but the widget never became ready (its js failed): treat the load as failed
+        val finishedAt = pageFinishedAt
+        if (loadPending && finishedAt != null && clock() - finishedAt >= READY_TIMEOUT_MS) loadPending = false
+        // a load is already running: keep it, the held message goes out at ready
+        if (!loadPending) loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     /**
-     * Reload the widget with a custom message via URL parameters
+     * `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token and the user (and a token or user you passed in, until you pass new ones), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
+     * Does nothing before init.
      */
-    private fun reloadWidgetWithMessage(message: String) {
+    fun reset() {
         val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
-        val params = mapOf("lc_open_message" to message)
-        val urlWithMessage = buildUrlWithParameters(baseUrl, params)
-        
-        Log.d(TAG, "Reloading widget with message: $message")
-        Log.d(TAG, "Widget URL: $urlWithMessage")
-        webView.loadUrl(urlWithMessage)
+        ConversationTokenStore.clear(context, instanceId)
+        cwConversation = null
+        this.config = config.copy(conversationToken = null, user = null)
+        pendingAttributes = emptyMap()
+        pendingOpen = null
+        reload()
+    }
+
+    /** Reload the widget. Does nothing before init. */
+    fun reload() {
+        val config = this.config ?: return
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     /**
-     * Reload the widget with a custom message object via URL parameters
+     * Attach custom attributes to the customer's next message. Repeat calls merge, later keys win.
+     * Held until the widget is ready, and sent before a held open message.
+     * @return false for a null, empty or unserialisable value
      */
-    private fun reloadWidgetWithMessageData(messageData: Map<String, Any>) {
-        val config = this.config ?: return
-        val baseUrl = UrlBuilder.buildWidgetUrl(config)
-        val messageJson = JSONObject(messageData).toString()
-        val params = mapOf("lc_open_payload" to messageJson)
-        val urlWithPayload = buildUrlWithParameters(baseUrl, params)
-        
-        Log.d(TAG, "Reloading widget with message data: $messageData")
-        Log.d(TAG, "Widget URL: $urlWithPayload")
-        webView.loadUrl(urlWithPayload)
+    fun setMessageAttributes(attributes: Map<String, Any?>?): Boolean {
+        val valid = !attributes.isNullOrEmpty() && isJsonValue(attributes)
+        if (!valid) return false
+        pendingAttributes = pendingAttributes + attributes!!
+        flushMessageAttributes()
+        return true
+    }
+
+    private fun isJsonValue(value: Any?): Boolean = when (value) {
+        null, is String, is Boolean -> true
+        is Double -> value.isFinite()
+        is Float -> value.isFinite()
+        is Number -> true
+        is Map<*, *> -> value.all { (k, v) -> k is String && isJsonValue(v) }
+        is Collection<*> -> value.all(::isJsonValue)
+        is Array<*> -> value.all(::isJsonValue)
+        else -> false
+    }
+
+    private fun flushMessageAttributes() {
+        if (!widgetReady || pendingAttributes.isEmpty()) return
+        sendMessage("set-message-attributes", mapOf("attributes" to pendingAttributes))
+        pendingAttributes = emptyMap()
+    }
+
+    private fun loadUrl(url: String) {
+        Log.d(TAG, "Loading widget URL: ${url.substringBefore('?')}")
+        pageStarted = false
+        widgetReady = false
+        loadPending = true
+        pageFinishedAt = null
+        webView.loadUrl(url)
     }
 
     /**
      * Handle back press for WebView navigation
      */
     fun onBackPressed(): Boolean {
-        return if (webView.canGoBack()) {
-            webView.goBack()
-            true
-        } else {
-            false
-        }
+        if (!webView.canGoBack()) return false
+        webView.goBack()
+        return true
     }
 
     /**
@@ -247,365 +297,50 @@ class LimechatWidgetView @JvmOverloads constructor(
         webView.destroy()
     }
 
-    @SuppressLint("SetJavaScriptEnabled")
-    private fun createHardenedWebView(): WebView {
-        return WebView(context).apply {
-            settings.apply {
-                // Enable JavaScript (required for widget)
-                javaScriptEnabled = true
-                
-                // Enable DOM storage
-                domStorageEnabled = true
-                
-                // Harden WebView
-                allowFileAccess = false
-                allowContentAccess = false
-                allowFileAccessFromFileURLs = false
-                allowUniversalAccessFromFileURLs = false
-                
-                // Block mixed content
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                    mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
-                }
-                
-                // Enable safe browsing
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    safeBrowsingEnabled = true
-                }
-                
-                // Custom user agent
-                userAgentString = "$USER_AGENT_PREFIX ${userAgentString}"
-                
-                // Other settings
-                setSupportZoom(false)
-                builtInZoomControls = false
-                displayZoomControls = false
-                loadWithOverviewMode = true
-                useWideViewPort = true
-                cacheMode = WebSettings.LOAD_DEFAULT
-            }
-            
-            // Set WebViewClient
-            webViewClient = createWebViewClient()
-            
-            // Set WebChromeClient for file picker
-            webChromeClient = createWebChromeClient()
+    private fun identityOf(user: WidgetConfig.User?): String? {
+        val parts = listOf(user?.identifier, user?.email, user?.phoneNumber).map { it ?: "" }
+        return if (parts.all { it.isEmpty() }) null else parts.joinToString("\n")
+    }
+
+    private fun userFields(): Map<String, Any> {
+        val user = config?.user ?: return emptyMap()
+        return buildMap {
+            user.name?.let { put("name", it) }
+            user.email?.let { put("email", it) }
+            user.phoneNumber?.let { put("phone_number", it) }
+            user.customAttributes?.let { put("custom_attributes", it) }
         }
     }
 
-    private fun createWebViewClient(): WebViewClient {
-        return object : WebViewClient() {
-            override fun onPageFinished(view: WebView, url: String) {
-                super.onPageFinished(view, url)
-                // Ensure messaging bridge is re-established on every load/HMR
-                isMessagingSetup = false
-                setupMessaging()
-                injectUserData()
-                callback?.onLoaded()
-            }
-
-            override fun onReceivedError(
-                view: WebView,
-                request: WebResourceRequest,
-                error: WebResourceError
-            ) {
-                super.onReceivedError(view, request, error)
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    callback?.onError(
-                        WidgetError(
-                            WidgetError.ErrorCode.WEBVIEW_ERROR,
-                            "WebView error: ${error.description}",
-                            context = mapOf("errorCode" to error.errorCode)
-                        )
-                    )
-                }
-            }
-
-            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
-                val url = request.url.toString()
-                
-                // Handle special URLs
-                if (url.startsWith("limechat://close")) {
-                    callback?.onClose()
-                    return true
-                }
-                
-                // Only allow loading the widget URL
-                val baseUrl = config?.baseUrl ?: return false
-                if (!url.startsWith(baseUrl)) {
-                    return true // Block loading
-                }
-                
-                return false
-            }
-        }
+    private fun injectUser() {
+        val fields = userFields()
+        if (fields.isEmpty()) return
+        webView.evaluateJavascript(
+            "if (window.chatwootWebChannel) { window.chatwootWebChannel.rnUser = ${JSONObject(fields)}; }",
+            null
+        )
     }
 
-    private fun createWebChromeClient(): WebChromeClient {
-        return object : WebChromeClient() {
-            override fun onShowFileChooser(
-                webView: WebView,
-                filePathCallback: ValueCallback<Array<Uri>>,
-                fileChooserParams: FileChooserParams
-            ): Boolean {
-                filePicker?.showFileChooser(filePathCallback, fileChooserParams)
-                return true
-            }
-
-            override fun onConsoleMessage(consoleMessage: ConsoleMessage): Boolean {
-                Log.d(TAG, "JS Console: ${consoleMessage.message()}")
-                return super.onConsoleMessage(consoleMessage)
-            }
+    private fun sendVerifiedUser() {
+        val user = config?.user ?: return
+        val identifier = user.identifier?.takeIf { it.isNotBlank() } ?: return
+        val hash = user.identifierHash?.takeIf { it.isNotBlank() } ?: return
+        val fields = buildMap<String, Any> {
+            user.name?.let { put("name", it) }
+            user.email?.let { put("email", it) }
+            put("identifier_hash", hash)
         }
+        sendMessage("set-user", mapOf("identifier" to identifier, "user" to fields))
     }
 
-    private fun loadWidget(initialMessage: String? = null, initialMessageData: Map<String, Any>? = null) {
+    private fun loadWidget(initialMessage: String?, initialMessageData: Map<String, Any>?) {
         val config = this.config ?: return
-        var url = UrlBuilder.buildWidgetUrl(config, cwConversation)
 
-        // Ensure messaging bridges are available before the page loads
-        // so JS can see window.LimechatAndroid / window.LimechatNative immediately
-        setupMessaging()
-        
-        // Add initial message parameters if provided
-        val params = mutableMapOf<String, String>()
-        
-        initialMessage?.let { message ->
-            params["lc_open_message"] = message
-            Log.d(TAG, "Loading widget with initial message: $message")
-        }
-        
-        initialMessageData?.let { data ->
-            val messageJson = JSONObject(data).toString()
-            params["lc_open_payload"] = messageJson
-            Log.d(TAG, "Loading widget with initial message data: $data")
-        }
-        
-        if (params.isNotEmpty()) {
-            url = buildUrlWithParameters(url, params)
-        }
-        
-        Log.d(TAG, "Loading widget URL: $url")
-        webView.loadUrl(url)
-    }
+        // Bridge must exist before the page loads so the page sees window.LimechatAndroid immediately
+        bridge.setup()
 
-    private fun injectUserData() {
-        val config = this.config ?: return
-        
-        coroutineScope.launch {
-            delay(500) // Small delay to ensure page is ready
-            
-            val scripts = buildList {
-                // Set user data
-                config.user?.let { user ->
-                    add("""
-                        window.LimechatWidget = window.LimechatWidget || {};
-                        window.LimechatWidget.setUser = function(user) {
-                            window.postMessage(JSON.stringify({
-                                event: 'set-user',
-                                user: user,
-                                identifier: user.identifier_hash
-                            }), '*');
-                        };
-                        window.LimechatWidget.setUser({
-                            name: "${user.name ?: ""}",
-                            email: "${user.email ?: ""}",
-                            phone_number: "${user.phoneNumber ?: ""}",
-                            identifier_hash: "${user.identifierHash ?: ""}"
-                        });
-                    """.trimIndent())
-                }
-                
-                // Set locale
-                add("""
-                    window.postMessage(JSON.stringify({
-                        event: 'set-locale',
-                        locale: '${config.locale}'
-                    }), '*');
-                """.trimIndent())
-                
-                // Set color scheme
-                add("""
-                    window.postMessage(JSON.stringify({
-                        event: 'set-color-scheme',
-                        darkMode: ${config.colorScheme == WidgetConfig.ColorScheme.DARK}
-                    }), '*');
-                """.trimIndent())
-                
-                // Set custom attributes
-                config.customAttributes?.let { attrs ->
-                    val attrsJson = JSONObject(attrs).toString()
-                    add("""
-                        window.postMessage(JSON.stringify({
-                            event: 'set-custom-attributes',
-                            customAttributes: $attrsJson
-                        }), '*');
-                    """.trimIndent())
-                }
-            }
-            
-            scripts.forEach { script ->
-                webView.evaluateJavascript(script, null)
-            }
-        }
-    }
-
-    private fun setupMessaging() {
-        if (isMessagingSetup) {
-            Log.d(TAG, "Messaging already setup, skipping")
-            return
-        }
-        
-        // Try WebMessageListener first (preferred method)
-        if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-            setupWebMessageListener()
-            // Also expose a JS interface so window.LimechatAndroid exists
-            // This lets the JS bridge call into Android directly when it prefers interfaces
-            setupJavascriptInterface()
-        } else {
-            // Fallback to JavascriptInterface
-            setupJavascriptInterface()
-        }
-        
-        isMessagingSetup = true
-    }
-
-    private fun setupWebMessageListener() {
-        try {
-            if (!webMessageListenerAdded) {
-                WebViewCompat.addWebMessageListener(
-                    webView,
-                    MESSAGE_LISTENER_NAME,
-                    setOf("*"),
-                    object : WebViewCompat.WebMessageListener {
-                        override fun onPostMessage(
-                            view: WebView,
-                            message: WebMessageCompat,
-                            sourceOrigin: Uri,
-                            isMainFrame: Boolean,
-                            replyProxy: JavaScriptReplyProxy
-                        ) {
-                            message.data?.let { data ->
-                                handleMessage(data)
-                            }
-                        }
-                    }
-                )
-                webMessageListenerAdded = true
-            } else {
-                Log.d(TAG, "WebMessageListener already added, reusing")
-            }
-            // Inject (idempotent) script to forward window.postMessage to native bridge
-            val script = """
-                (function(){
-                  if (!window.__lcAndroidBridgeWML) {
-                    window.__lcAndroidBridgeWML = true;
-                    // Wrap window.postMessage to also forward limechat-widget messages to native
-                    try {
-                      if (!window.__lcPostMessageWrapped) {
-                        window.__lcPostMessageWrapped = true;
-                        var __lcOrigPostMessage = window.postMessage.bind(window);
-                        window.postMessage = function(data, targetOrigin, transfer) {
-                          try {
-                            if (typeof data === 'string' && data.indexOf('limechat-widget:') === 0) {
-                              if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                                window.$MESSAGE_LISTENER_NAME.postMessage(data);
-                              } else if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                                window.$JS_INTERFACE_NAME.postMessage(data);
-                              }
-                              try { console.log('[LimechatBridge] forwarded via wrapped postMessage'); } catch (e) {}
-                            }
-                          } catch (e) {}
-                          return __lcOrigPostMessage(data, targetOrigin, transfer);
-                        };
-                      }
-                    } catch (e) {}
-                    window.addEventListener('message', function(e) {
-                      if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                        try {
-                          if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                            window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
-                          } else if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                            window.$JS_INTERFACE_NAME.postMessage(e.data);
-                          }
-                        } catch (err) {}
-                      }
-                    });
-                  }
-                })();
-            """.trimIndent()
-            webView.evaluateJavascript(script, null)
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set up WebMessageListener", e)
-            setupJavascriptInterface()
-        }
-    }
-
-    @SuppressLint("JavascriptInterface")
-    private fun setupJavascriptInterface() {
-        if (!jsInterfaceAdded) {
-            webView.addJavascriptInterface(object {
-                @JavascriptInterface
-                fun postMessage(message: String) {
-                    Log.d(TAG, "JS->Android postMessage: $message")
-                    this@LimechatWidgetView.handleMessage(message)
-                }
-
-                // Support alternate method names used by JS bridge - all delegate to postMessage
-                @JavascriptInterface
-                fun onMessage(message: String) = postMessage(message)
-
-                @JavascriptInterface
-                fun receiveMessage(message: String) = postMessage(message)
-
-                @JavascriptInterface
-                fun handleMessage(message: String) = postMessage(message)
-            }, JS_INTERFACE_NAME)
-            jsInterfaceAdded = true
-        } else {
-            Log.d(TAG, "JS interface already added, reusing")
-        }
-        
-        // Inject (idempotent) script to use JavascriptInterface
-        val script = """
-            (function(){
-              if (!window.__lcAndroidBridgeJSI) {
-                window.__lcAndroidBridgeJSI = true;
-                // Wrap window.postMessage to also forward limechat-widget messages to native
-                try {
-                  if (!window.__lcPostMessageWrapped) {
-                    window.__lcPostMessageWrapped = true;
-                    var __lcOrigPostMessage = window.postMessage.bind(window);
-                    window.postMessage = function(data, targetOrigin, transfer) {
-                      try {
-                        if (typeof data === 'string' && data.indexOf('limechat-widget:') === 0) {
-                          if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                            window.$JS_INTERFACE_NAME.postMessage(data);
-                          } else if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                            window.$MESSAGE_LISTENER_NAME.postMessage(data);
-                          }
-                          try { console.log('[LimechatBridge] forwarded via wrapped postMessage'); } catch (e) {}
-                        }
-                      } catch (e) {}
-                      return __lcOrigPostMessage(data, targetOrigin, transfer);
-                    };
-                  }
-                } catch (e) {}
-                window.addEventListener('message', function(e) {
-                  if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                    try {
-                      if (typeof window.$JS_INTERFACE_NAME !== 'undefined' && typeof window.$JS_INTERFACE_NAME.postMessage === 'function') {
-                        window.$JS_INTERFACE_NAME.postMessage(e.data);
-                      } else if (typeof window.$MESSAGE_LISTENER_NAME !== 'undefined' && typeof window.$MESSAGE_LISTENER_NAME.postMessage === 'function') {
-                        window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
-                      }
-                    } catch (err) {}
-                  }
-                });
-              }
-            })();
-        """.trimIndent()
-        webView.evaluateJavascript(script, null)
+        pendingOpen = initialMessage?.takeIf { it.isNotEmpty() } ?: initialMessageData?.takeIf { it.isNotEmpty() }?.let { withDefaultContent(it) }
+        loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
 
     private fun handleMessage(data: String) {
@@ -613,18 +348,17 @@ class LimechatWidgetView @JvmOverloads constructor(
             try {
                 val processed = messageHandler.processMessage(data)
                 processed?.let { message ->
-                    val event = message["event"] as? String
-                    val type = message["type"] as? String
-                    Log.d(TAG, "Received widget event: ${event ?: type ?: "unknown"} | payload: $message")
-                    
-                    when (event ?: type) {
-                        "loaded" -> callback?.onLoaded()
-                        "close-widget" -> callback?.onClose()
-                        "widget-back" -> callback?.onClose() // Handle back button same as close
-                        "set-cw-conversation" -> {
-                            // Handle conversation token update (like React Native's handleCwConversationUpdate)
-                            val token = message["cw_conversation"] as? String
-                            handleConversationTokenUpdate(token)
+                    when (BridgeEvents.nameOf(message)) {
+                        BridgeEvents.CLOSE_WIDGET, BridgeEvents.WIDGET_BACK ->
+                            CloseHandler.handle(context, config?.showLegacyBackIcon ?: false, callback)
+                        // the old page can still post after reset() or reload(): only the current page counts
+                        BridgeEvents.SET_CW_CONVERSATION -> if (!pageStarted) Unit else {
+                            val firstReady = markWidgetReady()
+                            try {
+                                handleConversationTokenUpdate(message["cw_conversation"] as? String)
+                            } finally {
+                                callback?.takeIf { firstReady }?.onLoaded()
+                            }
                         }
                         else -> callback?.onMessage(message)
                     }
@@ -640,61 +374,40 @@ class LimechatWidgetView @JvmOverloads constructor(
             }
         }
     }
-    
+
     /**
-     * Load conversation token from persistent storage using instanceId
-     * Provides cross-app restart persistence
+     * The widget posts set-cw-conversation in the same task that registers its message listener,
+     * so this is the first moment a held open message can be received. onPageFinished is too early:
+     * hash routing finishes a fragment navigation before the widget mounts.
+     * Returns true the first time the widget is ready on this page.
      */
-    private fun loadConversationToken(instanceId: String): String? {
-        // First check in-memory cache for performance
-        val memoryKey = instanceId
-        inMemoryTokenCache[memoryKey]?.let { return it }
-        
-        // Load from SharedPreferences for cross-app persistence
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        val token = prefs.getString(instanceId, null)
-        
-        // Cache in memory for future access
-        token?.let { inMemoryTokenCache[memoryKey] = it }
-        
-        return token
+    private fun markWidgetReady(): Boolean {
+        if (!pageStarted || widgetReady) return false
+        widgetReady = true
+        loadPending = false
+        processRecoveryUsed = false
+        injectUser()
+        sendVerifiedUser()
+        flushMessageAttributes()
+        pendingOpen?.let { sendMessage("open-with-message", mapOf("openMessage" to it)) }
+        pendingOpen = null
+        return true
     }
-    
-    /**
-     * Save conversation token to persistent storage using instanceId
-     * Enables cross-app restart persistence
-     */
-    private fun saveConversationToken(instanceId: String, token: String) {
-        // Save to in-memory cache for performance
-        inMemoryTokenCache[instanceId] = token
-        
-        // Save to SharedPreferences for cross-app persistence
-        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
-        prefs.edit().putString(instanceId, token).apply()
-    }
-    
+
     private fun handleConversationTokenUpdate(token: String?) {
         if (token.isNullOrBlank()) {
             Log.w(TAG, "Received empty conversation token, ignoring")
             return
         }
         
-        Log.d(TAG, "Conversation token updated: ${token.take(8)}...")
-        
-        // Update conversation token (like React Native's handleCwConversationUpdate)
         val config = this.config
+        cwConversation = token
         if (config?.onConversationTokenChange != null) {
-            // External token management - app handles persistence
             config.onConversationTokenChange.invoke(token)
-            Log.d(TAG, "External token management - calling onConversationTokenChange: ${token.take(8)}...")
         } else {
-            // Internal token management - SDK handles persistence using instanceId
-            cwConversation = token
-            saveConversationToken(instanceId, token)
-            Log.d(TAG, "Instance $instanceId - Saved conversation token: ${token.take(8)}...")
+            ConversationTokenStore.save(context, instanceId, token)
         }
         
-        // Also call the callback interface method
         callback?.onConversationTokenChange(token)
     }
 }

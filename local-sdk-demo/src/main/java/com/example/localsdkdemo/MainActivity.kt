@@ -2,7 +2,6 @@ package com.example.localsdkdemo
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
@@ -26,7 +25,6 @@ import ai.limechat.widget.models.WidgetConfig
 class MainActivity : AppCompatActivity() {
     
     companion object {
-        private const val TAG = "LocalSDKDemo"
         private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
         private const val BASE_URL = "https://app.limechat.ai"
     }
@@ -38,7 +36,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         
-        Log.d(TAG, "🚀 LOCAL SDK DEMO - Using local widget-sdk module")
         
         setupUI()
         setupWidgetWithLocalSDK()
@@ -51,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         // Test button - opens widget directly
         findViewById<Button>(R.id.btnTestWidget).setOnClickListener {
             Toast.makeText(this, "Opening local SDK widget...", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "🚀 Test button clicked - opening local SDK widget")
             openWidget()
         }
         
@@ -60,32 +56,27 @@ class MainActivity : AppCompatActivity() {
             badgeCount = (1..9).random()
             widgetButton.updateUnreadCount(badgeCount)
             Toast.makeText(this, "Badge updated to $badgeCount", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "📱 Badge count updated: $badgeCount")
         }
         
         // Custom message button
         findViewById<Button>(R.id.btnOpenWithCustomMessage).setOnClickListener {
             val customMessage = "Hi, I wanted to ask something!"
-            Log.d(TAG, "🗨️ Opening widget with custom message: $customMessage")
             Toast.makeText(this, "Opening with message: $customMessage", Toast.LENGTH_SHORT).show()
             openWidgetWithMessage(customMessage)
         }
         
         // Without legacy back icon button
         findViewById<Button>(R.id.btnOpenWithoutLegacyIcon).setOnClickListener {
-            Log.d(TAG, "🚫 Opening widget WITHOUT legacy back icon")
             Toast.makeText(this, "Opening widget without legacy back icon", Toast.LENGTH_SHORT).show()
             openWidgetWithoutLegacyIcon()
         }
     }
     
     private fun setupWidgetWithLocalSDK() {
-        Log.d(TAG, "🔧 Initializing widget with LOCAL SDK...")
         
         // Create widget configuration for floating button using builder pattern
         val config = WidgetConfig.builder(WEBSITE_TOKEN)
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = "Local SDK Demo User",
                 email = "demo@local.com"
@@ -114,7 +105,6 @@ class MainActivity : AppCompatActivity() {
         
         // Set click listener for consistent behavior (same as "Test Widget" button)
         widgetButton.setOnClickListener {
-            Log.d(TAG, "🎯 Floating widget button clicked - opening widget")
             Toast.makeText(this, "Opening floating widget...", Toast.LENGTH_SHORT).show()
             
             // Open widget consistently (same behavior as Test Widget button)
@@ -133,14 +123,11 @@ class MainActivity : AppCompatActivity() {
         // Set initial badge
         widgetButton.updateUnreadCount(badgeCount)
         
-        Log.d(TAG, "✅ Local SDK widget initialized successfully")
-        Log.d(TAG, "🌐 Widget will load: ${config.baseUrl}/widget?website_token=${config.websiteToken}")
         
         Toast.makeText(this, "✅ Local SDK ready with token: ${WEBSITE_TOKEN}", Toast.LENGTH_LONG).show()
     }
     
     private fun openWidget() {
-        Log.d(TAG, "🚀 Opening full-screen widget with local SDK")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)
@@ -155,7 +142,6 @@ class MainActivity : AppCompatActivity() {
      * Open widget with custom string message
      */
     private fun openWidgetWithMessage(message: String) {
-        Log.d(TAG, "🚀 Opening full-screen widget with custom message: $message")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)
@@ -171,7 +157,6 @@ class MainActivity : AppCompatActivity() {
      * Open widget WITHOUT legacy back icon (showLegacyBackIcon = false)
      */
     private fun openWidgetWithoutLegacyIcon() {
-        Log.d(TAG, "🚫 Opening full-screen widget WITHOUT legacy back icon")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)
@@ -187,7 +172,6 @@ class MainActivity : AppCompatActivity() {
      * Open widget with custom message object
      */
     private fun openWidgetWithMessage(messageData: Map<String, Any>) {
-        Log.d(TAG, "🚀 Opening full-screen widget with custom message data: $messageData")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)
@@ -208,6 +192,5 @@ class MainActivity : AppCompatActivity() {
         if (this::widgetButton.isInitialized) {
             widgetButton.destroy()
         }
-        Log.d(TAG, "🧹 Local SDK demo cleaned up")
     }
 }

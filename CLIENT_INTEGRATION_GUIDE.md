@@ -4,7 +4,7 @@
 
 | Version | Repository | Platform |  |
 | --- | --- | --- | --- |
-| v0.0.9 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
+| v0.2.0 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
 
 ---
 
@@ -27,19 +27,27 @@
 5. [Full-Screen Widget](#️-full-screen-widget)
     - [Creating a Widget Activity](#creating-a-widget-activity)
     - [Launching the Activity](#launching-the-activity)
-6. [User Management](#-user-management)
+6. [Chat Persistence](#-chat-persistence)
+    - [How It Works](#how-it-works)
+    - [Configuration](#configuration)
+    - [Instance ID Usage](#instance-id-usage)
+    - [External Token Management](#external-token-management)
+    - [Logout](#logout)
+7. [User Management](#-user-management)
     - [Passing User Information](#passing-user-information)
     - [Updating User Details](#updating-user-details)
     - [Secure Mode](#secure-mode)
-7. [Handling Events](#-handling-events)
+8. [Handling Events](#-handling-events)
     - [Implementing WidgetCallback](#implementing-widgetcallback)
-    - [Available Events](#available-events)
-8. [File Uploads](#-file-uploads)
+    - [Widget Events](#widget-events)
+    - [Web Process Death](#web-process-death)
+9. [File Uploads](#-file-uploads)
     - [Enabling File Uploads](#enabling-file-uploads)
     - [Permissions for File Uploads](#permissions-for-file-uploads)
-9. [Custom Message Widget Buttons](#-custom-message-widget-buttons)
-10. [Troubleshooting](#-troubleshooting)
-11. [API Reference](#-api-reference)
+10. [Custom Message Widget Buttons](#-custom-message-widget-buttons)
+11. [Message Attributes](#-message-attributes)
+12. [Troubleshooting](#-troubleshooting)
+13. [API Reference](#-api-reference)
 
 ---
 
@@ -75,7 +83,7 @@ Add the LimeChat Widget SDK as a dependency in your app's `build.gradle.kts` fil
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.8")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0")
 
     // The SDK requires the following AndroidX libraries
     implementation("androidx.core:core-ktx:1.12.0")
@@ -108,6 +116,7 @@ The quickest way to get started is by adding the floating `LimechatWidgetButton`
 ```kotlin
 import ai.limechat.widget.LimechatWidgetButton
 import ai.limechat.widget.models.WidgetConfig
+import android.content.Intent
 import android.os.Bundle
 import android.view.Gravity
 import android.view.ViewGroup
@@ -121,17 +130,21 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         // 1. Configure the widget with your token and user info
-        val config = WidgetConfig(
-            websiteToken = "YOUR_WEBSITE_TOKEN", // Replace with your token from the LimeChat dashboard
-            user = WidgetConfig.User(
+        val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN") // Replace with your token from the LimeChat dashboard
+            .setUser(WidgetConfig.User(
                 name = "John Doe",
                 email = "john@example.com"
-            )
-        )
+            ))
+            .build()
 
         // 2. Create the widget button
         val widgetButton = LimechatWidgetButton(this)
         widgetButton.init(config)
+
+        // The button only reports taps. Open the chat yourself, here a ChatActivity (see Full-Screen Widget below)
+        widgetButton.setOnClickListener {
+            startActivity(Intent(this, ChatActivity::class.java))
+        }
 
         // 3. Add the button to your layout (e.g., in the bottom-right corner)
         val container = findViewById<FrameLayout>(R.id.main_container)
@@ -140,14 +153,14 @@ class MainActivity : AppCompatActivity() {
             ViewGroup.LayoutParams.WRAP_CONTENT
         ).apply {
             gravity = Gravity.BOTTOM or Gravity.END
-            setMargins(0, 0, 16.dp, 16.dp) // Extension function for dp is recommended
+            setMargins(0, 0, dp(16), dp(16)) // dp() is the helper below
         }
         container.addView(widgetButton, layoutParams)
     }
 }
 ```
 
-> Tip: Create a simple extension function to convert dp to pixels: `fun Int.dp(): Int = (this * resources.displayMetrics.density).toInt()`
+> Tip: Create a simple helper to convert dp to pixels: `fun dp(value: Int): Int = (value * resources.displayMetrics.density).toInt()`
 
 ---
 
@@ -162,12 +175,12 @@ Here are some of the available options using the builder pattern:
 ```kotlin
 val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your LimeChat website token
     .setLocale("en")                                       // Optional: Language code (e.g., "en", "es", "fr")
-    .setColorScheme(WidgetConfig.ColorScheme.AUTO)         // Optional: LIGHT, DARK, or AUTO
     .setUser(WidgetConfig.User(                            // Optional: User information
         name = "John Doe",
         email = "john@company.com",
         phoneNumber = "+1234567890",
-        identifierHash = "USER_HASH_123"                   // Optional: For secure mode
+        identifier = "USER_ID_123",                        // Optional: For secure mode, needs identifierHash too
+        identifierHash = "USER_HASH_123"                   // Optional: For secure mode, needs identifier too
     ))
     .setCustomAttributes(mapOf(                            // Optional: Custom metadata
         "user_type" to "premium",
@@ -176,13 +189,18 @@ val config = WidgetConfig.builder("YOUR_WEBSITE_TOKEN")    // Required: Your Lim
     .setBaseUrl("https://app.limechat.ai")                 // Optional: For custom domains
     .setInstanceId("unique-widget-instance")               // Optional: For widget isolation and persistence
     .setShowLegacyBackIcon(true)                           // Optional: Enable legacy back icon (default: false)
+    .setHideFilePicker(true)                               // Optional: Hide the attachment button (default: false)
     .build()
 ```
 
 #### New Features in v0.0.9:
 
 - **`setInstanceId(String?)`**: Provides unique identification for widget instances, enabling proper conversation persistence and isolation between different widget instances in your app.
-- **`setShowLegacyBackIcon(Boolean)`**: Controls whether the legacy back icon is displayed in the widget. When enabled, adds `show_legacy_back_icon=true` to the widget URL.
+- **`setShowLegacyBackIcon(Boolean)`**: Controls the native close behaviour. Closing the widget always calls `onClose()` when a callback is set. Only when no callback is set and this is enabled, and the view sits in an Activity, does closing finish that Activity.
+
+#### Added after v0.0.9:
+
+- **`setHideFilePicker(Boolean)`**: Hides the attachment button in the widget (default: false).
 
 ### Custom Attributes
 
@@ -206,7 +224,7 @@ While the default button works out of the box, you can customize its appearance 
 
 ### Using a Custom Button
 
-You can use your own `View` as the chat button. The SDK will handle opening the widget when the view is clicked.
+You can use your own `View` as the chat button. The SDK does not open the widget when it is tapped. Set a click listener on the `LimechatWidgetButton` and open the chat yourself, by starting your `ChatActivity` or showing your `LimechatWidgetView`. Call `setWidgetView` only if you want `widgetButton.open` and `widgetButton.setMessageAttributes` to reach a view.
 
 ```kotlin
 // In your layout XML or created programmatically
@@ -215,6 +233,9 @@ val myCustomButton: Button = findViewById(R.id.my_chat_button)
 // Initialize the widget with your custom button
 val widgetButton = LimechatWidgetButton(this)
 widgetButton.init(config, myCustomButton)
+widgetButton.setOnClickListener {
+    startActivity(Intent(this, ChatActivity::class.java))
+}
 ```
 
 ### Positioning the Button
@@ -227,13 +248,13 @@ widgetButton.layoutParams = FrameLayout.LayoutParams(
     ViewGroup.LayoutParams.WRAP_CONTENT
 ).apply {
     gravity = Gravity.BOTTOM or Gravity.START // Example: bottom-left
-    setMargins(16.dp, 0, 0, 16.dp)
+    setMargins(dp(16), 0, 0, dp(16))
 }
 ```
 
 ### Displaying Unread Messages
 
-You can show a badge on the widget button to indicate unread messages.
+You can show a badge on the widget button to indicate unread messages. The count is set by the host app. The widget does not update it.
 
 ```kotlin
 // Show a badge with 5 unread messages
@@ -269,9 +290,9 @@ class ChatActivity : FragmentActivity() {
         setContentView(widgetView)
 
         // 2. Get config from intent or create a new one
-        val config = WidgetConfig(
-            websiteToken = intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN"
-        )
+        val config = WidgetConfig.builder(
+            intent.getStringExtra("WEBSITE_TOKEN") ?: "YOUR_TOKEN"
+        ).build()
 
         // 3. Initialize the view
         widgetView.init(config)
@@ -345,7 +366,9 @@ val supportWidgetConfig = WidgetConfig.builder("YOUR_TOKEN")
 For advanced use cases, you can manage conversation tokens externally:
 
 ```kotlin
-var conversationToken: String? = null
+// Either value can be omitted. With no token, the widget starts from a stored token for this instance if there is one.
+// With no callback, the SDK stores the live token itself. With a callback, the SDK stores nothing.
+var conversationToken: String = storedToken // from your own storage
 
 val config = WidgetConfig.builder("YOUR_TOKEN")
     .setExternalTokenManagement(
@@ -357,6 +380,19 @@ val config = WidgetConfig.builder("YOUR_TOKEN")
     )
     .build()
 ```
+
+### Logout
+
+```kotlin
+fun onLogout() {
+    widgetView.reset()
+}
+```
+
+`reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token and the user (and a token or user you passed in, until you pass new ones), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
+
+- `reset()` does nothing before `init`.
+- With no view on screen, call `LimechatWidgetView.reset(context)` or `LimechatWidgetView.reset(context, instanceId)`. It clears the stored token for that instance (`default` for a null or blank id) and does not reload a view that is showing. The static `reset(context, instanceId)` only clears stored state. if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again.
 
 ---
 
@@ -375,27 +411,41 @@ val user = WidgetConfig.User(
     phoneNumber = "+1987654321"
 )
 
-val config = WidgetConfig(
-    websiteToken = "YOUR_TOKEN",
-    user = user
+val config = WidgetConfig.builder("YOUR_TOKEN")
+    .setUser(user)
+    .build()
+```
+
+`WidgetConfig.User` also takes `customAttributes`. User custom attributes go with every message the customer types, not onto the contact.
+
+```kotlin
+val user = WidgetConfig.User(
+    email = "jane@example.com",
+    customAttributes = mapOf("plan" to "premium")
 )
 ```
 
+User details reach the widget without verification. On every customer message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and `identifierHash` (see Secure Mode) so the contact is verified.
+
 ### Updating User Details
 
-If the user logs in or out, you can re-initialize the widget with the new information.
+If the user logs out, call `reset()` (see Logout). If the user logs in, or their details change, re-initialize the widget with the new information.
+
+The SDK also notices a user switch. The identity is `identifier`, `email` and `phoneNumber`. At `init`, if the identity differs from the last one seen for the same instance (user A to user B, or user A to no user), the stored conversation token is dropped and the new user starts a fresh conversation. No user to user A, and the same identity with a new name, keep the conversation. A token you pass with `setExternalTokenManagement` still wins. The last identity is kept in memory only, so a switch across an app restart is not caught. Call `reset()` on logout.
 
 ```kotlin
 fun onUserLoggedIn(user: AppUser) {
     val chatUser = WidgetConfig.User(name = user.name, email = user.email)
-    val newConfig = WidgetConfig(websiteToken = "YOUR_TOKEN", user = chatUser)
-    widgetButton.init(newConfig) // Re-initializes with the new user
+    val newConfig = WidgetConfig.builder("YOUR_TOKEN").setUser(chatUser).build()
+    widgetView.init(newConfig, callback) // Re-initializes with the new user
 }
 ```
 
+`widgetView.init` clears held message attributes and a held `open` message, then reloads the widget. `LimechatWidgetButton.init` does not do this. The button keeps the config for its icon only, and the view keeps the old user and token.
+
 ### Secure Mode
 
-For added security, you can use a server-generated hash to verify the user's identity.
+For added security, you can verify the user's identity. Secure mode needs both `identifier` and `identifierHash`. The hash is `HMAC-SHA256(hmac_token, identifier)`, generated on your backend. With only one of the two, nothing is sent.
 
 ```kotlin
 // This hash should be generated on your backend
@@ -403,6 +453,7 @@ val userHash = "SERVER_GENERATED_HASH"
 
 val user = WidgetConfig.User(
     email = "jane@example.com",
+    identifier = "USER_ID_123",
     identifierHash = userHash
 )
 ```
@@ -418,12 +469,12 @@ You can listen for events from the widget using the `WidgetCallback`.
 ```kotlin
 widgetView.init(config, object : WidgetCallback {
     override fun onLoaded() {
-        // Widget has finished loading
+        // The widget can receive messages. Called once per page load.
     }
 
     override fun onClose() {
         // User has requested to close the widget (e.g., clicked minimize button or back button)
-        // Called for both 'close-widget' and 'widget-back' events
+        // Called when the widget close button is pressed
         // The SDK automatically handles minimize/close detection
         finish() // Example: close the activity
     }
@@ -433,42 +484,36 @@ widgetView.init(config, object : WidgetCallback {
         Log.e("LimeChat", "Widget error: ${error.message}")
     }
 
-    override fun onMessage(message: Map<String, Any>) {
-        // A message was received from the widget
-        handleWidgetMessage(message)
+    override fun onMessage(message: Map<String, Any?>) {
+        // No widget events reach this callback yet
     }
 })
 ```
 
-### Available Events
+`onLoaded` fires when the widget is ready to receive messages, once per page load, after `onConversationTokenChange`. A page that fails to load calls `onError` and never calls `onLoaded`. This includes a main page HTTP error (status 400 or above), which reaches `onError` as a `WEBVIEW_ERROR` with `statusCode` in `context`. A page that returns 200 but never starts the widget gives neither.
 
-Here are some of the events you can receive in `onMessage`:
+`onError` also reports failures of subresources, such as a script or image on the page (`WidgetWebViewClient`). `onLoaded` can still follow, so an `onError` alone does not mean the page failed.
 
-- `unread-count-changed`: The number of unread messages has changed.
-- `conversation-started`: A new conversation has been started.
-- `agent-joined`: An agent has joined the chat.
-- `message-received`: A new message has been received.
+### Widget Events
+
+The widget sends only `set-cw-conversation` and `close-widget` today. The SDK handles both itself, so `onMessage` has no events yet.
+
+When the widget becomes ready, the SDK sends in this order: the user fields, the verified user, held message attributes, then a held `open` message. Then `onConversationTokenChange` and `onLoaded` fire.
+
+### Web Process Death
+
+On API 26 and above the system can kill the WebView's render process. The SDK handles this for its own WebView, so the widget does not crash the host app. A WebView of your own needs its own `onRenderProcessGone`.
+
+1. The SDK replaces the dead WebView with a new one and clears the ready state, so `open` and `setMessageAttributes` hold.
+2. The first time, it reloads the page once with the live conversation token.
+3. If the process dies again before the widget is ready, it does not reload. It calls `onError` with `WEBVIEW_ERROR` and the message `Widget web process died again before ready`. The page is blank then, so close the screen from `onError`.
+4. The first time any page gets ready, this resets. A manual `reload()`, an `open` or a second `init` does not reset it.
+
+A held `open` message and unflushed message attributes stay held and go out at the next ready, attributes first. Attributes already sent are lost with the page. After step 3, a later `open(message)` or `reload()` still loads the page. The SDK does not retry on its own. On API 23 to 25 the system does not report this.
 
 ### Widget Close Events
 
-The `onClose()` callback is triggered by the following events:
-
-- `close-widget`: User clicked the minimize/close button
-- `widget-back`: User clicked the back button (same behavior as close-widget)
-
-```kotlin
-private fun handleWidgetMessage(message: Map<String, Any>) {
-    when (message["event"] as? String) {
-        "unread-count-changed" -> {
-            val count = message["count"] as? Int ?: 0
-            // Update a notification badge
-        }
-        "conversation-started" -> {
-            // Track an analytics event
-        }
-    }
-}
-```
+The `onClose()` callback is triggered by the `close-widget` event, when the user clicks the minimize/close button.
 
 ---
 
@@ -542,6 +587,25 @@ val customMessage = intent.getStringExtra("CUSTOM_MESSAGE")
 widgetView.init(config, callback, customMessage)
 ```
 
+### Opening a Loaded Widget with a Message
+
+`open` works on a view that is already initialised.
+
+```kotlin
+widgetView.open("I need help with my order.")
+widgetView.open(mapOf("content" to "I need help with my order."))
+```
+
+- If the widget is ready, the message is sent now. A ready widget is never reloaded.
+- If it is not ready, the message is held until it is. A later `open` replaces a held one.
+- If the page fails to load, the message stays held until a later load succeeds, or until you call `init` again, which drops it.
+- A null, empty string or empty map does nothing.
+- A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, like the web SDK's `setOpenMessage`. This also applies to `initialMessageData` at init. A lone `content: ""` is sent as is.
+- Call `open` and `setMessageAttributes` on the main thread. Before ready they only hold a value, so a background call seems to work. After ready they call `evaluateJavascript`, which throws off the main thread.
+- `sendMessage` before the widget is ready is lost. Only `open` and `setMessageAttributes` wait.
+
+`reload()` loads the widget page again. A held message and unflushed message attributes are kept and sent at the next ready.
+
 ### Example: Contextual Help Buttons
 
 ```kotlin
@@ -554,21 +618,158 @@ helpButton.setOnClickListener {
 
 ---
 
+## 🏷️ Message Attributes
+
+```kotlin
+val ok = widgetView.setMessageAttributes(mapOf(
+    "order_id" to "A-1042",
+    "screen" to "checkout"
+))
+```
+
+- They are attached as `custom_attributes` to the customer's next message only. Repeat calls merge, later keys win. They are message attributes, not contact attributes.
+- You can call this at any time. Until the widget is ready they are held, and they are sent before an `open` message, so the first message carries them.
+- It returns `false` for anything other than a non-empty map, or for a value that cannot be serialised. Nothing is sent then.
+- The widget's auto-start `Hi` counts as the next message. With no welcome text, no pre-chat form and no conversation, the widget sends `Hi` on its own. If you did not call `open`, the attributes can land on `Hi` and not on what the customer types.
+- Values must be json values: strings, numbers, booleans, `null`, and maps or lists of those. Anything else, such as a `Date`, makes the call return `false` and nothing is sent.
+- After the customer's message is sent, the widget clears them. If that message fails, the widget keeps them for the next one. Attributes already sent to the widget are lost on a page reload. Attributes still held are kept. They also survive the widget being closed, because the view stays alive. Calling `init` a second time clears them. Calls made before the first `init` are kept.
+- File attachments and email-only submits don't consume held attributes.
+- Explicit `custom_attributes` on the message payload win over held ones for the same key.
+- `LimechatWidgetButton.setMessageAttributes` forwards to the view set with `setWidgetView`. With no view it returns `false`.
+- This needs a widget build containing `c8126fb7cd` (pr #120, 2026-09-25). Older builds ignore the event silently.
+
+---
+
 ## 🔧 Troubleshooting
 
 If you encounter issues, check the following common problems and solutions.
 
-- **Dependency Resolution Error**: Ensure JitPack is in your `settings.gradle.kts` and the dependency name is correct.
+- **Dependency Resolution Error**: Ensure `google()`, `mavenCentral()` and JitPack are in your repositories and the dependency name is correct.
+
+  ```kotlin
+  // settings.gradle.kts
+  dependencyResolutionManagement {
+      repositories {
+          google()
+          mavenCentral()
+          maven { url = uri("https://jitpack.io") }
+      }
+  }
+  ```
+
 - **AndroidX Compatibility**: Make sure your project has `android.useAndroidX=true` and `android.enableJetifier=true` in `gradle.properties`.
+
+  ```properties
+  # gradle.properties
+  android.useAndroidX=true
+  android.enableJetifier=true
+  ```
+
 - **Widget Not Loading**: Double-check your `websiteToken` and internet permissions. Use the `onError` callback to log any errors.
 - **Widget Not Closing**: Ensure you've implemented the `onClose()` callback in your `WidgetCallback`. The SDK automatically handles minimize/close button presses.
-- **ProGuard Issues**: If the widget crashes in release builds, add the ProGuard rules from the `widget-sdk/proguard-rules.pro` file to your app's ProGuard configuration.
+- **File Picker Not Working**: Create the `WidgetFilePicker` in `onCreate`, before the activity starts, and attach it to the view.
+
+  ```kotlin
+  override fun onCreate(savedInstanceState: Bundle?) {
+      super.onCreate(savedInstanceState)
+      val widgetFilePicker = WidgetFilePicker(this) // Create here, not later
+      widgetView.attachFilePicker(widgetFilePicker)
+  }
+  ```
+
+- **ProGuard Issues**: If the widget crashes in release builds, the SDK ships `consumer-rules.pro`, which is applied automatically, so no manual rules should be needed. Check your own ProGuard configuration.
+
+### Checklists
+
+Before integration:
+
+- [ ] JitPack repository added
+- [ ] Internet permission in `AndroidManifest.xml`
+- [ ] AndroidX enabled in `gradle.properties`
+- [ ] Your LimeChat website token ready
+
+Testing:
+
+- [ ] Widget button appears and is clickable
+- [ ] Widget opens and loads correctly
+- [ ] File upload works (if needed)
+- [ ] Proper cleanup in `onDestroy()`
+- [ ] Works in a release build with ProGuard
+
+Go live:
+
+- [ ] Replace the test token with the production token
+- [ ] Test on multiple devices and screen sizes
+- [ ] Error handling implemented
 
 ---
 
 ## 📚 API Reference
 
-For detailed information on the SDK's classes and methods, please refer to the source code and the `LimechatWidgetButton`, `LimechatWidgetView`, and `WidgetConfig` classes.
+### LimechatWidgetView
+
+| Member | Description |
+| --- | --- |
+| `init(config, callback = null)` | Load the widget. |
+| `init(config, callback, initialMessage: String?)` | Load the widget and hold a first message. |
+| `init(config, callback, initialMessageData: Map<String, Any>?)` | Same, with a message object. |
+| `open(message: String? = null)` | Send a message, now if ready, else when ready. Null or empty does nothing. |
+| `open(messageData: Map<String, Any>)` | Same, with a message object. Empty does nothing. With no `content` and other keys, such as `submitted_values`, it gets `content: "Hi"`, like the web SDK's `setOpenMessage`. |
+| `setMessageAttributes(attributes: Map<String, Any?>?): Boolean` | See Message Attributes. |
+| `sendMessage(event: String, data: Map<String, Any> = emptyMap())` | Post an event to the widget. Lost if the widget is not ready. |
+| `reload()` | Load the widget page again. Does nothing before `init`. |
+| `reset()` | Clear this widget's conversation and reload it. Does not close the widget. Call it on logout. Does nothing before `init`. |
+| `LimechatWidgetView.reset(context: Context, instanceId: String? = null)` | Static. Clear the stored token for an instance (`default` for null or blank). Does not reload a view that is showing. The static `reset(context, instanceId)` only clears stored state. if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again. |
+| `onBackPressed(): Boolean` | Go back in the web view. Returns `false` if it cannot. |
+| `attachFilePicker(filePicker: WidgetFilePicker)` | Enable file uploads. |
+| `destroy()` | Release the web view. |
+
+Calling `init` again clears a held open message and unflushed message attributes.
+
+### LimechatWidgetButton
+
+| Member | Description |
+| --- | --- |
+| `init(config, customButton: View? = null)` | Show the default icon, or wrap your own view. |
+| `setOnClickListener(listener)` | Click handling for the button. |
+| `updateUnreadCount(count: Int)` | Set the badge. 0 or less hides it, above 99 shows `99+`. |
+| `setWidgetView(widgetView: LimechatWidgetView)` | Needed by `open` and `setMessageAttributes`. |
+| `open(message: String? = null)`, `open(messageData: Map<String, Any>)` | Forward to the widget view. Logs a warning with no view. |
+| `setMessageAttributes(attributes: Map<String, Any?>?): Boolean` | Forwards to the widget view. `false` with no view. |
+| `destroy()` | Cancel the button's background work. |
+
+### WidgetConfig.Builder
+
+`WidgetConfig.builder(websiteToken)` returns the builder. `build()` throws `WidgetException.ConfigurationError` for a blank token, locale or instance ID, or an invalid base URL.
+
+| Method | Description |
+| --- | --- |
+| `setLocale(locale: String)` | Language code. Default `en`. |
+| `setUser(user: WidgetConfig.User?)` | User details. |
+| `setCustomAttributes(attributes: Map<String, Any>?)` | Custom metadata sent with the widget url. |
+| `setBaseUrl(baseUrl: String)` | Custom domain. |
+| `setExternalTokenManagement(token: String?, onTokenChange: ((String) -> Unit)?)` | You store the conversation token. Either value can be omitted. |
+| `setInstanceId(instanceId: String?)` | Isolates stored conversations. No `:` or `/`. |
+| `setShowLegacyBackIcon(showLegacyBackIcon: Boolean)` | Legacy close behaviour. |
+| `setHideFilePicker(hideFilePicker: Boolean)` | Hide the attachment button. |
+
+### WidgetConfig.User
+
+`name`, `email`, `phoneNumber`, `identifier`, `identifierHash`, `customAttributes: Map<String, Any>?`. All are optional. `identifier` and `identifierHash` work only together.
+
+### WidgetCallback
+
+| Method | Description |
+| --- | --- |
+| `onLoaded()` | The widget is ready. Once per page load. |
+| `onClose()` | The user closed the widget. |
+| `onError(error: WidgetError)` | A load, http or script error. |
+| `onMessage(message: Map<String, Any?>)` | Widget events other than close and token. None are sent today. |
+| `onConversationTokenChange(token: String)` | Optional. The conversation token changed. |
+
+### WidgetError
+
+`code` (`WEBVIEW_ERROR` or `JAVASCRIPT_ERROR`), `message`, `originalError: Throwable?`, `context: Map<String, Any>?`. A main page HTTP error has `statusCode` in `context`. Other `ErrorCode` values are deprecated and unused, and will be removed in the next major release.
 
 ---
 
@@ -584,7 +785,7 @@ For detailed information on the SDK's classes and methods, please refer to the s
 
 Stay updated with the latest SDK versions:
 
-- **Current Version**: 0.0.8
+- **Current Version**: v0.2.0
 - **Changelog**: Check GitHub releases
 - **Migration Guides**: Available for major version updates
 

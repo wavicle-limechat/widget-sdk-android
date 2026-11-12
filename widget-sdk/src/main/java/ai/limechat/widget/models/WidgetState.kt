@@ -3,6 +3,7 @@ package ai.limechat.widget.models
 /**
  * Represents the current state of the widget
  */
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 data class WidgetState(
     val isInitialized: Boolean = false,
     val isLoading: Boolean = false,

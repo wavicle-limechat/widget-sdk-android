@@ -13,6 +13,7 @@ import android.util.Log
  * - Debug mode support
  * - Consistent tag formatting
  */
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 object WidgetLogger {
     
     private const val BASE_TAG = "LimechatWidget"
@@ -148,6 +149,7 @@ object WidgetLogger {
     /**
      * Log widget configuration
      */
+    @Suppress("DEPRECATION")
     fun logConfig(config: WidgetConfig, instanceId: String? = null) {
         val component = "Config"
         d(component, "Website token: ${config.websiteToken.take(8)}...", instanceId)

@@ -26,7 +26,6 @@ class WidgetActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        Log.d(TAG, "🚀 Opening widget with PUBLISHED SDK")
         
         // Create widget view
         widgetView = LimechatWidgetView(this)
@@ -45,7 +44,6 @@ class WidgetActivity : FragmentActivity() {
         // Create configuration using builder pattern
         val config = WidgetConfig.builder(websiteToken)
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = userName,
                 email = userEmail,
@@ -78,7 +76,6 @@ class WidgetActivity : FragmentActivity() {
             }
         })
         
-        Log.d(TAG, "✅ Widget initialized with published SDK")
     }
     
     override fun onBackPressed() {
@@ -93,6 +90,5 @@ class WidgetActivity : FragmentActivity() {
         if (this::widgetView.isInitialized) {
             widgetView.destroy()
         }
-        Log.d(TAG, "🧹 Published SDK widget cleaned up")
     }
 }

@@ -4,6 +4,7 @@ import ai.limechat.widget.models.WidgetConfig
 import org.junit.Assert.*
 import org.junit.Test
 
+@Suppress("DEPRECATION")
 class WidgetConfigTest {
 
     @Test
@@ -78,5 +79,13 @@ class WidgetConfigTest {
         assertTrue(WidgetConfig.ColorScheme.values().contains(WidgetConfig.ColorScheme.LIGHT))
         assertTrue(WidgetConfig.ColorScheme.values().contains(WidgetConfig.ColorScheme.DARK))
         assertTrue(WidgetConfig.ColorScheme.values().contains(WidgetConfig.ColorScheme.AUTO))
+    }
+
+    @Test
+    fun `user keeps the five argument constructor for java hosts`() {
+        val c = WidgetConfig.User::class.java.getConstructor(
+            String::class.java, String::class.java, String::class.java, String::class.java, Map::class.java
+        )
+        assertEquals("n", c.newInstance("n", null, null, null, null).name)
     }
 }

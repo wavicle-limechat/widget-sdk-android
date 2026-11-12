@@ -22,6 +22,7 @@ import java.util.concurrent.ConcurrentHashMap
  * - Instance-based isolation using instanceId
  * - Thread-safe operations for concurrent access
  */
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 class WidgetManager private constructor(private val context: Context) {
     
     companion object {
@@ -104,6 +105,7 @@ class WidgetManager private constructor(private val context: Context) {
      * 
      * @param instanceId Unique identifier for widget instance
      */
+    @Deprecated("Use LimechatWidgetView.reset(context, instanceId). Will be removed in the next major release.")
     suspend fun clearConversation(instanceId: String) {
         memoryCache.remove(instanceId)
         

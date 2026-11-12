@@ -14,13 +14,14 @@ import java.net.URL
  * val config = WidgetConfig.Builder("your-website-token")
  *     .setInstanceId("my-widget-1")
  *     .setUser(user)
- *     .setColorScheme(ColorScheme.DARK)
  *     .build()
  * ```
  */
 data class WidgetConfig internal constructor(
     val websiteToken: String,
     val locale: String,
+    @Deprecated("Ignored by the widget. Will be removed in the next major release.")
+    @Suppress("DEPRECATION")
     val colorScheme: ColorScheme,
     val user: User?,
     val customAttributes: Map<String, Any>?,
@@ -28,23 +29,26 @@ data class WidgetConfig internal constructor(
     val conversationToken: String?,
     val onConversationTokenChange: ((String) -> Unit)?,
     val instanceId: String?,
-    val showLegacyBackIcon: Boolean
+    val showLegacyBackIcon: Boolean,
+    val hideFilePicker: Boolean
 ) : Serializable {
     
     /**
      * User information to be passed to the widget
      */
-    data class User(
+    data class User @JvmOverloads constructor(
         val name: String? = null,
         val email: String? = null,
         val phoneNumber: String? = null,
         val identifierHash: String? = null,
-        val customAttributes: Map<String, Any>? = null
+        val customAttributes: Map<String, Any>? = null,
+        val identifier: String? = null
     ) : Serializable {
         
         /**
          * Check if user has any identifying information
          */
+        @Deprecated("Unused by the SDK. Will be removed in the next major release.")
         fun hasIdentifyingInfo(): Boolean {
             return !name.isNullOrBlank() || 
                    !email.isNullOrBlank() || 
@@ -55,6 +59,7 @@ data class WidgetConfig internal constructor(
         /**
          * Get primary identifier for the user
          */
+        @Deprecated("Unused by the SDK. Will be removed in the next major release.")
         fun getPrimaryIdentifier(): String? {
             return identifierHash ?: email ?: phoneNumber ?: name
         }
@@ -63,6 +68,7 @@ data class WidgetConfig internal constructor(
     /**
      * Color scheme options for the widget
      */
+    @Deprecated("Ignored by the widget. Will be removed in the next major release.")
     enum class ColorScheme {
         LIGHT,
         DARK,
@@ -72,6 +78,7 @@ data class WidgetConfig internal constructor(
     /**
      * Token management mode
      */
+    @Deprecated("Unused by the SDK. Will be removed in the next major release.")
     enum class TokenManagement {
         /** SDK manages tokens internally using instanceId */
         INTERNAL,
@@ -82,6 +89,8 @@ data class WidgetConfig internal constructor(
     /**
      * Get the token management mode based on configuration
      */
+    @Deprecated("Unused by the SDK. Will be removed in the next major release.")
+    @Suppress("DEPRECATION")
     val tokenManagement: TokenManagement
         get() = if (conversationToken != null || onConversationTokenChange != null) {
             TokenManagement.EXTERNAL
@@ -92,6 +101,8 @@ data class WidgetConfig internal constructor(
     /**
      * Check if configuration is valid for external token management
      */
+    @Deprecated("Unused by the SDK. Will be removed in the next major release.")
+    @Suppress("DEPRECATION")
     val isExternalTokenManagementValid: Boolean
         get() = tokenManagement == TokenManagement.INTERNAL || 
                 (conversationToken != null && onConversationTokenChange != null)
@@ -99,6 +110,7 @@ data class WidgetConfig internal constructor(
     /**
      * Builder for WidgetConfig with validation
      */
+    @Suppress("DEPRECATION")
     class Builder(private val websiteToken: String) {
         private var locale: String = "en"
         private var colorScheme: ColorScheme = ColorScheme.LIGHT
@@ -109,6 +121,7 @@ data class WidgetConfig internal constructor(
         private var onConversationTokenChange: ((String) -> Unit)? = null
         private var instanceId: String? = null
         private var showLegacyBackIcon: Boolean = false
+        private var hideFilePicker: Boolean = false
         
         /**
          * Set the locale for the widget
@@ -121,6 +134,7 @@ data class WidgetConfig internal constructor(
         /**
          * Set the color scheme for the widget
          */
+        @Deprecated("Ignored by the widget. Will be removed in the next major release.")
         fun setColorScheme(colorScheme: ColorScheme): Builder {
             this.colorScheme = colorScheme
             return this
@@ -152,7 +166,7 @@ data class WidgetConfig internal constructor(
         
         /**
          * Set external conversation token management
-         * Both token and callback must be provided for external management
+         * Either value can be omitted. A token only is used as the starting token, a callback only receives the live token.
          */
         fun setExternalTokenManagement(
             token: String?,
@@ -173,10 +187,18 @@ data class WidgetConfig internal constructor(
         }
         
         /**
-         * Set whether to show the legacy back icon in the widget
+         * Set whether closing the widget uses the legacy back behaviour
          */
         fun setShowLegacyBackIcon(showLegacyBackIcon: Boolean): Builder {
             this.showLegacyBackIcon = showLegacyBackIcon
+            return this
+        }
+        
+        /**
+         * Hide the attachment button in the widget
+         */
+        fun setHideFilePicker(hideFilePicker: Boolean): Builder {
+            this.hideFilePicker = hideFilePicker
             return this
         }
         
@@ -198,45 +220,26 @@ data class WidgetConfig internal constructor(
                 conversationToken = conversationToken,
                 onConversationTokenChange = onConversationTokenChange,
                 instanceId = instanceId,
-                showLegacyBackIcon = showLegacyBackIcon
+                showLegacyBackIcon = showLegacyBackIcon,
+                hideFilePicker = hideFilePicker
             )
         }
         
         private fun validateConfiguration() {
-            // Validate website token
             if (websiteToken.isBlank()) {
                 throw WidgetException.ConfigurationError("Website token cannot be blank")
             }
             
-            // Validate base URL
             try {
                 URL(baseUrl)
             } catch (e: Exception) {
                 throw WidgetException.ConfigurationError("Invalid base URL: $baseUrl", e)
             }
             
-            // Validate locale
             if (locale.isBlank()) {
                 throw WidgetException.ConfigurationError("Locale cannot be blank")
             }
             
-            // Validate external token management
-            val hasToken = conversationToken != null
-            val hasCallback = onConversationTokenChange != null
-            
-            if (hasToken && !hasCallback) {
-                throw WidgetException.ConfigurationError(
-                    "External token management requires both token and callback"
-                )
-            }
-            
-            if (!hasToken && hasCallback) {
-                throw WidgetException.ConfigurationError(
-                    "External token management requires both token and callback"
-                )
-            }
-            
-            // Validate instance ID format if provided
             instanceId?.let { id ->
                 if (id.isBlank()) {
                     throw WidgetException.ConfigurationError("Instance ID cannot be blank")
@@ -260,11 +263,13 @@ data class WidgetConfig internal constructor(
          * Create a simple configuration with just website token
          * Uses all default values
          */
+        @Deprecated("Unused by the SDK. Will be removed in the next major release.")
         fun simple(websiteToken: String): WidgetConfig = builder(websiteToken).build()
         
         /**
          * Create configuration with instance ID for conversation isolation
          */
+        @Deprecated("Unused by the SDK. Will be removed in the next major release.")
         fun withInstanceId(websiteToken: String, instanceId: String): WidgetConfig =
             builder(websiteToken).setInstanceId(instanceId).build()
     }

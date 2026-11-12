@@ -11,30 +11,36 @@ object UrlBuilder {
     
     /**
      * Build the complete widget URL with query parameters
+     * @param openMessage Unused by the SDK. Will be removed in the next major release.
+     * @param openPayload Unused by the SDK. Will be removed in the next major release.
      */
-    fun buildWidgetUrl(config: WidgetConfig, cwConversation: String? = null): String {
+    @Suppress("DEPRECATION")
+    @JvmOverloads
+    fun buildWidgetUrl(
+        config: WidgetConfig,
+        cwConversation: String? = null,
+        openMessage: String? = null,
+        openPayload: String? = null
+    ): String {
         val baseUrl = config.baseUrl.trimEnd('/')
         val params = mutableMapOf<String, String>()
         
-        // Required parameters
         params["website_token"] = config.websiteToken
+        params["platform"] = "android"
         params["locale"] = config.locale
         
-        // Color scheme
         params["color_scheme"] = when (config.colorScheme) {
             WidgetConfig.ColorScheme.LIGHT -> "light"
             WidgetConfig.ColorScheme.DARK -> "dark"
             WidgetConfig.ColorScheme.AUTO -> "auto"
         }
         
-        // Custom attributes
         config.customAttributes?.let { attrs ->
             if (attrs.isNotEmpty()) {
                 params["custom_attributes"] = JSONObject(attrs).toString()
             }
         }
         
-        // Conversation token (like React Native's cwConversation)
         val conversationToken = cwConversation ?: config.conversationToken
         conversationToken?.let { token ->
             if (token.isNotBlank()) {
@@ -42,10 +48,10 @@ object UrlBuilder {
             }
         }
         
-        // Legacy back icon
-        if (config.showLegacyBackIcon) {
-            params["show_legacy_back_icon"] = "true"
-        }
+        if (config.hideFilePicker) params["hide_file_picker"] = "true"
+
+        openMessage?.let { params["lc_open_message"] = it.replace("%", "%25") }
+        openPayload?.let { params["lc_open_payload"] = it.replace("%", "\\u0025") }
         
         return buildUrl(baseUrl, "widget", params)
     }

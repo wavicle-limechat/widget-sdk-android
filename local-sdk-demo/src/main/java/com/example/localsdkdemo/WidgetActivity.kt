@@ -27,7 +27,6 @@ class WidgetActivity : FragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        Log.d(TAG, "🚀 Opening widget with LOCAL SDK")
         
         // Create widget view
         widgetView = LimechatWidgetView(this)
@@ -44,15 +43,11 @@ class WidgetActivity : FragmentActivity() {
         val instanceId = intent.getStringExtra("instance_id") // Get instance ID from intent
         val showLegacyBackIcon = intent.getBooleanExtra("show_legacy_back_icon", true) // Default to true for demo
         
-        Log.d(TAG, "🔧 Widget configuration:")
-        Log.d(TAG, "   - Instance ID: $instanceId")
-        Log.d(TAG, "   - Show Legacy Back Icon: $showLegacyBackIcon")
 
         // Create configuration using builder pattern (no token handling - SDK manages internally like React Native)
         val config = WidgetConfig.builder(websiteToken)
             .setBaseUrl("https://app.limechat.ai")
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = userName,
                 email = userEmail,
@@ -74,23 +69,19 @@ class WidgetActivity : FragmentActivity() {
         // Initialize widget with callbacks and initial message if provided
         when {
             customMessage != null -> {
-                Log.d(TAG, "🗨️ Initializing widget with custom string message: $customMessage")
                 widgetView.init(config, createWidgetCallback(), customMessage)
                 hasHandledCustomMessage = true
             }
             customMessageData != null -> {
-                Log.d(TAG, "🗨️ Initializing widget with custom message data: $customMessageData")
                 widgetView.init(config, createWidgetCallback(), customMessageData)
                 hasHandledCustomMessage = true
             }
             else -> {
-                Log.d(TAG, "Initializing widget without custom message")
                 widgetView.init(config, createWidgetCallback())
                 hasHandledCustomMessage = true
             }
         }
         
-        Log.d(TAG, "✅ Widget initialized with local SDK")
     }
     
     private fun createWidgetCallback(): WidgetCallback {
@@ -132,6 +123,5 @@ class WidgetActivity : FragmentActivity() {
         if (this::widgetView.isInitialized) {
             widgetView.destroy()
         }
-        Log.d(TAG, "🧹 Local SDK widget cleaned up")
     }
 }

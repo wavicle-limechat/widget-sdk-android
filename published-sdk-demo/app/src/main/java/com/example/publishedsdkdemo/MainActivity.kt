@@ -2,7 +2,6 @@ package com.example.publishedsdkdemo
 
 import android.content.Intent
 import android.os.Bundle
-import android.util.Log
 import android.view.Gravity
 import android.view.ViewGroup
 import android.widget.Button
@@ -19,14 +18,13 @@ import ai.limechat.widget.models.WidgetConfig
  * PUBLISHED SDK DEMO
  * 
  * This app uses ONLY the JitPack published SDK:
- * implementation("com.github.wavicle-limechat:widget-sdk-android:0.0.9-beta-4")
+ * implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0")
  * 
  * NO local project dependencies - proving the SDK works independently
  */
 class MainActivity : AppCompatActivity() {
     
     companion object {
-        private const val TAG = "PublishedSDKDemo"
         private const val WEBSITE_TOKEN = "MEFFACy4xaovJayhLjSt836h"
         private const val BASE_URL = "https://app.limechat.ai"
     }
@@ -38,7 +36,6 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         
-        Log.d(TAG, "🚀 PUBLISHED SDK DEMO - Using JitPack dependency")
         
         setupUI()
         setupWidgetWithPublishedSDK()
@@ -51,7 +48,6 @@ class MainActivity : AppCompatActivity() {
         // Test button - opens widget directly
         findViewById<Button>(R.id.btnTestWidget).setOnClickListener {
             Toast.makeText(this, "Opening published SDK widget...", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "🚀 Test button clicked - opening published SDK widget")
             openWidget()
         }
         
@@ -60,17 +56,14 @@ class MainActivity : AppCompatActivity() {
             badgeCount = (1..9).random()
             widgetButton.updateUnreadCount(badgeCount)
             Toast.makeText(this, "Badge updated to $badgeCount", Toast.LENGTH_SHORT).show()
-            Log.d(TAG, "📱 Badge count updated: $badgeCount")
         }
     }
     
     private fun setupWidgetWithPublishedSDK() {
-        Log.d(TAG, "🔧 Initializing widget with PUBLISHED SDK...")
         
         // Create widget configuration using builder pattern
         val config = WidgetConfig.builder(WEBSITE_TOKEN)
             .setLocale("en")
-            .setColorScheme(WidgetConfig.ColorScheme.LIGHT)
             .setUser(WidgetConfig.User(
                 name = "Published SDK Demo User",
                 email = "demo@published.com"
@@ -98,7 +91,6 @@ class MainActivity : AppCompatActivity() {
         
         // Set click listener to open actual widget (same instance ID as floating button)
         widgetButton.setOnClickListener {
-            Log.d(TAG, "🎯 Published SDK widget clicked - opening full widget")
             val intent = Intent(this, WidgetActivity::class.java).apply {
                 putExtra("website_token", WEBSITE_TOKEN)
                 putExtra("user_name", "Published SDK Demo User")
@@ -114,14 +106,11 @@ class MainActivity : AppCompatActivity() {
         // Set initial badge
         widgetButton.updateUnreadCount(badgeCount)
         
-        Log.d(TAG, "✅ Published SDK widget initialized successfully")
-        Log.d(TAG, "🌐 Widget will load: ${config.baseUrl}/widget?website_token=${config.websiteToken}")
         
         Toast.makeText(this, "✅ Published SDK ready with token: ${WEBSITE_TOKEN}", Toast.LENGTH_LONG).show()
     }
     
     private fun openWidget() {
-        Log.d(TAG, "🚀 Opening full-screen widget with published SDK")
         
         val intent = Intent(this, WidgetActivity::class.java).apply {
             putExtra("website_token", WEBSITE_TOKEN)
@@ -141,6 +130,5 @@ class MainActivity : AppCompatActivity() {
         if (this::widgetButton.isInitialized) {
             widgetButton.destroy()
         }
-        Log.d(TAG, "🧹 Published SDK demo cleaned up")
     }
 }

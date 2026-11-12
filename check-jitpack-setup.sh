@@ -22,7 +22,6 @@ FILES_TO_CHECK=(
     "publish-to-jitpack.sh"
     "validate-build.sh"
     "test-jitpack-dependency.sh"
-    "JITPACK_PUBLISHING.md"
 )
 
 echo -e "${YELLOW}📁 Checking required files...${NC}"
@@ -187,4 +186,4 @@ else
 fi
 
 echo ""
-echo -e "${BLUE}📖 For detailed instructions, see: JITPACK_PUBLISHING.md${NC}"
+echo -e "${BLUE}📖 For detailed instructions, see: README.md${NC}"

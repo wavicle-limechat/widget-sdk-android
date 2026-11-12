@@ -6,10 +6,6 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.webkit.*
-import androidx.webkit.JavaScriptReplyProxy
-import androidx.webkit.WebMessageCompat
-import androidx.webkit.WebViewCompat
-import androidx.webkit.WebViewFeature
 import ai.limechat.widget.WidgetCallback
 import ai.limechat.widget.WidgetError
 import ai.limechat.widget.models.WidgetConfig
@@ -19,6 +15,7 @@ import kotlinx.coroutines.*
 /**
  * Manages WebView configuration, security, and messaging for the widget
  */
+@Deprecated("Unused by the SDK. Will be removed in the next major release.")
 class WidgetWebViewManager(
     private val context: Context,
     private val config: WidgetConfig,
@@ -26,7 +23,6 @@ class WidgetWebViewManager(
 ) {
     companion object {
         private const val TAG = "WidgetWebViewManager"
-        private const val MESSAGE_LISTENER_NAME = "LimechatNative"
         private const val JS_INTERFACE_NAME = "LimechatAndroid"
         private const val USER_AGENT_PREFIX = "LimechatWidget/Android"
         private const val WIDGET_Z_INDEX = 2147483647
@@ -148,11 +144,7 @@ class WidgetWebViewManager(
         }
         
         try {
-            if (WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER)) {
-                setupWebMessageListener(webView)
-            } else {
-                setupJavascriptInterface(webView)
-            }
+            setupJavascriptInterface(webView)
             isMessagingSetup = true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to setup messaging", e)
@@ -163,44 +155,6 @@ class WidgetWebViewManager(
                     e
                 )
             )
-        }
-    }
-
-    private fun setupWebMessageListener(webView: WebView) {
-        try {
-            WebViewCompat.addWebMessageListener(
-                webView,
-                MESSAGE_LISTENER_NAME,
-                setOf("*"),
-                object : WebViewCompat.WebMessageListener {
-                    override fun onPostMessage(
-                        view: WebView,
-                        message: WebMessageCompat,
-                        sourceOrigin: Uri,
-                        isMainFrame: Boolean,
-                        replyProxy: JavaScriptReplyProxy
-                    ) {
-                        message.data?.let { data ->
-                            handleMessage(data)
-                        }
-                    }
-                }
-            )
-            
-            // Inject script to use WebMessageListener
-            val script = """
-                window.addEventListener('message', function(e) {
-                    if (typeof e.data === 'string' && e.data.startsWith('limechat-widget:')) {
-                        window.$MESSAGE_LISTENER_NAME.postMessage(e.data);
-                    }
-                });
-            """.trimIndent()
-            
-            webView.evaluateJavascript(script, null)
-            Log.d(TAG, "WebMessageListener setup successful")
-        } catch (e: Exception) {
-            Log.e(TAG, "Failed to set up WebMessageListener, falling back to JavascriptInterface", e)
-            setupJavascriptInterface(webView)
         }
     }
 

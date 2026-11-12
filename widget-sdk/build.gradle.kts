@@ -12,17 +12,12 @@ android {
         minSdk = 23
         targetSdk = 35
 
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         consumerProguardFiles("consumer-rules.pro")
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
         }
     }
 
@@ -35,25 +30,26 @@ android {
         jvmTarget = "1.8"
     }
 
+    testOptions {
+        unitTests {
+            // robolectric (test only): load sdk resources like ic_limechat_default in jvm tests
+            isIncludeAndroidResources = true
+        }
+    }
+
 }
 
 dependencies {
     implementation("androidx.core:core-ktx:1.12.0")
     implementation("androidx.appcompat:appcompat:1.6.1")
-    implementation("androidx.webkit:webkit:1.11.0")
     implementation("androidx.activity:activity-ktx:1.8.2")
     implementation("androidx.fragment:fragment-ktx:1.6.2")
     implementation("com.google.android.material:material:1.11.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
     
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.mockito:mockito-core:5.8.0")
-    testImplementation("org.mockito.kotlin:mockito-kotlin:5.2.1")
-    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
     testImplementation("org.json:json:20231013")
-    
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    testImplementation("org.robolectric:robolectric:4.14.1")
 }
 
 afterEvaluate {
@@ -64,7 +60,7 @@ afterEvaluate {
                 
                 groupId = "com.github.wavicle-limechat"
                 artifactId = "widget-sdk-android"
-                version = "0.0.8"
+                version = "0.2.0"
                 
                 pom {
                     name.set("LimeChat Widget Android SDK")

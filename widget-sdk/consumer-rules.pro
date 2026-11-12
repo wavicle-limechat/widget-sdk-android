@@ -4,7 +4,7 @@
 -keep public class ai.limechat.widget.** { *; }
 
 # Keep JavaScript interface methods
--keep class * {
+-keepclassmembers class * {
     @android.webkit.JavascriptInterface <methods>;
 }
 

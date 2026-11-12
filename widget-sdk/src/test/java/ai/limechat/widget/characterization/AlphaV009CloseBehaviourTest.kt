@@ -1,0 +1,90 @@
+package ai.limechat.widget.characterization
+
+import ai.limechat.widget.LimechatWidgetView
+import ai.limechat.widget.models.WidgetConfig
+import android.app.Activity
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Before
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.Robolectric
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
+
+/**
+ * Close behaviour matches v0.0.9: `close-widget` and `widget-back` call onClose when a callback is set.
+ *   - callback set (legacy on or off) -> onClose(), the activity is not finished
+ *   - legacy on, Activity context and no callback -> activity.finish()
+ */
+@RunWith(RobolectricTestRunner::class)
+class AlphaV009CloseBehaviourTest {
+
+    @Before
+    fun setUp() {
+        resetTokenMemory()
+    }
+
+    private fun activityView(legacy: Boolean, cb: RecordingCallback): Pair<Activity, LimechatWidgetView> {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val v = LimechatWidgetView(activity)
+        v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(legacy).build(), cb)
+        return activity to v
+    }
+
+    @Test
+    fun `alpha - legacy back icon + activity context - close-widget calls onClose and does not finish the activity`() {
+        val cb = RecordingCallback()
+        val (activity, v) = activityView(legacy = true, cb = cb)
+        v.postFromJs("""{"event":"close-widget","type":"close-widget"}""")
+        assertEquals(listOf("onClose"), cb.events)
+        assertFalse(activity.isFinishing)
+    }
+
+    @Test
+    fun `alpha - legacy back icon + activity context + no callback - close finishes the activity`() {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val v = LimechatWidgetView(activity)
+        v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build())
+        v.postFromJs("""{"event":"close-widget"}""")
+        assertTrue(activity.isFinishing)
+    }
+
+    @Test
+    fun `alpha - legacy back icon + non-activity context - falls back to onClose`() {
+        val cb = RecordingCallback()
+        val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
+        v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), cb)
+        v.postFromJs("""{"event":"close-widget"}""")
+        assertEquals(listOf("onClose"), cb.events)
+    }
+
+    @Test
+    fun `alpha - widget-back behaves like close-widget`() {
+        val cb = RecordingCallback()
+        val (activity, v) = activityView(legacy = false, cb = cb)
+        v.postFromJs("""{"event":"widget-back"}""")
+        assertEquals(listOf("onClose"), cb.events)
+        assertFalse(activity.isFinishing)
+    }
+
+    @Test
+    fun `alpha - no legacy back icon - onClose only, activity keeps running`() {
+        val cb = RecordingCallback()
+        val (activity, v) = activityView(legacy = false, cb = cb)
+        v.postFromJs("""{"event":"close-widget"}""")
+        assertEquals(listOf("onClose"), cb.events)
+        assertFalse(activity.isFinishing)
+    }
+
+    @Test
+    fun `alpha - legacy back icon does not add show_legacy_back_icon to the url`() {
+        val (_, v) = activityView(legacy = true, cb = RecordingCallback())
+        assertEquals(
+            "https://app.limechat.ai/widget?website_token=tok&platform=android&locale=en&color_scheme=light",
+            v.lastLoadedUrl()
+        )
+    }
+}
