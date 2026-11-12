@@ -431,6 +431,8 @@ User details reach the widget without verification. On every customer message th
 
 If the user logs out, call `reset()` (see Logout). If the user logs in, or their details change, re-initialize the widget with the new information.
 
+The SDK also notices a user switch. The identity is `identifier`, `email` and `phoneNumber`. At `init`, if the identity differs from the last one seen for the same instance (user A to user B, or user A to no user), the stored conversation token is dropped and the new user starts a fresh conversation. No user to user A, and the same identity with a new name, keep the conversation. A token you pass with `setExternalTokenManagement` still wins. The last identity is kept in memory only, so a switch across an app restart is not caught. Call `reset()` on logout.
+
 ```kotlin
 fun onUserLoggedIn(user: AppUser) {
     val chatUser = WidgetConfig.User(name = user.name, email = user.email)

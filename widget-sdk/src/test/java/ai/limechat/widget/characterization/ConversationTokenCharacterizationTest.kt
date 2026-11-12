@@ -33,7 +33,7 @@ class ConversationTokenCharacterizationTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         prefs.edit().clear().commit()
     }
 
@@ -198,5 +198,74 @@ class ConversationTokenCharacterizationTest {
         setToken(v, "live2")
         assertEquals("live2", prefs.getString("tok-only", null))
         assertEquals("live2", tokenMemoryCache()["tok-only"])
+    }
+
+    // ---- identity switch ----
+
+    private fun userConfig(
+        identifier: String? = null,
+        email: String? = null,
+        name: String? = null,
+        builder: WidgetConfig.Builder = WidgetConfig.builder("tok")
+    ) = builder.setUser(WidgetConfig.User(name = name, email = email, identifier = identifier)).build()
+
+    @Test
+    fun `init with a different user on the same view drops the stored token`() {
+        val v = view(userConfig(identifier = "a"))
+        setToken(v, "tokA")
+        v.init(userConfig(identifier = "b"))
+        assertNull(prefs.getString("default", null))
+        assertTrue(tokenMemoryCache().isEmpty())
+        assertEquals("$prod$q", v.lastLoadedUrl())
+    }
+
+    @Test
+    fun `a new view for a different user in the same process drops it`() {
+        setToken(view(userConfig(email = "a@x.com")), "tokA")
+        val v2 = view(userConfig(email = "b@x.com"))
+        assertNull(prefs.getString("default", null))
+        assertEquals("$prod$q", v2.lastLoadedUrl())
+    }
+
+    @Test
+    fun `user to no user drops it`() {
+        val v = view(userConfig(identifier = "a"))
+        setToken(v, "tokA")
+        v.init(WidgetConfig.builder("tok").build())
+        assertNull(prefs.getString("default", null))
+        assertEquals("$prod$q", v.lastLoadedUrl())
+    }
+
+    @Test
+    fun `first login after anonymous use keeps the token`() {
+        val v = view(WidgetConfig.builder("tok").build())
+        setToken(v, "tokA")
+        v.init(userConfig(identifier = "a"))
+        assertEquals("tokA", prefs.getString("default", null))
+        assertEquals("$prod$q&cw_conversation=tokA", v.lastLoadedUrl())
+    }
+
+    @Test
+    fun `the same identity with a new name keeps it`() {
+        val v = view(userConfig(identifier = "a", name = "One"))
+        setToken(v, "tokA")
+        v.init(userConfig(identifier = "a", name = "Two"))
+        assertEquals("$prod$q&cw_conversation=tokA", v.lastLoadedUrl())
+    }
+
+    @Test
+    fun `null and empty identity fields are equal`() {
+        val v = view(userConfig(identifier = "a", email = null))
+        setToken(v, "tokA")
+        v.init(userConfig(identifier = "a", email = ""))
+        assertEquals("$prod$q&cw_conversation=tokA", v.lastLoadedUrl())
+    }
+
+    @Test
+    fun `an external config token still wins after a switch`() {
+        val v = view(userConfig(identifier = "a"))
+        setToken(v, "tokA")
+        v.init(userConfig(identifier = "b", builder = WidgetConfig.builder("tok").setExternalTokenManagement("ext1") {}))
+        assertEquals("$prod$q&cw_conversation=ext1", v.lastLoadedUrl())
     }
 }

@@ -38,7 +38,7 @@ class NavigationAndOpenCharacterizationTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         cb = RecordingCallback()
     }
 

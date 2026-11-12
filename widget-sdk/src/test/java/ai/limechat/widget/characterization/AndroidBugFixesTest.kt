@@ -36,7 +36,7 @@ class AndroidBugFixesTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         ShadowLog.clear()
         cb = RecordingCallback()
     }

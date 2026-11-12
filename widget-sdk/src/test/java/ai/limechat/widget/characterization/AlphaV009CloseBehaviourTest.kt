@@ -24,7 +24,7 @@ class AlphaV009CloseBehaviourTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
     }
 
     private fun activityView(legacy: Boolean, cb: RecordingCallback): Pair<Activity, LimechatWidgetView> {

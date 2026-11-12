@@ -20,7 +20,7 @@ class UserInjectionTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
     }
 
     private fun LimechatWidgetView.userScripts() = recorder().scripts.filter { it.contains("rnUser") }

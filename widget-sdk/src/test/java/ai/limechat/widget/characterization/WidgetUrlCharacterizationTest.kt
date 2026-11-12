@@ -31,7 +31,7 @@ class WidgetUrlCharacterizationTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
     }
 
     private fun url(builder: WidgetConfig.Builder, cw: String? = null) =

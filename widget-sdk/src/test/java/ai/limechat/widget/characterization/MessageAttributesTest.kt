@@ -18,7 +18,7 @@ class MessageAttributesTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
     }
 
     private fun config(tok: String = "tok") = WidgetConfig.builder(tok).build()

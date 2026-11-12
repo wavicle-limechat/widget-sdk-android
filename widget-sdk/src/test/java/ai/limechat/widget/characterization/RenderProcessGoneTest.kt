@@ -35,7 +35,7 @@ class RenderProcessGoneTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         cb = RecordingCallback()
     }
 

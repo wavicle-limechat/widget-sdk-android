@@ -144,6 +144,13 @@ class LimechatWidgetView @JvmOverloads constructor(
         this.callback = callback
 
         instanceId = config.instanceId?.takeIf { it.isNotBlank() } ?: "default"
+
+        // a different user than the last one seen on this instance starts a new conversation. A token the host passed still wins.
+        val identity = identityOf(config.user)
+        val previous = ConversationTokenStore.identity(instanceId)
+        if (previous != null && previous != identity) ConversationTokenStore.clear(context, instanceId)
+        ConversationTokenStore.setIdentity(instanceId, identity)
+
         cwConversation = config.conversationToken ?: ConversationTokenStore.load(context, instanceId)
 
         // the file picker is attached separately with attachFilePicker() so it can be created in the activity's onCreate()
@@ -273,6 +280,11 @@ class LimechatWidgetView @JvmOverloads constructor(
     fun destroy() {
         coroutineScope.cancel()
         webView.destroy()
+    }
+
+    private fun identityOf(user: WidgetConfig.User?): String? {
+        val parts = listOf(user?.identifier, user?.email, user?.phoneNumber).map { it ?: "" }
+        return if (parts.all { it.isEmpty() }) null else parts.joinToString("\n")
     }
 
     private fun userFields(): Map<String, Any> {

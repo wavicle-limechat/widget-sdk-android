@@ -12,6 +12,15 @@ internal object ConversationTokenStore {
     // survives widget recreation within the same app process
     private val cache = mutableMapOf<String, String>()
 
+    // the user identity last seen per instance, memory only. Absent means anonymous or unknown.
+    private val identities = mutableMapOf<String, String>()
+
+    fun identity(instanceId: String): String? = identities[instanceId]
+
+    fun setIdentity(instanceId: String, id: String?) {
+        if (id == null) identities.remove(instanceId) else identities[instanceId] = id
+    }
+
     fun load(context: Context, instanceId: String): String? {
         cache[instanceId]?.let { return it }
 
@@ -28,6 +37,7 @@ internal object ConversationTokenStore {
     /** Drops the token (memory and prefs) and the identity entry for [instanceId]. */
     fun clear(context: Context, instanceId: String) {
         cache.remove(instanceId)
+        identities.remove(instanceId)
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().remove(instanceId).apply()
     }
 }

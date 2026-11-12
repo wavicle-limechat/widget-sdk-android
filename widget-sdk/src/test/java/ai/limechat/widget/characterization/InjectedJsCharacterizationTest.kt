@@ -19,7 +19,7 @@ class InjectedJsCharacterizationTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
     }
 
     @Test

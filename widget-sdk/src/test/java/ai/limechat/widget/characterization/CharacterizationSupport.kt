@@ -98,6 +98,21 @@ fun tokenMemoryCache(): MutableMap<String, String> {
     return f.get(null) as MutableMap<String, String>
 }
 
+/** The identity per instance the store remembers in process memory. */
+@Suppress("UNCHECKED_CAST")
+fun identityMemory(): MutableMap<String, String> {
+    val store = Class.forName("ai.limechat.widget.internal.ConversationTokenStore")
+    val f = store.getDeclaredField("identities")
+    f.isAccessible = true
+    return f.get(null) as MutableMap<String, String>
+}
+
+/** Empties the token cache and the remembered identities between tests. */
+fun resetTokenMemory() {
+    tokenMemoryCache().clear()
+    identityMemory().clear()
+}
+
 class FakeRequest(
     private val uri: String,
     private val mainFrame: Boolean = true,

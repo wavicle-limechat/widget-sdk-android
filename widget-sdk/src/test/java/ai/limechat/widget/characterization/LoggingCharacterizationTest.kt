@@ -24,7 +24,7 @@ class LoggingCharacterizationTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         ShadowLog.clear()
     }
 

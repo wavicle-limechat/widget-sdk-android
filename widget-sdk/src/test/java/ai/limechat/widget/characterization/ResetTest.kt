@@ -25,7 +25,7 @@ class ResetTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         ctx.getSharedPreferences("limechat_widget_conversations", Context.MODE_PRIVATE).edit().clear().commit()
     }
 

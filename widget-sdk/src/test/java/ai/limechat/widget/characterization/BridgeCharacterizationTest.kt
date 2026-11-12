@@ -36,7 +36,7 @@ class BridgeCharacterizationTest {
 
     @Before
     fun setUp() {
-        tokenMemoryCache().clear()
+        resetTokenMemory()
         cb = RecordingCallback()
         view = newView(RuntimeEnvironment.getApplication(), WidgetConfig.builder("tok").build(), cb)
     }
