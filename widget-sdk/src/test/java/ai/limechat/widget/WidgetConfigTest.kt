@@ -4,6 +4,7 @@ import ai.limechat.widget.models.WidgetConfig
 import org.junit.Assert.*
 import org.junit.Test
 
+@Suppress("DEPRECATION")
 class WidgetConfigTest {
 
     @Test

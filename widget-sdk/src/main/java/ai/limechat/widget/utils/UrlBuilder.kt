@@ -14,6 +14,7 @@ object UrlBuilder {
      * @param openMessage Unused by the SDK. Will be removed in the next major release.
      * @param openPayload Unused by the SDK. Will be removed in the next major release.
      */
+    @Suppress("DEPRECATION")
     @JvmOverloads
     fun buildWidgetUrl(
         config: WidgetConfig,

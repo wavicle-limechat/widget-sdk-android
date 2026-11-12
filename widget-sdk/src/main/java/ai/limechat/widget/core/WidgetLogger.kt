@@ -149,6 +149,7 @@ object WidgetLogger {
     /**
      * Log widget configuration
      */
+    @Suppress("DEPRECATION")
     fun logConfig(config: WidgetConfig, instanceId: String? = null) {
         val component = "Config"
         d(component, "Website token: ${config.websiteToken.take(8)}...", instanceId)

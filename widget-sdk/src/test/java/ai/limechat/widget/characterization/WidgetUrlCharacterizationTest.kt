@@ -24,6 +24,7 @@ import org.robolectric.RuntimeEnvironment
  * cw_conversation, then lc_open_message / lc_open_payload.
  */
 @RunWith(RobolectricTestRunner::class)
+@Suppress("DEPRECATION")
 class WidgetUrlCharacterizationTest {
 
     private val prod = "https://app.limechat.ai/widget"

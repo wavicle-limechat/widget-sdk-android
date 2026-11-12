@@ -20,6 +20,8 @@ import java.net.URL
 data class WidgetConfig internal constructor(
     val websiteToken: String,
     val locale: String,
+    @Deprecated("Ignored by the widget. Will be removed in the next major release.")
+    @Suppress("DEPRECATION")
     val colorScheme: ColorScheme,
     val user: User?,
     val customAttributes: Map<String, Any>?,
@@ -66,6 +68,7 @@ data class WidgetConfig internal constructor(
     /**
      * Color scheme options for the widget
      */
+    @Deprecated("Ignored by the widget. Will be removed in the next major release.")
     enum class ColorScheme {
         LIGHT,
         DARK,
@@ -107,6 +110,7 @@ data class WidgetConfig internal constructor(
     /**
      * Builder for WidgetConfig with validation
      */
+    @Suppress("DEPRECATION")
     class Builder(private val websiteToken: String) {
         private var locale: String = "en"
         private var colorScheme: ColorScheme = ColorScheme.LIGHT
@@ -130,6 +134,7 @@ data class WidgetConfig internal constructor(
         /**
          * Set the color scheme for the widget
          */
+        @Deprecated("Ignored by the widget. Will be removed in the next major release.")
         fun setColorScheme(colorScheme: ColorScheme): Builder {
             this.colorScheme = colorScheme
             return this

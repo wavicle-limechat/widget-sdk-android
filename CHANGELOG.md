@@ -42,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `init()` or `reload()` followed by `open(...)` no longer loads the page twice.
 
 ### Deprecated
+- `WidgetConfig.colorScheme`, `WidgetConfig.ColorScheme` and `WidgetConfig.Builder.setColorScheme`. Ignored by the widget. Will be removed in the next major release. The url keeps `color_scheme` as before.
 - `WidgetError.ErrorCode`: `CONFIG_ERROR`, `NETWORK_ERROR`, `FILE_PICKER_ERROR`, `INITIALIZATION_ERROR`, `UNKNOWN_ERROR` will be removed in the next major release.
 - `WidgetConfigResponse.ConfigData`: every property except `widgetIconMobile` and `widgetIconDesktop` will be removed in the next major release.
 - `LimechatWidgetButton.SDK_VERSION` and `getSDKVersion()` will be removed in the next major release.
