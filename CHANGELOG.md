@@ -44,6 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `init()` or `reload()` followed by `open(...)` no longer loads the page twice.
 - If the page loads but the widget never becomes ready, `open` reloads after 10 seconds instead of holding forever.
 - A conversation token posted by the old page after `reset()` or `reload()` is ignored. It used to be saved and could bring the old conversation back.
+- The consumer ProGuard rule no longer keeps every class that has a `@JavascriptInterface` method; only those members are kept.
 
 ### Deprecated
 - `WidgetConfig.colorScheme`, `WidgetConfig.ColorScheme` and `WidgetConfig.Builder.setColorScheme`. Ignored by the widget. Will be removed in the next major release. The url keeps `color_scheme` as before.
