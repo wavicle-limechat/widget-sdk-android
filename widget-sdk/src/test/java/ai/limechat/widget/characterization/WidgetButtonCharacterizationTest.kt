@@ -82,9 +82,9 @@ class WidgetButtonCharacterizationTest {
         (0 until childCount).map { getChildAt(it) }.filterIsInstance<TextView>().firstOrNull()
 
     @Test
-    fun `pins current behaviour - SDK_VERSION constant matches gradle version 0_2_0-beta_1`() {
-        assertEquals("0.2.0-beta.1", LimechatWidgetButton.SDK_VERSION)
-        assertEquals("0.2.0-beta.1", LimechatWidgetButton.getSDKVersion())
+    fun `pins current behaviour - SDK_VERSION constant matches gradle version 0_2_0`() {
+        assertEquals("0.2.0", LimechatWidgetButton.SDK_VERSION)
+        assertEquals("0.2.0", LimechatWidgetButton.getSDKVersion())
     }
 
     @Test

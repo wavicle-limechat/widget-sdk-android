@@ -18,7 +18,7 @@ import ai.limechat.widget.models.WidgetConfig
  * PUBLISHED SDK DEMO
  * 
  * This app uses ONLY the JitPack published SDK:
- * implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0-beta.1")
+ * implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0")
  * 
  * NO local project dependencies - proving the SDK works independently
  */

@@ -45,7 +45,7 @@ Next, add the SDK dependency to your app's `build.gradle.kts` file:
 ```kotlin
 // app/build.gradle.kts  
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0-beta.1")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0")
 }
 ```
 
@@ -147,7 +147,7 @@ For persistence, back icon, message attributes, `open` and the full API referenc
 
 ## 📊 SDK Status
 
-- **Current Version**: v0.2.0-beta.1
+- **Current Version**: v0.2.0
 - **Build Status**: [![JitPack Build](https://jitpack.io/v/wavicle-limechat/widget-sdk-android.svg)](https://jitpack.io/#wavicle-limechat/widget-sdk-android)
 - **Stability**: Production Ready
 

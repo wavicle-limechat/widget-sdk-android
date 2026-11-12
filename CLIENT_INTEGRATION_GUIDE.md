@@ -4,7 +4,7 @@
 
 | Version | Repository | Platform |  |
 | --- | --- | --- | --- |
-| v0.2.0-beta.1 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
+| v0.2.0 | `com.github.wavicle-limechat:widget-sdk-android` | Android API 23+ |  |
 
 ---
 
@@ -83,7 +83,7 @@ Add the LimeChat Widget SDK as a dependency in your app's `build.gradle.kts` fil
 ```kotlin
 // app/build.gradle.kts
 dependencies {
-    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0-beta.1")
+    implementation("com.github.wavicle-limechat:widget-sdk-android:v0.2.0")
 
     // The SDK requires the following AndroidX libraries
     implementation("androidx.core:core-ktx:1.12.0")
@@ -785,7 +785,7 @@ Calling `init` again clears a held open message and unflushed message attributes
 
 Stay updated with the latest SDK versions:
 
-- **Current Version**: v0.2.0-beta.1
+- **Current Version**: v0.2.0
 - **Changelog**: Check GitHub releases
 - **Migration Guides**: Available for major version updates
 

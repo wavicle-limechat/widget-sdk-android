@@ -40,7 +40,7 @@ class LimechatWidgetButton @JvmOverloads constructor(
         
         // SDK Version - this helps distinguish between local and published versions
         @Deprecated("Unused. Will be removed in the next major release.")
-        const val SDK_VERSION = "0.2.0-beta.1"
+        const val SDK_VERSION = "0.2.0"
         
         private const val DEFAULT_BACKGROUND_COLOR = 0xFF6366F1.toInt() // Purple
         private const val WHITE_COLOR = 0xFFFFFFFF.toInt()

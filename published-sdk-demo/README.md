@@ -13,7 +13,7 @@ This demonstrates the LimeChat Widget Android SDK working with the published Jit
 
 ### Published SDK (This Demo)
 
-- **Dependency**: `com.github.wavicle-limechat:widget-sdk-android:v0.2.0-beta.1`
+- **Dependency**: `com.github.wavicle-limechat:widget-sdk-android:v0.2.0`
 - **UI**: Green banner shows "Using PUBLISHED SDK from JitPack"
 - **Structure**: Standalone project, no `/widget-sdk` folder
 
@@ -25,7 +25,7 @@ This demonstrates the LimeChat Widget Android SDK working with the published Jit
 
 ## 🚀 Usage
 
-1. **Wait for JitPack Build**: v0.2.0-beta.1 must complete on JitPack
+1. **Wait for JitPack Build**: v0.2.0 must complete on JitPack
 2. **Open in Android Studio**: This folder only
 3. **Gradle Sync**: Downloads SDK from JitPack automatically
 4. **Run**:
