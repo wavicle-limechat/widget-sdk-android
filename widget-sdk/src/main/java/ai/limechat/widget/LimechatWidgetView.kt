@@ -40,7 +40,7 @@ class LimechatWidgetView @JvmOverloads constructor(
 
         /**
          * Clears the stored conversation token for an instance (null or blank means "default").
-         * A view that is showing is not reloaded. Call it on logout.
+         * A view that is showing is not reloaded: if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again. Call it on logout.
          */
         @JvmStatic
         @JvmOverloads
@@ -187,13 +187,13 @@ class LimechatWidgetView @JvmOverloads constructor(
     /**
      * Open the widget with a custom message object
      * @param messageData Message object that can contain 'content' key or other properties. Empty does nothing.
-     * A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, as in the web SDK.
+     * A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, like the web SDK's `setOpenMessage`.
      */
     fun open(messageData: Map<String, Any>) {
         if (messageData.isNotEmpty()) deliverOpen(withDefaultContent(messageData))
     }
 
-    /** A message object with no content and other keys gets `content: "Hi"`, as in the web SDK. */
+    /** A message object with no content and other keys gets `content: "Hi"`, like the web SDK's `setOpenMessage`. */
     private fun withDefaultContent(message: Map<String, Any>): Map<String, Any> {
         val content = message["content"]
         val missing = content == null || content === JSONObject.NULL || content == ""

@@ -12,8 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 > **Upgrade note: unverified contact update.** User details passed to the SDK reach the widget through `rnUser` with no verification. On every customer message the server updates the contact, and can merge into an existing contact with the same email or phone. If you use identity validation, pass `identifier` and the identifier hash (`identifierHash`) so the contact is verified.
 
 ### Changed
+- `open(message)` now continues the stored conversation. In 0.0.9 every `open` reloaded without the stored token and started a new conversation.
 - `onLoaded` fires once per page, when the widget is ready (its first `set-cw-conversation`), after `onConversationTokenChange`. It used to fire on every page finish, twice per load. A failed page gives `onError` and no `onLoaded`.
-- `open` sends the message now if the widget is ready, with no reload. If not ready it holds the message, with no url parameter, and sends it at ready. An empty string or empty map does nothing. A held message stays held after a failed load. A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, as in the web SDK. This also applies to `initialMessageData`.
+- `open` sends the message now if the widget is ready, with no reload. If not ready it holds the message, with no url parameter, and sends it at ready. An empty string or empty map does nothing. A held message stays held after a failed load. A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, like the web SDK's `setOpenMessage`. This also applies to `initialMessageData`.
 - `set-user` is sent once per page, at ready, not on every page finish. Back press no longer resends an open message.
 - `sendMessage` now posts `chatwoot-widget:` prefixed json, the prefix the widget reads. It was ignored before. Apostrophes and nested maps now arrive intact.
 - Removed the `LimechatNative` web message listener and the injected `window.postMessage` wrappers. The widget calls `window.LimechatAndroid.postMessage` directly.
@@ -28,7 +29,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `platform=android` in the widget url, right after `website_token`.
 - `setMessageAttributes` on `LimechatWidgetView` and `LimechatWidgetButton`. Needs a widget build containing `c8126fb7cd`, older builds ignore it. Values that are not json (a `Date`, an unknown object) return `false`.
 - `LimechatWidgetView.reload()`.
-- `LimechatWidgetView.reset()` and the static `LimechatWidgetView.reset(context, instanceId)`. `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token and the user (and a token or user you passed in, until you pass new ones), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
+- `LimechatWidgetView.reset()` and the static `LimechatWidgetView.reset(context, instanceId)`. `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token and the user (and a token or user you passed in, until you pass new ones), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout. The static `reset(context, instanceId)` only clears stored state. if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again.
 - `WidgetConfig.User.identifier`. When both `identifier` and `identifierHash` are set, a `set-user` message is sent. Nothing changes until a host sets both.
 - `WidgetConfig.Builder.setHideFilePicker`, which adds `hide_file_picker=true` to the widget URL.
 

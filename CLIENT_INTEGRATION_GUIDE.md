@@ -392,7 +392,7 @@ fun onLogout() {
 `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token and the user (and a token or user you passed in, until you pass new ones), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
 
 - `reset()` does nothing before `init`.
-- With no view on screen, call `LimechatWidgetView.reset(context)` or `LimechatWidgetView.reset(context, instanceId)`. It clears the stored token for that instance (`default` for a null or blank id) and does not reload a view that is showing.
+- With no view on screen, call `LimechatWidgetView.reset(context)` or `LimechatWidgetView.reset(context, instanceId)`. It clears the stored token for that instance (`default` for a null or blank id) and does not reload a view that is showing. The static `reset(context, instanceId)` only clears stored state. if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again.
 
 ---
 
@@ -600,7 +600,7 @@ widgetView.open(mapOf("content" to "I need help with my order."))
 - If it is not ready, the message is held until it is. A later `open` replaces a held one.
 - If the page fails to load, the message stays held until a later load succeeds, or until you call `init` again, which drops it.
 - A null, empty string or empty map does nothing.
-- A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, as in the web SDK. This also applies to `initialMessageData` at init. A lone `content: ""` is sent as is.
+- A message object with no `content` and other keys, such as `submitted_values`, gets `content: "Hi"`, like the web SDK's `setOpenMessage`. This also applies to `initialMessageData` at init. A lone `content: ""` is sent as is.
 - Call `open` and `setMessageAttributes` on the main thread. Before ready they only hold a value, so a background call seems to work. After ready they call `evaluateJavascript`, which throws off the main thread.
 - `sendMessage` before the widget is ready is lost. Only `open` and `setMessageAttributes` wait.
 
@@ -714,12 +714,12 @@ Go live:
 | `init(config, callback, initialMessage: String?)` | Load the widget and hold a first message. |
 | `init(config, callback, initialMessageData: Map<String, Any>?)` | Same, with a message object. |
 | `open(message: String? = null)` | Send a message, now if ready, else when ready. Null or empty does nothing. |
-| `open(messageData: Map<String, Any>)` | Same, with a message object. Empty does nothing. With no `content` and other keys, such as `submitted_values`, it gets `content: "Hi"`, as in the web SDK. |
+| `open(messageData: Map<String, Any>)` | Same, with a message object. Empty does nothing. With no `content` and other keys, such as `submitted_values`, it gets `content: "Hi"`, like the web SDK's `setOpenMessage`. |
 | `setMessageAttributes(attributes: Map<String, Any?>?): Boolean` | See Message Attributes. |
 | `sendMessage(event: String, data: Map<String, Any> = emptyMap())` | Post an event to the widget. Lost if the widget is not ready. |
 | `reload()` | Load the widget page again. Does nothing before `init`. |
 | `reset()` | Clear this widget's conversation and reload it. Does not close the widget. Call it on logout. Does nothing before `init`. |
-| `LimechatWidgetView.reset(context: Context, instanceId: String? = null)` | Static. Clear the stored token for an instance (`default` for null or blank). Does not reload a view that is showing. |
+| `LimechatWidgetView.reset(context: Context, instanceId: String? = null)` | Static. Clear the stored token for an instance (`default` for null or blank). Does not reload a view that is showing. The static `reset(context, instanceId)` only clears stored state. if a view is showing, call its `reset()` instead, or the view keeps its live token and stores it again. |
 | `onBackPressed(): Boolean` | Go back in the web view. Returns `false` if it cannot. |
 | `attachFilePicker(filePicker: WidgetFilePicker)` | Enable file uploads. |
 | `destroy()` | Release the web view. |

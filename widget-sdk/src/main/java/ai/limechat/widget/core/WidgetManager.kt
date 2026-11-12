@@ -105,6 +105,7 @@ class WidgetManager private constructor(private val context: Context) {
      * 
      * @param instanceId Unique identifier for widget instance
      */
+    @Deprecated("Use LimechatWidgetView.reset(context, instanceId). Will be removed in the next major release.")
     suspend fun clearConversation(instanceId: String) {
         memoryCache.remove(instanceId)
         
