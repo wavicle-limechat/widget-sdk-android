@@ -506,4 +506,46 @@ class NavigationAndOpenCharacterizationTest {
         assertTrue(v.onBackPressed())
         assertEquals(1, shadowOf(v.webView()).goBackInvocations)
     }
+
+    private fun loadedNotReady(now: () -> Long): LimechatWidgetView {
+        val v = view()
+        v.clock = now
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        shadowOf(v.webView()).webViewClient.onPageFinished(v.webView(), "x")
+        return v
+    }
+
+    @Test
+    fun `open 10s after page finish without ready reloads`() {
+        var t = 1_000L
+        val v = loadedNotReady { t }
+        val loads = v.recorder().loadedUrls.size
+        t += 10_000
+        v.open("hi")
+        assertEquals(loads + 1, v.recorder().loadedUrls.size)
+        v.widgetReady()
+        assertTrue(v.recorder().scripts.any { it.contains("\"open-with-message\"") })
+    }
+
+    @Test
+    fun `open 5s after page finish holds`() {
+        var t = 1_000L
+        val v = loadedNotReady { t }
+        val loads = v.recorder().loadedUrls.size
+        t += 5_000
+        v.open("hi")
+        assertEquals(loads, v.recorder().loadedUrls.size)
+    }
+
+    @Test
+    fun `open during load holds`() {
+        var t = 1_000L
+        val v = view()
+        v.clock = { t }
+        shadowOf(v.webView()).webViewClient.onPageStarted(v.webView(), "x", null)
+        val loads = v.recorder().loadedUrls.size
+        t += 60_000
+        v.open("hi")
+        assertEquals(loads, v.recorder().loadedUrls.size)
+    }
 }

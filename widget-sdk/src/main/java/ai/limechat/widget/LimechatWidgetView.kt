@@ -12,6 +12,7 @@ import ai.limechat.widget.utils.MessageHandler
 import ai.limechat.widget.utils.UrlBuilder
 import android.content.Context
 import android.util.AttributeSet
+import android.os.SystemClock
 import android.util.Log
 import android.webkit.WebView
 import android.widget.FrameLayout
@@ -33,6 +34,9 @@ class LimechatWidgetView @JvmOverloads constructor(
 
     companion object {
         private const val TAG = "LimechatWidgetView"
+
+        // a page that finished loading this long ago and is still not ready is treated as failed
+        private const val READY_TIMEOUT_MS = 10_000L
 
         /**
          * Clears the stored conversation token for an instance (null or blank means "default").
@@ -58,6 +62,10 @@ class LimechatWidgetView @JvmOverloads constructor(
     private var pageStarted = false
     private var widgetReady = false
     private var loadPending = false
+    private var pageFinishedAt: Long? = null
+
+    // monotonic, injectable for tests
+    internal var clock: () -> Long = { SystemClock.elapsedRealtime() }
     private var processRecoveryUsed = false
     private var pendingAttributes: Map<String, Any?> = emptyMap()
 
@@ -76,7 +84,10 @@ class LimechatWidgetView @JvmOverloads constructor(
                     pageStarted = true
                     widgetReady = false
                 },
-                onPageLoaded = { injectUser() },
+                onPageLoaded = {
+                    pageFinishedAt = clock()
+                    injectUser()
+                },
                 onRenderGone = { handleRenderGone(it) },
                 onMainFrameError = { loadPending = false }
             ),
@@ -196,6 +207,9 @@ class LimechatWidgetView @JvmOverloads constructor(
             return
         }
         pendingOpen = message
+        // the page loaded but the widget never became ready (its js failed): treat the load as failed
+        val finishedAt = pageFinishedAt
+        if (loadPending && finishedAt != null && clock() - finishedAt >= READY_TIMEOUT_MS) loadPending = false
         // a load is already running: keep it, the held message goes out at ready
         if (!loadPending) loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
     }
@@ -255,6 +269,7 @@ class LimechatWidgetView @JvmOverloads constructor(
         pageStarted = false
         widgetReady = false
         loadPending = true
+        pageFinishedAt = null
         webView.loadUrl(url)
     }
 
