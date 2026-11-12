@@ -15,17 +15,9 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 
 /**
- * Describes the close behaviour of jitpack `v0.0.9-alpha` (tag commit 253523a, from the
- * refactor/back-button-client-integration line), which a client runs today. Ported into
- * chore/sdk-drift-cleanup by plan task b0 (LimechatWidgetView.handleCloseEvent).
- *
- * 0.0.9-alpha routes `close-widget`, `widget-back` (and the since-removed `limechat://close`)
- * through handleCloseEvent():
- *   - showLegacyBackIcon = true and the view's context is an Activity -> activity.finish(),
- *     host onClose() is NOT called
- *   - showLegacyBackIcon = true and the context is not an Activity -> onClose()
- *   - showLegacyBackIcon = true and activity.finish() throws -> onClose()
- *   - showLegacyBackIcon = false -> onClose() only (same as develop)
+ * Close behaviour matches v0.0.9: `close-widget` and `widget-back` call onClose when a callback is set.
+ *   - callback set (legacy on or off) -> onClose(), the activity is not finished
+ *   - legacy on, Activity context and no callback -> activity.finish()
  */
 @RunWith(RobolectricTestRunner::class)
 class AlphaV009CloseBehaviourTest {
@@ -43,16 +35,16 @@ class AlphaV009CloseBehaviourTest {
     }
 
     @Test
-    fun `alpha - legacy back icon + activity context - close-widget finishes the activity and skips onClose`() {
+    fun `alpha - legacy back icon + activity context - close-widget calls onClose and does not finish the activity`() {
         val cb = RecordingCallback()
         val (activity, v) = activityView(legacy = true, cb = cb)
         v.postFromJs("""{"event":"close-widget","type":"close-widget"}""")
-        assertTrue(activity.isFinishing)
-        assertEquals(emptyList<String>(), cb.events)
+        assertEquals(listOf("onClose"), cb.events)
+        assertFalse(activity.isFinishing)
     }
 
     @Test
-    fun `alpha - legacy back icon + activity context + no callback - close still finishes the activity`() {
+    fun `alpha - legacy back icon + activity context + no callback - close finishes the activity`() {
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
         val v = LimechatWidgetView(activity)
         v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build())
@@ -64,22 +56,6 @@ class AlphaV009CloseBehaviourTest {
     fun `alpha - legacy back icon + non-activity context - falls back to onClose`() {
         val cb = RecordingCallback()
         val v = LimechatWidgetView(RuntimeEnvironment.getApplication())
-        v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), cb)
-        v.postFromJs("""{"event":"close-widget"}""")
-        assertEquals(listOf("onClose"), cb.events)
-    }
-
-    class ThrowingFinishActivity : Activity() {
-        override fun finish() {
-            throw IllegalStateException("finish failed")
-        }
-    }
-
-    @Test
-    fun `alpha - legacy back icon + finish() throws - falls back to onClose`() {
-        val cb = RecordingCallback()
-        val activity = Robolectric.buildActivity(ThrowingFinishActivity::class.java).setup().get()
-        val v = LimechatWidgetView(activity)
         v.init(WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), cb)
         v.postFromJs("""{"event":"close-widget"}""")
         assertEquals(listOf("onClose"), cb.events)

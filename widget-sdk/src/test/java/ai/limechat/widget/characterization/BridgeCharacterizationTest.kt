@@ -193,15 +193,15 @@ class BridgeCharacterizationTest {
     }
 
     @Test
-    fun `with setShowLegacyBackIcon(true) and an activity context, close finishes the activity and skips onClose`() {
+    fun `with setShowLegacyBackIcon(true) and an activity context, close calls onClose and does not finish the activity`() {
         val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
         val acb = RecordingCallback()
         val v = newView(activity, WidgetConfig.builder("tok").setShowLegacyBackIcon(true).build(), acb)
 
         v.postFromJs("""{"event":"close-widget"}""")
 
-        assertEquals(emptyList<String>(), acb.events)
-        assertTrue(activity.isFinishing)
+        assertEquals(listOf("onClose"), acb.events)
+        assertFalse(activity.isFinishing)
     }
 
     @Test
