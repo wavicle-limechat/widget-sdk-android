@@ -115,4 +115,11 @@ class UrlBuilderTest {
             assertEquals(message, java.net.URLDecoder.decode(once, "UTF-8"))
         }
     }
+
+    @Test
+    fun `the two argument buildWidgetUrl exists for java`() {
+        val m = UrlBuilder::class.java.getMethod("buildWidgetUrl", WidgetConfig::class.java, String::class.java)
+        val url = m.invoke(UrlBuilder, WidgetConfig.builder("test").build(), "tokX") as String
+        assertTrue(url.contains("cw_conversation=tokX"))
+    }
 }
