@@ -24,4 +24,10 @@ internal object ConversationTokenStore {
         cache[instanceId] = token
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().putString(instanceId, token).apply()
     }
+
+    /** Drops the token (memory and prefs) and the identity entry for [instanceId]. */
+    fun clear(context: Context, instanceId: String) {
+        cache.remove(instanceId)
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().remove(instanceId).apply()
+    }
 }

@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `platform=android` in the widget url, right after `website_token`.
 - `setMessageAttributes` on `LimechatWidgetView` and `LimechatWidgetButton`. Needs a widget build containing `c8126fb7cd`, older builds ignore it. Values that are not json (a `Date`, an unknown object) return `false`.
 - `LimechatWidgetView.reload()`.
+- `LimechatWidgetView.reset()` and the static `LimechatWidgetView.reset(context, instanceId)`. `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token (and a token you passed in, until you pass a new one), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
 - `WidgetConfig.User.identifier`. When both `identifier` and `identifierHash` are set, a `set-user` message is sent. Nothing changes until a host sets both.
 - `WidgetConfig.Builder.setHideFilePicker`, which adds `hide_file_picker=true` to the widget URL.
 

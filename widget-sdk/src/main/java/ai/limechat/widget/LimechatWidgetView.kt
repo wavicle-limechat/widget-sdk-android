@@ -31,8 +31,18 @@ class LimechatWidgetView @JvmOverloads constructor(
     defStyleAttr: Int = 0
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
-    private companion object {
-        const val TAG = "LimechatWidgetView"
+    companion object {
+        private const val TAG = "LimechatWidgetView"
+
+        /**
+         * Clears the stored conversation token for an instance (null or blank means "default").
+         * A view that is showing is not reloaded. Call it on logout.
+         */
+        @JvmStatic
+        @JvmOverloads
+        fun reset(context: Context, instanceId: String? = null) {
+            ConversationTokenStore.clear(context.applicationContext, instanceId?.takeIf { it.isNotBlank() } ?: "default")
+        }
     }
 
     private lateinit var webView: WebView
@@ -181,6 +191,20 @@ class LimechatWidgetView @JvmOverloads constructor(
         pendingOpen = message
         // a load is already running: keep it, the held message goes out at ready
         if (!loadPending) loadUrl(UrlBuilder.buildWidgetUrl(config, cwConversation))
+    }
+
+    /**
+     * `reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token (and a token you passed in, until you pass a new one), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
+     * Does nothing before init.
+     */
+    fun reset() {
+        val config = this.config ?: return
+        ConversationTokenStore.clear(context, instanceId)
+        cwConversation = null
+        this.config = config.copy(conversationToken = null)
+        pendingAttributes = emptyMap()
+        pendingOpen = null
+        reload()
     }
 
     /** Reload the widget. Does nothing before init. */

@@ -32,6 +32,7 @@
     - [Configuration](#configuration)
     - [Instance ID Usage](#instance-id-usage)
     - [External Token Management](#external-token-management)
+    - [Logout](#logout)
 7. [User Management](#-user-management)
     - [Passing User Information](#passing-user-information)
     - [Updating User Details](#updating-user-details)
@@ -380,6 +381,19 @@ val config = WidgetConfig.builder("YOUR_TOKEN")
     .build()
 ```
 
+### Logout
+
+```kotlin
+fun onLogout() {
+    widgetView.reset()
+}
+```
+
+`reset()` clears this widget's conversation, like the web SDK's `reset()`: it drops the stored or live conversation token (and a token you passed in, until you pass a new one), drops held message attributes and a held open message, and reloads the page without a conversation if it is showing. It does not close the widget. Call it on logout.
+
+- `reset()` does nothing before `init`.
+- With no view on screen, call `LimechatWidgetView.reset(context)` or `LimechatWidgetView.reset(context, instanceId)`. It clears the stored token for that instance (`default` for a null or blank id) and does not reload a view that is showing.
+
 ---
 
 ## 👤 User Management
@@ -415,7 +429,7 @@ User details reach the widget without verification. On every customer message th
 
 ### Updating User Details
 
-If the user logs in or out, you can re-initialize the widget with the new information.
+If the user logs out, call `reset()` (see Logout). If the user logs in, or their details change, re-initialize the widget with the new information.
 
 ```kotlin
 fun onUserLoggedIn(user: AppUser) {
@@ -702,6 +716,8 @@ Go live:
 | `setMessageAttributes(attributes: Map<String, Any?>?): Boolean` | See Message Attributes. |
 | `sendMessage(event: String, data: Map<String, Any> = emptyMap())` | Post an event to the widget. Lost if the widget is not ready. |
 | `reload()` | Load the widget page again. Does nothing before `init`. |
+| `reset()` | Clear this widget's conversation and reload it. Does not close the widget. Call it on logout. Does nothing before `init`. |
+| `LimechatWidgetView.reset(context: Context, instanceId: String? = null)` | Static. Clear the stored token for an instance (`default` for null or blank). Does not reload a view that is showing. |
 | `onBackPressed(): Boolean` | Go back in the web view. Returns `false` if it cannot. |
 | `attachFilePicker(filePicker: WidgetFilePicker)` | Enable file uploads. |
 | `destroy()` | Release the web view. |
